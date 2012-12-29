@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Spread-grid-column-Header'>/**
+</span> * @class Spread.grid.column.Header
+ *
+ * A grid column which cells look and feel like column headers. (Grayed out)
+ * Typically used as first column like a row numberer - known from spreadsheet applications.
+ */
+Ext.define('Spread.grid.column.Header', {
+
+    extend: 'Ext.grid.RowNumberer',
+
+    alias: 'widget.spreadheadercolumn',
+
+<span id='Spread-grid-column-Header-cfg-editable'>    /**
+</span>     * @cfg {Boolean} editable
+     * If a column is configured as header column, the values aren't editable by default.
+     * If it should be editable, it needs to be selectable too.
+     */
+    editable: false,
+
+<span id='Spread-grid-column-Header-cfg-columnWidth'>    /**
+</span>     * @cfg {Number} columnWidth
+     * Width of the header column width in pixel
+     */
+    columnWidth: 60,
+
+<span id='Spread-grid-column-Header-cfg-selectable'>    /**
+</span>     * @cfg {Boolean} selectable
+     * If a column is configured as header column, the values aren't selectable nor focusable by default
+     */
+    selectable: false,
+
+<span id='Spread-grid-column-Header-cfg-dataIndex'>    /**
+</span>     * @cfg {String} dataIndex
+     * Index of the column id by default
+     */
+    dataIndex: 'id',
+
+<span id='Spread-grid-column-Header-property-resizable'>    // Resizing is allowed by default
+</span>    resizable: true,
+
+<span id='Spread-grid-column-Header-method-constructor'>    /**
+</span>     * @private
+     */
+    constructor: function(config) {
+
+        // Reinvent the logic of Ext.grid.column.Column and prevent RowNumberer logic
+        config.width = config.columnWidth || this.columnWidth;
+
+        // TODO: Handle renderer given by instance configuration (config!)
+
+        this.callParent(arguments);
+    },
+
+<span id='Spread-grid-column-Header-method-renderer'>    // private
+</span>    renderer: function(value, metaData, record, rowIdx, colIdx, store) {
+
+        var rowspan = this.rowspan;
+
+        if (rowspan){
+            metaData.tdAttr = 'rowspan=&quot;' + rowspan + '&quot;';
+        }
+        metaData.tdCls = Ext.baseCSSPrefix + 'grid-cell-header ' +
+                         Ext.baseCSSPrefix + 'grid-cell-special';
+        return value;
+    }
+});</pre>
+</body>
+</html>

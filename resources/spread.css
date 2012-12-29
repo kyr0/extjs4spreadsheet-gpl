@@ -1,0 +1,72 @@
+.spreadsheet-cell-cover {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    display: none;
+    border: 3px solid #000;
+    width: 0px;
+    height: 0px;
+    margin: 0px;
+    padding: 0px;
+    cursor: cell;
+}
+
+.x-grid-row .spreadsheet-cell-unselectable {
+    cursor: default !important;
+}
+
+.x-grid-row .spreadsheet-cell-editable .x-grid-cell-inner {
+    background-color: #ffffcf;
+}
+
+.x-grid-row .spreadsheet-cell-editable-dirty .x-grid-cell-inner {
+    background-color: #ffffcf;
+    background-image: url("dirty.gif");
+    background-position: 0 0;
+    background-repeat: no-repeat;
+}
+
+.spreadsheet-view-default {
+    position: absolute;
+}
+
+.x-grid-row {
+    cursor: cell;
+}
+
+.spreadsheet-view-default .x-grid-cell-header {
+    cursor: default !important;
+}
+
+.spreadsheet-view-default .x-grid-cell-header .x-grid-cell-inner {
+    background-color: #e5e5e5;
+}
+
+.x-grid-row .spreadsheet-cell-editable .spreadsheet-cell-selection-cover {
+    background-color: #f0e7a6 !important;
+}
+
+.x-grid-row .spreadsheet-cell-editable-dirty .spreadsheet-cell-selection-cover {
+    background-color: #f0e7a6 !important;
+    background-image: url("dirty.gif");
+    background-position: 0 0;
+    background-repeat: no-repeat;
+}
+
+.x-grid-row .spreadsheet-cell-selection-cover {
+    background-color: #e0e0e0 !important;
+}
+
+.x-grid-row .x-grid-dirty-cell .spreadsheet-cell-selection-cover {
+    background-color: #e0e0e0;
+    background-image: url("dirty.gif");
+    background-position: 0 0;
+    background-repeat: no-repeat;
+}
+
+.spreadsheet-cell-cover-edit-field {
+    width: 100%;
+    border: 0px;
+    height: 100%;
+    display: none;
+}

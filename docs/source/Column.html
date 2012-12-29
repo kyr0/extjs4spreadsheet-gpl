@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Spread-overrides-Column'>/**
+</span> * @class Spread.overrides.Column
+ * @overrides Ext.grid.Column
+ * Overrides to the standard gird column to implement spreadsheet-specific features.
+ */
+Ext.define('Spread.overrides.Column', {
+
+    override: 'Ext.grid.Column',
+
+<span id='Spread-overrides-Column-cfg-selectable'>    /**
+</span>     * @cfg {Boolean} selectable
+     * If a column is configured as header column, the values aren't selectable nor focusable
+     */
+    selectable: true,
+
+<span id='Spread-overrides-Column-cfg-editable'>    /**
+</span>     * @cfg {Boolean} editable
+     * If the column is editable, the edit fields gets active on key type-in or double-clicking
+     */
+    editable: true,
+
+<span id='Spread-overrides-Column-cfg-autoCommit'>    /**
+</span>     * @cfg {Boolean} autoCommit
+     * Auto-commit cell data changes on record automatically
+     * (otherwise the data change indicator will be shown and record needs to be commit()'ed manually!
+     */
+    autoCommit: true,
+
+<span id='Spread-overrides-Column-cfg-cellwriter'>    /**
+</span>     * @cfg {Function} cellwriter
+     * Pre-processor function for cell data write operations - if you want to modify cell data before record update.
+     * (e.g. when edit field gets blur()'ed and updates the record AND when selection paste (ctrl+v) happens,
+     * this function gets called, when it's defined. The return value of this function will be used as new data value.
+     */
+    cellwriter: null,
+
+<span id='Spread-overrides-Column-cfg-cellreader'>    /**
+</span>     * @cfg {Function} cellreader
+     * Pre-processor function for cell read operations - if you want to modify cell data while reading from record.
+     * (e.g. when edit field gets active and loads cell data AND when selection copy (ctrl+c) happens,
+     * this function gets called, when it's defined. The return value of this function will be used.
+     */
+    cellreader: null,
+
+<span id='Spread-overrides-Column-cfg-editModeStyling'>    /**
+</span>     * @cfg {Boolean} editModeStyling
+     * If you enable special styles for editable columns they will
+     * be displayed with a special background color and selection color.
+     */
+    editModeStyling: true,
+
+<span id='Spread-overrides-Column-cfg-allowedEditKeys'>    /**
+</span>     * @cfg {Array} allowedEditKeys
+     * Specifies the allowed keys so that only these keys can be typed into the edit field
+     */
+    allowedEditKeys: [],
+
+<span id='Spread-overrides-Column-property-initialPanelEditModeStyling'>    // internal flag
+</span>    initialPanelEditModeStyling: false,
+
+<span id='Spread-overrides-Column-method-initComponent'>    // private
+</span>    initComponent: function() {
+
+        // Handle UI stuff
+        this.initDynamicColumnTdCls();
+
+        // Call parent
+        this.callParent(arguments);
+    },
+
+<span id='Spread-overrides-Column-method-initDynamicColumnTdCls'>    /**
+</span>     * @private
+     * Handles cell &lt;td&gt; addition of CSS classes
+     * @return void
+     */
+    initDynamicColumnTdCls: function() {
+
+        //console.log('has view?', this.view);
+
+        if (!this.selectable) {
+
+            // If not selectable, then editing is impossible
+            this.editable = false;
+
+            // Add unselectable class
+            this.tdCls = 'spreadsheet-cell-unselectable';
+        }
+
+        // Check for editable flag and for edit mode styling
+        if (this.editable &amp;&amp; this.editModeStyling &amp;&amp;
+            this.initialPanelEditModeStyling) {
+
+            // Add editable class
+            this.tdCls += ' ' + 'spreadsheet-cell-editable';
+        }
+    }
+});
+</pre>
+</body>
+</html>

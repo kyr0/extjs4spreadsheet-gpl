@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Spread-grid-plugin-Pasteable'>/**
+</span> * @class Spread.grid.plugin.Pasteable
+ * Allows the spreadsheet to receive data from a native spreadsheet application like
+ * e.g. OpenOffice.org Calc by pasting into a selected cell range or right-down direction from a focused cell
+ * using the keystroke Ctrl/Cmd + V.
+ *
+ * TODO: Context menu paste
+ */
+Ext.define('Spread.grid.plugin.Pasteable', {
+
+    alias: 'pasteable',
+
+    extend: 'Ext.AbstractComponent',
+
+    mixins: {
+        clipping: 'Spread.util.Clipping'
+    },
+
+<span id='Spread-grid-plugin-Pasteable-property-view'>    /**
+</span>     * @property {Spread.grid.View}
+     * View instance reference
+     */
+    view: null,
+
+<span id='Spread-grid-plugin-Pasteable-method-init'>    /**
+</span>     * @protected
+     * Registers the paste keystroke event handling mechanism.
+     * @param {Spread.grid.View} view View instance
+     * @return void
+     */
+    init: function(view) {
+
+        // Add events
+        this.addEvents(
+
+<span id='Spread-grid-plugin-Pasteable-event-beforepaste'>            /**
+</span>             * @event beforepaste
+             * Fires before a paste action happens. Return false in listener to stop the event processing.
+             * @param {Spread.grid.plugin.Pasteable} pasteable Pasteable plugin instance
+             * @param {Spread.selection.RangeModel} selModel Selection model instance
+             * @param {Array} selections Array of selected positions
+             */
+            'beforepaste',
+
+<span id='Spread-grid-plugin-Pasteable-event-paste'>            /**
+</span>             * @event paste
+             * Fires when a paste action happened.
+             * @param {Spread.grid.plugin.Pasteable} pasteable Pasteable plugin instance
+             * @param {Spread.selection.RangeModel} selModel Selection model instance
+             * @param {Array} selections Array of selected positions
+             * @param {Array} pastedData Array of pasted data
+             */
+            'paste'
+        );
+
+        // Initialize clipping mixin
+        this.initClipping();
+
+        var me = this;
+
+        // Set internal reference
+        me.view = view;
+
+        // Init key navigation
+        this.initKeyNav(view);
+    },
+
+<span id='Spread-grid-plugin-Pasteable-method-initKeyNav'>    /**
+</span>     * @protected
+     * Initializes the key navigation
+     * @param {Spread.grid.View} view View instance
+     * @return void
+     */
+    initKeyNav: function(view) {
+
+        var me = this;
+
+        if (!view.rendered) {
+            view.on('render', Ext.Function.bind(me.initKeyNav, me, [view], 0), me, {single: true});
+            return;
+        }
+
+        // Register key-stroke event detector
+        view.getEl().on('keydown', me.detectPasteKeyStroke, me);
+    },
+
+<span id='Spread-grid-plugin-Pasteable-method-detectPasteKeyStroke'>    /**
+</span>     * @protected
+     * Detects paste key-strokes (ctrl+v, cmd+v) and calls the
+     * clipping mixin to hook the native event loop for clipboard
+     * interaction. Also calls the TSVTransformer to transform
+     * the pasted data into array data.
+     *
+     * @param {Ext.EventObject} evt Key event
+     * @return void
+     */
+    detectPasteKeyStroke: function(evt) {
+
+        if (evt.getKey() === evt.V &amp;&amp; evt.ctrlKey) {
+            this.pasteFromClipboard();
+        }
+    },
+
+<span id='Spread-grid-plugin-Pasteable-method-pasteFromClipboard'>    /**
+</span>     * @protected
+     * Pastes selected range data from the native clipboard to
+     * the text area and then onto the record fields.
+     * @return void
+     */
+    pasteFromClipboard: function() {
+
+        //console.log('copying to clipboard');
+
+        var me = this,
+            selModel = this.view.getSelectionModel(),
+            selectionPositions = selModel.getSelectedPositionData(),
+            pastedDataArray = [];
+
+        // Fire interceptable event
+        if (this.fireEvent('beforepaste', this, selModel, selectionPositions) !== false) {
+
+            this.prepareForClipboardPaste(function(clipboardData) {
+
+                // Call the transformer to transform and insert data
+                pastedDataArray = Spread.data.TSVTransformer.transformToArray(clipboardData);
+
+                // Call the method to paste the data into the store
+                me.updateRecordFieldsInStore(pastedDataArray, selectionPositions);
+
+                this.fireEvent('paste', this, selModel, selectionPositions, pastedDataArray);
+
+            }, this.view);
+
+        }
+    },
+
+<span id='Spread-grid-plugin-Pasteable-method-updateRecordFieldsInStore'>    /**
+</span>     * @protected
+     * Update the store records selected in the range of selectionPositions.
+     * @param {Array} pastedDataArray Clipboard data converted as flat array
+     * @param {Array} selectionPositions Selected positions
+     * @return void
+     */
+    updateRecordFieldsInStore: function(pastedDataArray, selectionPositions) {
+
+        console.log('updateRecordFieldsInStore', pastedDataArray, selectionPositions);
+
+        // TODO: Projection and record field change, IMPLEMENT
+    }
+});</pre>
+</body>
+</html>
