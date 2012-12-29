@@ -115,6 +115,12 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     editableCellCls: 'spreadsheet-cell-editable',
 
+<span id='Spread-grid-plugin-Editable-cfg-editableDirtyCellCls'>    /**
+</span>     * @cfg {String} editableDirtyCellCls
+     * Name of the css class for editable spreadsheet cells which are dirty too
+     */
+    editableDirtyCellCls: 'spreadsheet-cell-editable-dirty',
+
 <span id='Spread-grid-plugin-Editable-property-lastEditFieldValue'>    /**
 </span>     * @property {Mixed} lastEditFieldValue
      * Stores the last edit field value
@@ -361,8 +367,26 @@ Ext.define('Spread.grid.plugin.Editable', {
                 this.autoCommit
             );
 
+            // Recolorize for dirty flag!
+            this.handleDirtyMarkOnEditModeStyling();
+
             // Fire event
             this.fireEvent('editfieldblur', this);
+        }
+    },
+
+<span id='Spread-grid-plugin-Editable-method-handleDirtyMarkOnEditModeStyling'>    /**
+</span>     * @protected
+     * Full redraw on edit mode styling after each edit field change
+     * @return void
+     */
+    handleDirtyMarkOnEditModeStyling: function() {
+
+        // Full redraw
+        this.displayCellsEditing(false);
+
+        if (this.view.ownerCt.editModeStyling) {
+            this.displayCellsEditing(true);
         }
     },
 
@@ -433,9 +457,9 @@ Ext.define('Spread.grid.plugin.Editable', {
         if (me.activePosition.columnHeader.allowedEditKeys.length &gt; 0) {
 
             // Stop key input if not in allowed keys list
-            if (me.activePosition.columnHeader.allowedEditKeys.indexOf(
+            if (Ext.Array.indexOf(me.activePosition.columnHeader.allowedEditKeys,
                     String.fromCharCode(evt.getCharCode())
-                ) === -1)
+                ) === -1 &amp;&amp; evt.getKey() !== evt.BACKSPACE)
             {
                 evt.stopEvent();
             }
@@ -478,9 +502,10 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     onCoverKeyPressed: function(evt, viewEl) {
 
-        if (!evt.isSpecialKey() &amp;&amp; !evt.ctrlKey &amp;&amp; !this.isEditing) {
+        // keyCode 91 === Windows / Command key
+        if (!evt.isSpecialKey() &amp;&amp; /*!evt.altKey &amp;&amp;*/ !evt.ctrlKey &amp;&amp; /*!evt.getKey() === 91 &amp;&amp;*/ !this.isEditing) {
 
-            //console.log('onCoverKeyPressed', evt);
+            //console.log('onCoverKeyPressed', evt.getKey(), evt.getCharCode());
 
             if (!this.isEditing) {
 
@@ -664,9 +689,6 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     displayCellsEditing: function(displayEditing) {
 
-        // TODO: If stripeRows is enabled, this will collide! -&gt; inked odd rows not striped: BROKEN!
-        // TODO: Dirty cell marker and edit field color collide -&gt; marker not shown: BROKEN!
-
         var me = this, viewCells = me.activePosition.view.getEl().query(
             this.activePosition.view.cellSelector
         ), viewColumns = me.view.getHeaderCt().getGridColumns();
@@ -681,7 +703,7 @@ Ext.define('Spread.grid.plugin.Editable', {
                 // Jump-over non-exiting AND non-editable cells (of non-editable columns) AND
                 // when a column should be inked which has an implicit editModeStyling=false flag!
                 if (!viewCells[i] ||
-                    me.editableColumnIndexes.indexOf(viewCells[i].cellIndex) &lt; 0 ||
+                    Ext.Array.indexOf(me.editableColumnIndexes, viewCells[i].cellIndex) &lt; 0 ||
                     (viewColumns[viewCells[i].cellIndex] &amp;&amp;
                      viewColumns[viewCells[i].cellIndex].editModeStyling === false)) {
                     continue;
@@ -691,12 +713,18 @@ Ext.define('Spread.grid.plugin.Editable', {
 
                     // Add css class
                     if (!Ext.fly(viewCells[i]).hasCls(me.editableCellCls)) {
-                        Ext.fly(viewCells[i]).addCls(me.editableCellCls);
+
+                        if (Ext.fly(viewCells[i]).hasCls('x-grid-dirty-cell')) {
+                            Ext.fly(viewCells[i]).addCls(me.editableDirtyCellCls);
+                        } else {
+                            Ext.fly(viewCells[i]).addCls(me.editableCellCls);
+                        }
                     }
 
                 } else {
 
                     Ext.fly(viewCells[i]).removeCls(me.editableCellCls);
+                    Ext.fly(viewCells[i]).removeCls(me.editableDirtyCellCls);
                 }
             }
 

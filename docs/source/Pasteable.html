@@ -20,8 +20,6 @@
  * Allows the spreadsheet to receive data from a native spreadsheet application like
  * e.g. OpenOffice.org Calc by pasting into a selected cell range or right-down direction from a focused cell
  * using the keystroke Ctrl/Cmd + V.
- *
- * TODO: Context menu paste
  */
 Ext.define('Spread.grid.plugin.Pasteable', {
 
@@ -38,6 +36,28 @@ Ext.define('Spread.grid.plugin.Pasteable', {
      * View instance reference
      */
     view: null,
+
+<span id='Spread-grid-plugin-Pasteable-cfg-autoCommit'>    /**
+</span>     * @cfg {Boolean}
+     * Should changed cell data be automatically committed?
+     * This config gets auto-applied from spread grid panel.
+     */
+    autoCommit: false,
+
+<span id='Spread-grid-plugin-Pasteable-cfg-loadMask'>    /**
+</span>     * @cfg {Boolean}
+     * Indicator if a load mask should be shown while pasting
+     */
+    loadMask: true,
+
+<span id='Spread-grid-plugin-Pasteable-cfg-useInternalAPIs'>    /**
+</span>     * @cfg {Boolean}
+     * Using internal API's allows a much faster record data changing.
+     * Using internal API's is dangerous. If this method doesn't work
+     * after a framework update anymore, just switch this flag to false!
+     * EXPERIMENTAL. Dirty flag is known to be buggy in this release.
+     */
+    useInternalAPIs: false,
 
 <span id='Spread-grid-plugin-Pasteable-method-init'>    /**
 </span>     * @protected
@@ -126,12 +146,15 @@ Ext.define('Spread.grid.plugin.Pasteable', {
      */
     pasteFromClipboard: function() {
 
-        //console.log('copying to clipboard');
+        //console.log('pasting from clipboard');
 
         var me = this,
             selModel = this.view.getSelectionModel(),
-            selectionPositions = selModel.getSelectedPositionData(),
-            pastedDataArray = [];
+            selectionPositions = selModel.getSelectedPositionData();
+
+        if (me.loadMask) {
+            me.view.setLoading(true);
+        }
 
         // Fire interceptable event
         if (this.fireEvent('beforepaste', this, selModel, selectionPositions) !== false) {
@@ -139,15 +162,18 @@ Ext.define('Spread.grid.plugin.Pasteable', {
             this.prepareForClipboardPaste(function(clipboardData) {
 
                 // Call the transformer to transform and insert data
-                pastedDataArray = Spread.data.TSVTransformer.transformToArray(clipboardData);
+                var pastedDataArray = Spread.data.TSVTransformer.transformToArray(clipboardData);
 
                 // Call the method to paste the data into the store
-                me.updateRecordFieldsInStore(pastedDataArray, selectionPositions);
+                me.updateRecordFieldsInStore(pastedDataArray, selectionPositions, selModel);
 
-                this.fireEvent('paste', this, selModel, selectionPositions, pastedDataArray);
+                me.fireEvent('paste', me, selModel, selectionPositions, pastedDataArray);
+
+                if (me.loadMask) {
+                    me.view.setLoading(false);
+                }
 
             }, this.view);
-
         }
     },
 
@@ -156,13 +182,182 @@ Ext.define('Spread.grid.plugin.Pasteable', {
      * Update the store records selected in the range of selectionPositions.
      * @param {Array} pastedDataArray Clipboard data converted as flat array
      * @param {Array} selectionPositions Selected positions
+     * @param {Spread.selection.RangeModel} selModel Selection model
      * @return void
      */
-    updateRecordFieldsInStore: function(pastedDataArray, selectionPositions) {
+    updateRecordFieldsInStore: function(pastedDataArray, selectionPositions, selModel) {
 
-        console.log('updateRecordFieldsInStore', pastedDataArray, selectionPositions);
+        var me = this;
 
-        // TODO: Projection and record field change, IMPLEMENT
+        //console.log('updateRecordFieldsInStore', selModel, pastedDataArray, selectionPositions);
+
+        // Selects a range of cells
+        function selectRangeByNewPosition(newOriginSelectionPosition, newFocusPosition) {
+
+            //console.log('select new range', newOriginSelectionPosition, newFocusPosition);
+
+            // Switch position references
+            selModel.currentFocusPosition = newFocusPosition;
+            selModel.originSelectionPosition = newOriginSelectionPosition;
+
+            // Try selecting range
+            selModel.tryToSelectRange(true);
+        }
+
+        // Do nothing, if nothing is selected or nothing was pasted
+        if (selectionPositions.length === 0 || pastedDataArray.length === 0) {
+            //console.log('return, because no selection was found');
+            return;
+        }
+
+        // Single cell paste, just set data on focus position
+        if (pastedDataArray.length === 1 &amp;&amp; pastedDataArray[0].length === 1) {
+
+            var newFocusPosition = selectionPositions[0].update();
+
+            /*console.log(
+                'setting data value',
+                newFocusPosition,
+                pastedDataArray[0][0]
+            );*/
+
+            // Set data on field of record
+            Spread.data.DataMatrix.setValueForPosition(
+                newFocusPosition,
+                pastedDataArray[0][0],
+                me.autoCommit
+            );
+
+            // Redraw edit mode styling
+            me.handleDirtyMarkOnEditModeStyling();
+
+            return;
+        }
+
+        // Build real selectionPositions array
+        if (selectionPositions.length === 1) {
+
+            var newOriginSelectionPosition = selectionPositions[0].update(),
+                newFocusPosColumnIndex = newOriginSelectionPosition.column,
+                newFocusPosRowIndex = newOriginSelectionPosition.row,
+                newFocusPosition = null;
+
+            //console.log('detect selection out of focus position', newFocusPosRowIndex);
+
+            // Increment row (-2 because the selected position also is a row)
+            newFocusPosRowIndex += (pastedDataArray.length - 1);
+
+            // Selected (-1 because the selected position also is a column)
+            newFocusPosColumnIndex += (pastedDataArray[0].length - 1);
+
+            // Lets try this position
+            newFocusPosition = new Spread.selection.Position(
+                me.view,
+                newFocusPosColumnIndex,
+                newFocusPosRowIndex
+            );
+
+            //console.log('originPosition would be: ', newOriginSelectionPosition);
+            //console.log('focusPosition would be: ', newFocusPosition);
+
+            // Select range
+            selectRangeByNewPosition(newOriginSelectionPosition, newFocusPosition);
+        }
+
+        // Update selection info
+        selectionPositions = selModel.getSelectedPositionData();
+
+        // Selection exists, change data for cells in selection
+        //console.log('change data inside selection: ', selectionPositions, pastedDataArray);
+
+        var projectedColumnIndex = 0;
+        var projectedRowIndex = 0;
+        var lastProjectedRowIndex = 0;
+
+        // Walk selected positions to set new field/cell values
+        for (var i=0; i&lt;selectionPositions.length; i++) {
+
+            // Update record references
+            selectionPositions[i].update();
+
+            // Matrix-project row and column index of grid (coordinates) onto selected range (coordinates)
+            projectedRowIndex = (selectionPositions[i].row-newOriginSelectionPosition.row);
+            projectedColumnIndex = (selectionPositions[i].column-newOriginSelectionPosition.column)
+
+            if (!me.useInternalAPIs) {
+
+                if (i==0) {
+                    selectionPositions[i].record.beginEdit();
+                }
+
+                // Performance: BULK editing of records
+                if (lastProjectedRowIndex !== projectedRowIndex &amp;&amp;
+                    selectionPositions[(i-1)]) {
+
+                    //console.log('BULK');
+
+                    // Bulk editing of records (for performance)
+                    selectionPositions[(i-1)].record.endEdit();
+                    selectionPositions[i].record.beginEdit();
+                }
+            }
+
+            // Update last projected row index
+            lastProjectedRowIndex = projectedRowIndex;
+
+            /*console.log(
+                'setting data values',
+                selectionPositions[i],
+                pastedDataArray[projectedRowIndex][projectedColumnIndex],
+                projectedRowIndex,
+                projectedColumnIndex
+            );*/
+
+            // Set new data value
+            Spread.data.DataMatrix.setValueForPosition(
+                selectionPositions[i],
+                pastedDataArray[projectedRowIndex][projectedColumnIndex],
+                me.autoCommit,
+                me.useInternalAPIs
+            );
+        }
+
+        if (!me.useInternalAPIs) {
+
+            // Last endEdit() record call
+            selectionPositions[i-1].record.endEdit();
+
+        } else {
+
+            // Using internal API's we've changed the internal
+            // values now, but we need to refresh the view for
+            // data values to be updates
+            me.view.refresh();
+        }
+
+        // Redraw edit mode styling
+        me.handleDirtyMarkOnEditModeStyling();
+
+        // Highlight pasted data selection cells
+        me.view.highlightCells(selectionPositions);
+    },
+
+<span id='Spread-grid-plugin-Pasteable-method-handleDirtyMarkOnEditModeStyling'>    /**
+</span>     * @protected
+     * Full redraw on edit mode styling after each edit field change
+     * @return void
+     */
+    handleDirtyMarkOnEditModeStyling: function() {
+
+        if (this.view.editable) {
+
+            // Full redraw
+            this.view.editable.displayCellsEditing(false);
+
+            if (this.view.ownerCt.editModeStyling) {
+                this.view.editable.displayCellsEditing(true);
+            }
+        }
     }
 });</pre>
 </body>

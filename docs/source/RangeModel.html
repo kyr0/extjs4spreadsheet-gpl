@@ -33,6 +33,7 @@
  *
  * Using the interceptable eventing of this selection model, it's possible
  * to extend the selection and focussing logic.
+ *
  */
 Ext.define('Spread.selection.RangeModel', {
 
@@ -103,6 +104,7 @@ Ext.define('Spread.selection.RangeModel', {
 </span>     * @property {Spread.grid.View} Internal view instance reference
      */
     view: null,
+
 
 <span id='Spread-selection-RangeModel-property-Internal'>    /**
 </span>     * @property {Spread.grid.Panel} Internal grid reference
@@ -385,7 +387,7 @@ Ext.define('Spread.selection.RangeModel', {
         }
 
         // Listen for mouseup globally (stable method to fetch mouseup)
-        Ext.EventManager.on(window, 'mouseup', this.onCellMouseUp, this, {
+        Ext.EventManager.on(document.body, 'mouseup', this.onCellMouseUp, this, {
             buffer: 50
         });
     },
@@ -759,9 +761,10 @@ Ext.define('Spread.selection.RangeModel', {
 </span>     * @protected
      * Tries to select a range by information from _previously_ internally set
      * this.originSelectionPosition and (to) this.currentFocusPosition.
+     * @param {Boolean} [virtual=false] Virtual calculation but no UI change
      * @return void
      */
-    tryToSelectRange: function() {
+    tryToSelectRange: function(virtual) {
 
         // private method to interpolate numbers and return them as index array
         var interpolate = function(startIdx, endIdx) {
@@ -789,7 +792,8 @@ Ext.define('Spread.selection.RangeModel', {
             focusColumn = this.getCurrentFocusPosition().column,
             rowIndexes = [],
             columnIndexes = [],
-            selectedPositions = [];
+            selectedPositions = [],
+            selPosition = null;
 
         // Interpolate selected row indexes
         if (focusRow &lt;= originRow) {
@@ -812,22 +816,30 @@ Ext.define('Spread.selection.RangeModel', {
 
             for (var colIndex=0; colIndex&lt;columnCount; colIndex++) {
 
-                // Match selected position and
-                if (rowIndexes.indexOf(rowIndex) &gt; -1 &amp;&amp;
-                    columnIndexes.indexOf(colIndex) &gt; -1) {
+                // Match positioning indexes
+                if (Ext.Array.indexOf(rowIndexes, rowIndex) &gt; -1 &amp;&amp;
+                    Ext.Array.indexOf(columnIndexes, colIndex) &gt; -1) {
 
-                    selectedPositions.push(
-                        new Spread.selection.Position(this.view, colIndex, rowIndex)
-                    );
+                    // Fetch already-updated position instance
+                    selPosition = new Spread.selection.Position(this.view, colIndex, rowIndex).update();
+
+                    // Only add position to selection if column isn't hidden currently
+                    if (!selPosition.columnHeader.hidden) {
+                        selectedPositions.push(selPosition);
+                    }
                 }
             }
         }
+
+        //console.log('SELECTED', selectedPositions);
 
         // Update local selection range cache
         this.currentSelectionRange = selectedPositions;
 
         // Tell the view which cells to highlight
-        this.view.highlightCells(selectedPositions);
+        if (!virtual) {
+            this.view.highlightCells(selectedPositions);
+        }
     },
 
 <span id='Spread-selection-RangeModel-method-getSelectedPositionData'>    /**

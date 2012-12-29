@@ -23,8 +23,6 @@
  * selection background color change.
  *
  * &lt;b&gt;Please use the Grid's viewConfig-property for configuration of the view.&lt;/b&gt;
- *
- * TODO: Context menu implementation (shown when plugins hook it and add items)
  */
 Ext.define('Spread.grid.View', {
 
@@ -105,6 +103,9 @@ Ext.define('Spread.grid.View', {
 </span>     * @private
      */
     initComponent: function() {
+
+        // Disable row-striping
+        this.stripeRows = false;
 
         // Add spread view CSS cls
         this.baseCls = this.baseCls + ' ' + this.spreadViewBaseCls;
@@ -350,7 +351,7 @@ Ext.define('Spread.grid.View', {
 <span id='Spread-grid-View-method-bubbleCellMouseDownToSelectionModel'>    /**
 </span>     * @protected
      * Bubble the mousedown event to the cell's &lt;td&gt; element which is covered by the coverEl.
-     * @param {Ext.EventObject} evt Event of mouseup
+     * @param {Ext.EventObject} evt Event of mousedown
      * @param {HTMLElement} coverEl Promise that this is a cover element, the user clicked on
      * @return void
      */
@@ -485,7 +486,7 @@ Ext.define('Spread.grid.View', {
             for (var i=0; i&lt;me.currentHighlightPositions.length; i++) {
 
                 // (Un-)highlight visually by adding/removing CSS class
-                Ext.fly(me.currentHighlightPositions[i].cellEl)
+                Ext.fly(me.currentHighlightPositions[i].update().cellEl)
                     .down('div')[methodName]('spreadsheet-cell-selection-cover');
             }
         };

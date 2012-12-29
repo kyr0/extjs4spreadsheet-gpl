@@ -70,7 +70,7 @@ Ext.define('Spread.data.TSVTransformer', {
                 tsvText = this.addTabulator(tsvText);
             }
         }
-        console.log('tsvText', tsvText);
+        //console.log('tsvText', tsvText);
 
         return tsvText;
     },
@@ -87,7 +87,8 @@ Ext.define('Spread.data.TSVTransformer', {
 
         //console.log('transformToArray', clipboardData, rows);
 
-        for (var i=0; i&lt;rows.length; i++) {
+        for (var i=0; i&lt;(rows.length-1); i++) {
+
             dataArray.push(
                 rows[i].split(this.columnSeparator)
             );

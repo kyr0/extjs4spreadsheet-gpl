@@ -51,20 +51,25 @@ Ext.define('Spread.data.DataMatrix', {
      * @param {Spread.selection.Position} position Position reference
      * @param {Mixed} newValue New cell value
      * @param {Boolean} [autoCommit=false] Should the record be automatically committed after change
+     * @param {Boolean} [useInternalAPIs=false] Force to use the internal Model API's
      * @return {String[]}
      */
-    setValueForPosition: T(function(position, newValue, autoCommit) {
+    setValueForPosition: function(position, newValue, autoCommit, useInternalAPIs) {
 
         // Get local test instance
-        var t = T('setValueForPosition', arguments);
+        //var t = T('setValueForPosition', arguments);
 
         //console.log('setValueForPosition', arguments);
 
         // Get arguments
-        t.assert(position, 'position to be defined').toBeDefined();
+        //t.assert(position, 'position to be defined').toBeDefined();
 
         // Update position
         position.update();
+
+        // @assert(position).not.toBeInstanceOf(Function);
+        // @log('whatever', position);
+        // @dir('whatever', position);
 
         var fieldName = this.getFieldNameForColumnIndex(position.view, position.column);
 
@@ -80,9 +85,20 @@ Ext.define('Spread.data.DataMatrix', {
             newValue = position.columnHeader.cellwriter(newValue, position);
         }
 
-        // Set new value
-        var ret = position.record.set(fieldName, newValue);
+        if (useInternalAPIs) {
 
+            var ret = position.record[
+                position.record.persistenceProperty
+            ][fieldName] = newValue;
+
+            // Set record dirty
+            position.record.setDirty();
+
+        } else {
+
+            // Set new value
+            var ret = position.record.set(fieldName, newValue);
+        }
         // Automatically commit if wanted
         if (autoCommit &amp;&amp;
             position.columnHeader.autoCommit) {
@@ -90,7 +106,7 @@ Ext.define('Spread.data.DataMatrix', {
             position.record.commit();
         }
         return ret;
-    }),
+    },
 
 <span id='Spread-data-DataMatrix-method-getValueOfPosition'>    /**
 </span>     * Returns the value of a cell identified by row and column index.

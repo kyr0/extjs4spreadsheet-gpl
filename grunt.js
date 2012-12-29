@@ -27,7 +27,6 @@ module.exports = function (grunt) {
             dist: {
                 src: [
                     '<banner:meta.banner>',
-                    baseDir('../tea/tea-debug.js'),
                     srcDir('grid/overrides/Column.js'),
                     srcDir('data/TSVTransformer.js'),
                     srcDir('data/DataMatrix.js'),

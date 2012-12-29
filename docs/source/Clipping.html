@@ -97,6 +97,9 @@ Ext.define('Spread.util.Clipping', {
             // Call callback with pasted data
             pasteDataCallback(me.el.dom.value);
 
+            // Reset textarea value
+            me.el.dom.value = '';
+
         }, 150);
 
         // Re-focus the view

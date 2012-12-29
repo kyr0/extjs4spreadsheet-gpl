@@ -109,6 +109,20 @@ Ext.define('Spread.selection.Position', {
 
         //console.log('instantiation of Position', arguments);
 
+        // Correct row and column index if outside of possible grid boundings
+        var maxRowCount = view.getStore().getCount(),
+            maxColumnCount = view.headerCt.getGridColumns(true).length
+
+        // Column boundary protection
+        if (columnIndex &gt;= maxColumnCount) {
+            columnIndex = (maxColumnCount-1);
+        }
+
+        // Row boundary protection
+        if (rowIndex &gt;= maxRowCount) {
+            rowIndex = (maxRowCount-1);
+        }
+
         var rowEl = rowEl || view.getNode(rowIndex),
             record = record || view.getStore().getAt(rowIndex),
             model = null;

@@ -135,15 +135,15 @@
  *
  * todo
  *
- * ### Special Colorization
+ * ## Auto-Committing
+ *
+ * todo
+ *
+ * ### Special Edit Mode Colorization
  *
  * todo
  *
  * ## Special Eventing (Event Pipeline Interception)
- *
- * todo
- *
- * ## Localization
  *
  * todo
  *
@@ -184,7 +184,7 @@ Ext.define('Spread.grid.Panel', {
      * Automatically commit changed records or wait for manually store.sync() / record.commit()?
      * (Generally, can be specially configured per column config too)
      */
-    autoCommit: true,
+    autoCommit: false,
 
 <span id='Spread-grid-Panel-cfg-editModeStyling'>    /**
 </span>     * @cfg {Boolean} editModeStyling
@@ -195,8 +195,8 @@ Ext.define('Spread.grid.Panel', {
 <span id='Spread-grid-Panel-property-columnLines'>    // Show column lines by default
 </span>    columnLines: true,
 
-<span id='Spread-grid-Panel-property-stripeRows'>    // Internal flag
-</span>    stripeRows: false,
+    // Internal flag
+    //stripeRows: false,
 
 <span id='Spread-grid-Panel-cfg-editablePluginInstance'>    /**
 </span>     * @cfg {Spread.grid.plugin.Editable}
@@ -344,10 +344,10 @@ Ext.define('Spread.grid.Panel', {
         );
 
         // Manage the view config instance configuration
-        this.manageViewConfig(config);
+        me.manageViewConfig(config);
 
         // Manage the selection model instance configuration
-        this.manageSelectionModelConfig(config);
+        me.manageSelectionModelConfig(config);
 
         me.callParent(arguments);
 
@@ -372,6 +372,11 @@ Ext.define('Spread.grid.Panel', {
             'beforepaste',
             'paste'
         ]);
+
+        // Just relay autoCommit flag to pastable plugin
+        if (me.pasteablePluginInstance) {
+            me.pasteablePluginInstance.autoCommit = me.autoCommit;
+        }
 
         // View refresh
         me.getView().on('viewready', function() {
