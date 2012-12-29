@@ -12,7 +12,7 @@ module.exports = function (grunt) {
     // Build configuration
     grunt.initConfig({
         meta: {
-            version: '0.1',
+            version: '1.0-beta1',
             banner: '/*! Ext JS 4 SpreadSheets - v<%= meta.version %> - ' +
                 '<%= grunt.template.today("yyyy-mm-dd") %>\n' +
                 '* http://www.extjs4spreadsheets.com/\n' +
