@@ -444,6 +444,48 @@
        ...
 
    &lt;/code&gt;
+
+
+   &lt;code&gt;
+
+        new Spread.grid.Panel({
+
+             title: 'Spreadsheet of users (generated sample data)',
+
+             store: localDataStore,
+
+             // Setting if editing is allowed initially
+             editable: true,
+
+             // Configure visible grid columns
+             columns: [
+                 {
+                     xtype: 'spreadheadercolumn',
+                     header: 'ID'
+                 },
+                 {
+                     header: 'Last name&lt;br&gt;(editable)',
+                     renderer: function (value) {
+                         return '&lt;i&gt;' + value + '&lt;/i&gt;';
+                     },
+                     dataIndex: 'lastname',
+                     flex: 1
+                 },
+                 {
+                     allowedEditKeys: '0123456789.',
+                     header: 'Age&lt;br&gt;(editable)',
+                     dataIndex: 'age',
+                     xtype: 'numbercolumn'
+                 },
+                 {
+                     header: 'Birthday &lt;br&gt;(not editable)',
+                     dataIndex: 'birthday',
+                     xtype: 'datecolumn',
+                     editable: false
+                 }
+             ]
+         })
+    &lt;/code&gt;
  */
 Ext.define('Spread.grid.Panel', {
 
