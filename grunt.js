@@ -40,13 +40,13 @@ module.exports = function (grunt) {
                     srcDir('grid/column/Header.js'),
                     srcDir('grid/Panel.js')
                 ],
-                dest: baseDir('builds/spread-all-debug.js')
+                dest: baseDir('spread-all-debug.js')
             }
         },
         min: {
             dist: {
                 src: ['<banner:meta.banner>', '<config:concat.dist.dest>'],
-                dest: baseDir('builds/spread-all.js')
+                dest: baseDir('spread-all.js')
             }
         },
         watch: {
