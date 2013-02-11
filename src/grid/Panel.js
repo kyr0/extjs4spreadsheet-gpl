@@ -724,7 +724,7 @@ Ext.define('Spread.grid.Panel', {
         // User specified it's on viewConfig
         if (config.viewConfig) {
 
-            // Maintain merging of spreadPlugins viewConfig section
+            // Maintain merging of spreaiewonfig section
             if (config.viewConfig.spreadPlugins && Ext.isArray(config.viewConfig.spreadPlugins)) {
 
                 // Merges a plugin into spreadPlugins array if forgotten to be defined

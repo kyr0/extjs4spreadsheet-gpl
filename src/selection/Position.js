@@ -130,7 +130,7 @@ Ext.define('Spread.selection.Position', {
             column: columnIndex,
             row: rowIndex,
             record: model,
-            model: record.self,
+            model: record ? record.self : undefined,
             columnHeader: view.getHeaderAtIndex(columnIndex),
             rowEl: rowEl,
             cellEl: cellEl
@@ -157,8 +157,10 @@ Ext.define('Spread.selection.Position', {
         // Assign updated values/references
         this.columnHeader = this.view.getHeaderAtIndex(this.column);
         this.rowEl = this.view.getNode(this.row);
-        this.cellEl = this.rowEl.childNodes[this.column];
 
+        if (this.rowEl) {
+            this.cellEl = this.rowEl.childNodes[this.column];
+        }
         //console.log('Position update()ed ', this);
 
         return this;

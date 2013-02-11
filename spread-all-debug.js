@@ -1,4 +1,4 @@
-/*! Ext JS 4 SpreadSheets - v1.0-beta1 - 2013-01-01
+/*! Ext JS 4 SpreadSheets - v1.0-beta1 - 2013-02-11
 * http://www.extjs4spreadsheets.com/
 * Copyright (c) 2013 Copyright (C) 2012, 2013 Aron Homberg; GPLv3 and commercially licensed. */
 
@@ -464,7 +464,7 @@ Ext.define('Spread.selection.Position', {
             column: columnIndex,
             row: rowIndex,
             record: model,
-            model: record.self,
+            model: record ? record.self : undefined,
             columnHeader: view.getHeaderAtIndex(columnIndex),
             rowEl: rowEl,
             cellEl: cellEl
@@ -491,8 +491,10 @@ Ext.define('Spread.selection.Position', {
         // Assign updated values/references
         this.columnHeader = this.view.getHeaderAtIndex(this.column);
         this.rowEl = this.view.getNode(this.row);
-        this.cellEl = this.rowEl.childNodes[this.column];
 
+        if (this.rowEl) {
+            this.cellEl = this.rowEl.childNodes[this.column];
+        }
         //console.log('Position update()ed ', this);
 
         return this;
@@ -528,6 +530,9 @@ Ext.define('Spread.selection.RangeModel', {
 
     // Internal indicator flag
     initialViewRefresh: true,
+
+    // Internal indicator flag
+    dataChangedRecently: false,
 
     // Internal keyNav reference
     keyNav: null,
@@ -754,7 +759,13 @@ Ext.define('Spread.selection.RangeModel', {
         });
 
         // On data change (e.g. filtering)
-        me.view.store.on('datachanged', me.reinitialize, me);
+        me.view.store.on('datachanged', function() {
+
+            //console.log('datachanged!');
+
+            // Set indicator flag to reinitialize after store data has been changed
+            me.dataChangedRecently = true;
+        });
     },
 
     /**
@@ -823,8 +834,19 @@ Ext.define('Spread.selection.RangeModel', {
 
         //console.log('view refresh happened');
 
-        // Update root position / record reference
-        this.rootPosition.update();
+        if (this.dataChangedRecently) {
+
+            // Reset root position
+            this.reinitialize();
+
+            // Reset flag
+            this.dataChangedRecently = false;
+
+        } else {
+
+            // Update root position / record reference
+            this.rootPosition.update();
+        }
 
         // May auto-focus root position
         if (this.autoFocusRootPosition && this.initialViewRefresh) {
@@ -4000,7 +4022,7 @@ Ext.define('Spread.grid.Panel', {
         // User specified it's on viewConfig
         if (config.viewConfig) {
 
-            // Maintain merging of spreadPlugins viewConfig section
+            // Maintain merging of spreaiewonfig section
             if (config.viewConfig.spreadPlugins && Ext.isArray(config.viewConfig.spreadPlugins)) {
 
                 // Merges a plugin into spreadPlugins array if forgotten to be defined

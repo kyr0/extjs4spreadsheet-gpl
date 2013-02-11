@@ -29,6 +29,9 @@ Ext.define('Spread.selection.RangeModel', {
     // Internal indicator flag
     initialViewRefresh: true,
 
+    // Internal indicator flag
+    dataChangedRecently: false,
+
     // Internal keyNav reference
     keyNav: null,
 
@@ -254,7 +257,13 @@ Ext.define('Spread.selection.RangeModel', {
         });
 
         // On data change (e.g. filtering)
-        me.view.store.on('datachanged', me.reinitialize, me);
+        me.view.store.on('datachanged', function() {
+
+            //console.log('datachanged!');
+
+            // Set indicator flag to reinitialize after store data has been changed
+            me.dataChangedRecently = true;
+        });
     },
 
     /**
@@ -323,8 +332,19 @@ Ext.define('Spread.selection.RangeModel', {
 
         //console.log('view refresh happened');
 
-        // Update root position / record reference
-        this.rootPosition.update();
+        if (this.dataChangedRecently) {
+
+            // Reset root position
+            this.reinitialize();
+
+            // Reset flag
+            this.dataChangedRecently = false;
+
+        } else {
+
+            // Update root position / record reference
+            this.rootPosition.update();
+        }
 
         // May auto-focus root position
         if (this.autoFocusRootPosition && this.initialViewRefresh) {
