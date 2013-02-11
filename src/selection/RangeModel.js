@@ -279,7 +279,12 @@ Ext.define('Spread.selection.RangeModel', {
         this.initRootPosition();
 
         // Auto-focus the root position initially
-        this.setCurrentFocusPosition(this.rootPosition);
+        try {
+
+            // This may fail due to non-rendered circumstances
+            this.setCurrentFocusPosition(this.rootPosition);
+
+        } catch (e) {}
 
         // Set the origin to the root position too
         this.setOriginSelectionPosition(this.rootPosition);
@@ -350,7 +355,12 @@ Ext.define('Spread.selection.RangeModel', {
         if (this.autoFocusRootPosition && this.initialViewRefresh) {
 
             // Auto-focus the root position initially
-            this.setCurrentFocusPosition(this.rootPosition);
+            try {
+
+                // This may fail due to non-rendered circumstances
+                this.setCurrentFocusPosition(this.rootPosition);
+
+            } catch (e) {}
 
             // Set the origin to the root position too
             this.setOriginSelectionPosition(this.rootPosition);

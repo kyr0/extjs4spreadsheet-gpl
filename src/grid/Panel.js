@@ -655,13 +655,16 @@ Ext.define('Spread.grid.Panel', {
         }
 
         // View refresh
-        me.getView().on('viewready', function() {
+        me.getView().on('viewrefresh', function() {
 
             // Handle edit mode initially
             me.setEditable(me.editable);
 
             // Set edit mode styling
             me.setEditModeStyling(me.editModeStyling);
+
+        }, this, {
+            single: true
         });
     },
 
