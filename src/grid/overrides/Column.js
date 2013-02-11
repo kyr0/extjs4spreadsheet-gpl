@@ -24,7 +24,7 @@ Ext.define('Spread.overrides.Column', {
      * Auto-commit cell data changes on record automatically
      * (otherwise the data change indicator will be shown and record needs to be commit()'ed manually!
      */
-    autoCommit: true,
+    autoCommit: false,
 
     /**
      * @cfg {Function} cellwriter

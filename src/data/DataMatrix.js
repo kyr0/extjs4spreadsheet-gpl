@@ -39,13 +39,7 @@ Ext.define('Spread.data.DataMatrix', {
      */
     setValueForPosition: function(position, newValue, autoCommit, useInternalAPIs) {
 
-        // Get local test instance
-        //var t = T('setValueForPosition', arguments);
-
-        //console.log('setValueForPosition', arguments);
-
-        // Get arguments
-        //t.assert(position, 'position to be defined').toBeDefined();
+        //useInternalAPIs = true;
 
         // Update position
         position.update();

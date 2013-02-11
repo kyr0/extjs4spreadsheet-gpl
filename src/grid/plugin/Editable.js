@@ -239,13 +239,15 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     initEventing: function(view) {
 
+
         // Handle eventing of cover element
         var me = this,
             coverEl = view.getCellCoverEl();
 
+        //console.log('initEventing!', coverEl);
         if (coverEl) {
 
-            //console.log('found a view to hook on', coverEl);
+            console.log('found a view to hook on', coverEl, this.cellCoverEditFieldEl);
 
             // Render the text field
             me.initTextField(coverEl);
@@ -260,10 +262,11 @@ Ext.define('Spread.grid.plugin.Editable', {
             view.on('covercell', me.onCellCovered, me);
 
             // Handle TAB and ENTER select while editing (save and focus next cell)
-            view.getSelectionModel().on('tabselect', me.blurEditFieldIfEditing, me);
-            view.getSelectionModel().on('enterselect', me.blurEditFieldIfEditing, me);
-            view.getSelectionModel().on('beforecellfocus', me.blurEditFieldIfEditing, me);
-            view.getSelectionModel().on('keynavigate', me.blurEditFieldIfEditing, me);
+            //view.getSelectionModel().on('tabselect', me.blurEditFieldIfEditing, me);
+            //view.getSelectionModel().on('enterselect', me.blurEditFieldIfEditing, me);
+            //view.getSelectionModel().on('beforecellfocus', me.blurEditFieldIfEditing, me);
+            //view.getSelectionModel().on('keynavigate', me.blurEditFieldIfEditing, me);
+            view.getSelectionModel().on('cellblur', me.blurEditFieldIfEditing, me);
 
         } else {
             throw "Cover element not found, initializing editing failed! Please check proper view rendering.";
@@ -318,6 +321,7 @@ Ext.define('Spread.grid.plugin.Editable', {
             this.cellCoverEditFieldEl = Ext.get(
 
                 Ext.DomHelper.append(coverEl, {
+                    id: Ext.id() + '-cover-input',
                     tag: 'input',
                     type: 'text',
                     cls: 'spreadsheet-cell-cover-edit-field',
@@ -350,6 +354,7 @@ Ext.define('Spread.grid.plugin.Editable', {
                 this.autoCommit
             );
 
+
             // Recolorize for dirty flag!
             this.handleDirtyMarkOnEditModeStyling();
 
@@ -378,16 +383,13 @@ Ext.define('Spread.grid.plugin.Editable', {
      * Blurs the editor field if editing is happening and
      * the user pressed TAB or ENTER to focus next cell.
      * (blur causes the editor to save its changed data)
-     * @param {Spread.selection.RangeModel} selModel Selection model
-     * @param {Ext.EventObject} evt Key event
      * @return void
      */
-    blurEditFieldIfEditing: function(selModel, evt) {
+    blurEditFieldIfEditing: function() {
 
         if (this.isEditing) {
             this.onEditFieldBlur();
         }
-        return true;
     },
 
     /**
@@ -401,50 +403,60 @@ Ext.define('Spread.grid.plugin.Editable', {
 
         var me = this;
 
-        // Save and jump next cell
-        if (evt.getKey() === evt.ENTER) {
-            me.onEditFieldBlur();
-            me.view.getSelectionModel().onKeyEnter();
-        }
+        if (this.isEditing) {
 
-        // Save and jump next cell
-        if (evt.getKey() === evt.TAB) {
-            me.onEditFieldBlur();
-            me.view.getSelectionModel().onKeyTab();
-        }
+            switch (evt.getKey()) {
+                case evt.ENTER:
+                case evt.TAB:
+                case evt.LEFT:
+                case evt.RIGHT:
+                case evt.UP:
+                case evt.DOWN:
+                    this.blurEditFieldIfEditing();
+                    return true;
+            }
 
-        // Key navigation support (jumping out of field)
-        if (evt.getKey() === evt.LEFT) {
-            me.onEditFieldBlur();
-            me.view.getSelectionModel().onKeyLeft();
-        }
+            //console.log('columns keys allowed? ', me.activePosition.columnHeader.allowedEditKeys);
 
-        if (evt.getKey() === evt.RIGHT) {
-            me.onEditFieldBlur();
-            me.view.getSelectionModel().onKeyRight();
-        }
+            // If there is a list of allowed keys, check for them
+            if (me.activePosition.columnHeader.allowedEditKeys.length > 0) {
 
-        if (evt.getKey() === evt.UP) {
-            me.onEditFieldBlur();
-            me.view.getSelectionModel().onKeyUp();
-        }
+                // Stop key input if not in allowed keys list
+                if (Ext.Array.indexOf(me.activePosition.columnHeader.allowedEditKeys,
+                        String.fromCharCode(evt.getCharCode())
+                    ) === -1 && evt.getKey() !== evt.BACKSPACE)
+                {
+                    evt.stopEvent();
+                }
+            }
 
-        if (evt.getKey() === evt.DOWN) {
-            me.onEditFieldBlur();
-            me.view.getSelectionModel().onKeyDown();
-        }
+        } else {
 
-        //console.log('columns keys allowed? ', me.activePosition.columnHeader.allowedEditKeys);
+            // Save and jump next cell
+            if (evt.getKey() === evt.ENTER) {
+                me.view.getSelectionModel().onKeyEnter(evt);
+            }
 
-        // If there is a list of allowed keys, check for them
-        if (me.activePosition.columnHeader.allowedEditKeys.length > 0) {
+            // Save and jump next cell
+            if (evt.getKey() === evt.TAB) {
+                me.view.getSelectionModel().onKeyTab(evt);
+            }
 
-            // Stop key input if not in allowed keys list
-            if (Ext.Array.indexOf(me.activePosition.columnHeader.allowedEditKeys,
-                    String.fromCharCode(evt.getCharCode())
-                ) === -1 && evt.getKey() !== evt.BACKSPACE)
-            {
-                evt.stopEvent();
+            // Key navigation support (jumping out of field)
+            if (evt.getKey() === evt.LEFT) {
+                me.view.getSelectionModel().onKeyLeft(evt);
+            }
+
+            if (evt.getKey() === evt.RIGHT) {
+                me.view.getSelectionModel().onKeyRight(evt);
+            }
+
+            if (evt.getKey() === evt.UP) {
+                me.view.getSelectionModel().onKeyUp(evt);
+            }
+
+            if (evt.getKey() === evt.DOWN) {
+                me.view.getSelectionModel().onKeyDown(evt);
             }
         }
     },
@@ -484,6 +496,8 @@ Ext.define('Spread.grid.plugin.Editable', {
      * @return void
      */
     onCoverKeyPressed: function(evt, viewEl) {
+
+        //console.log('????', !evt.isSpecialKey(), !evt.ctrlKey, !this.isEditing);
 
         // keyCode 91 === Windows / Command key
         if (!evt.isSpecialKey() && /*!evt.altKey &&*/ !evt.ctrlKey && /*!evt.getKey() === 91 &&*/ !this.isEditing) {
@@ -547,6 +561,8 @@ Ext.define('Spread.grid.plugin.Editable', {
         // Check global and column edit-ability
         if (!this.activePosition.columnHeader.editable ||
             !this.editable) {
+
+            //console.log('!this.activePosition.columnHeader.editable || !this.editable', !this.activePosition.columnHeader.editable, !this.editable)
             return false;
         }
 

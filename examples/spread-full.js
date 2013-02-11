@@ -3,173 +3,178 @@
  */
 Ext.onReady(function() {
 
-    var fields = ['id', 'firstname', 'lastname', 'age', 'birthday', 'isMember', 'loginCount'],
-        dataGenerator = function(count) {
 
-            var data = [];
+    Ext.create('Ext.button.Button', {
+        renderTo: Ext.getBody(),
+        text: 'Show Spreadsheet',
+        handler: function() {
 
-            // Generate data rows
-            for (var i=0; i<count; i++) {
+            var fields = ['id', 'firstname', 'lastname', 'age', 'birthday', 'isMember', 'loginCount'],
+                dataGenerator = function(count) {
 
-                data.push({
-                    id: i+1,
-                    firstname: 'Eddie ' + (i+1),
-                    lastname: 'Crash ' + (i+1),
-                    age: parseInt(i+20),
-                    birthday: new Date(),
-                    isMember: i % 2 ? true : false,
-                    loginCount: parseInt(Math.random()) + i
-                });
-            }
-            return data;
-        };
+                    var data = [];
 
-    var localDataStore = new Ext.data.Store({
-        storeId: 'persons',
-        data: dataGenerator(100),
-        proxy: {
-            type: 'memory',
-            reader: {
-                type: 'json'
-            }
-        },
-        fields: fields
-    });
+                    // Generate data rows
+                    for (var i=0; i<count; i++) {
 
-    // Create an instance of the Ext Calc panel
-    var spreadPanel = new Spread.grid.Panel({
+                        data.push({
+                            id: i+1,
+                            firstname: 'Eddie ' + (i+1),
+                            lastname: 'Crash ' + (i+1),
+                            age: parseInt(i+20),
+                            birthday: new Date(),
+                            isMember: i % 2 ? true : false,
+                            loginCount: parseInt(Math.random()) + i
+                        });
+                    }
+                    return data;
+                };
 
-        store: localDataStore,
+            var localDataStore = new Ext.data.Store({
+                storeId: 'persons',
+                data: dataGenerator(100),
+                proxy: {
+                    type: 'memory',
+                    reader: {
+                        type: 'json'
+                    }
+                },
+                fields: fields
+            });
 
-        // You can supply your own viewConfig to change
-        // the config of Spread.grid.View!
-        /*
-        viewConfig: {
-            stripeRows: true
-        },
-        */
+            // Create an instance of the Ext Calc panel
+            var spreadPanel = new Spread.grid.Panel({
 
-        listeners: {
-            covercell: function() {
-                //console.log('External listener to covercell', arguments);
-            }
-        },
+                store: localDataStore,
 
-        // Setting if editing is allowed initially
-        editable: true,
+                // You can supply your own viewConfig to change
+                // the config of Spread.grid.View!
+                /*
+                viewConfig: {
+                    stripeRows: true
+                },
+                */
 
-        // Setting if edit mode styling shall be activated
-        editModeStyling: true,
+                listeners: {
+                    covercell: function() {
+                        //console.log('External listener to covercell', arguments);
+                    }
+                },
 
-        // Enable summary feature
-        features: [{
-            ftype: 'summary'
-        }, {
-            ftype: 'filters',
-            autoReload: true,
-            local: true,
-            filters: [{
-                type: 'string',
-                dataIndex: 'lastname'
-            }]
-        }],
+                // Setting if editing is allowed initially
+                editable: true,
 
-        // Configure visible grid columns
-        columns: [{
-            xtype: 'spreadheadercolumn',
-            header: 'ID'
-        }, {
-            header: 'First name',
-            dataIndex: 'firstname',
-            selectable: false
-        }, {
-            header: 'Last name',
-            renderer: function(value) {
-                return '<b>' + value + '</b>';
-            },
-            dataIndex: 'lastname'
-        }, {
-            allowedEditKeys: '0123456789.',
-            header: 'Age',
-            //hidden: true,
-            dataIndex: 'age',
-            xtype: 'numbercolumn',
-            summaryType: 'sum',
-            summaryRenderer: function(value, summaryData, dataIndex) {
-                return '<b>' + value + '</b>';
-            }
-        }, {
-            header: 'Birthday',
-            dataIndex: 'birthday',
-            xtype: 'datecolumn',
+                // Setting if edit mode styling shall be activated
+                editModeStyling: true,
 
-            // Column based auto-commit setting
-            autoCommit: false
-        }, {
+                // Enable summary feature
+                features: [{
+                    ftype: 'summary'
+                }, {
+                    ftype: 'filters',
+                    autoReload: true,
+                    local: true,
+                    filters: [{
+                        type: 'string',
+                        dataIndex: 'lastname'
+                    }]
+                }],
 
-            // Special column-based edit mode inking deny
-            //editModeStyling: false,
+                // Configure visible grid columns
+                columns: [{
+                    xtype: 'spreadheadercolumn',
+                    header: 'ID'
+                }, {
+                    header: 'First name',
+                    dataIndex: 'firstname',
+                    selectable: false
+                }, {
+                    header: 'Last name',
+                    renderer: function(value) {
+                        return '<b>' + value + '</b>';
+                    },
+                    dataIndex: 'lastname'
+                }, {
+                    allowedEditKeys: '0123456789.',
+                    header: 'Age',
+                    //hidden: true,
+                    dataIndex: 'age',
+                    xtype: 'numbercolumn',
+                    summaryType: 'sum',
+                    summaryRenderer: function(value, summaryData, dataIndex) {
+                        return '<b>' + value + '</b>';
+                    }
+                }, {
+                    header: 'Birthday',
+                    dataIndex: 'birthday',
+                    xtype: 'datecolumn'
+                }, {
 
-            header: 'Is member?',
-            dataIndex: 'isMember',
-            xtype: 'booleancolumn',
-            cellreader: function(value, position) {
+                    // Special column-based edit mode inking deny
+                    //editModeStyling: false,
 
-                //console.log('[Before] Reading value: ', value, ' from ', position);
+                    header: 'Is member?',
+                    dataIndex: 'isMember',
+                    xtype: 'booleancolumn',
+                    cellreader: function(value, position) {
 
-                // Change the return value here!
-                // Meta-data is accessible through position.record etc.
+                        //console.log('[Before] Reading value: ', value, ' from ', position);
 
-                return value;
-            },
-            cellwriter: function(value, position) {
+                        // Change the return value here!
+                        // Meta-data is accessible through position.record etc.
 
-                //console.log('[Before] Writing value: ', value, ' to ', position);
+                        return value;
+                    },
+                    cellwriter: function(value, position) {
 
-                // Change the return value here!
-                // Meta-data is accessible through position.record etc.
+                        //console.log('[Before] Writing value: ', value, ' to ', position);
 
-                return value;
-            }
-        }, {
-            header: 'Login count (cnt)',
-            dataIndex: 'loginCount',
-            editModeStyling: false,
-            xtype: 'templatecolumn',
-            summaryType: 'count',
-            summaryRenderer: function(value, summaryData, dataIndex) {
-                return '<b>' + value + '</b>';
-            },
-            tpl: '{firstname} (<i>{loginCount}</i>)'//,
-            //editable: false
-        }]
-    });
+                        // Change the return value here!
+                        // Meta-data is accessible through position.record etc.
 
-    // Show spread inside a window
-    var spreadWnd = new Ext.window.Window({
-        title: 'Spread Example',
-        layout: 'fit',
-        maximizable: true,
-        resizable: true,
-        width: 1000,
-        height: 600,
-        tbar: [{
-            text: 'Enable edit mode',
-            handler: function() {
-                spreadPanel.setEditable(true);
-            }
-        }, {
-            text: 'Disable edit mode',
-            handler: function() {
-                spreadPanel.setEditable(false);
-            }
-        }],
-        items: [spreadPanel]
-    });
+                        return value;
+                    }
+                }, {
+                    header: 'Login count (cnt)',
+                    dataIndex: 'loginCount',
+                    editModeStyling: false,
+                    xtype: 'templatecolumn',
+                    summaryType: 'count',
+                    summaryRenderer: function(value, summaryData, dataIndex) {
+                        return '<b>' + value + '</b>';
+                    },
+                    tpl: '{firstname} (<i>{loginCount}</i>)'//,
+                    //editable: false
+                }]
+            });
 
-    // Show the spread window
-    spreadWnd.show();
+            // Show spread inside a window
+            var spreadWnd = new Ext.window.Window({
+                title: 'Spread Example',
+                layout: 'fit',
+                maximizable: true,
+                resizable: true,
+                width: 1000,
+                height: 600,
+                tbar: [{
+                    text: 'Enable edit mode',
+                    handler: function() {
+                        spreadPanel.setEditable(true);
+                    }
+                }, {
+                    text: 'Disable edit mode',
+                    handler: function() {
+                        spreadPanel.setEditable(false);
+                    }
+                }],
+                items: [spreadPanel]
+            });
 
-    // And center it
-    spreadWnd.center();
+            // Show the spread window
+            spreadWnd.show();
+
+            // And center it
+            spreadWnd.center();
+        }
+    })
 });

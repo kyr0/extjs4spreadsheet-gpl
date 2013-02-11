@@ -437,6 +437,8 @@ Ext.define('Spread.grid.Panel', {
     // use spread view
     viewType: 'spreadview',
 
+    closeAction: 'destroy',
+
     /**
      * @cfg {Boolean} autoFocusRootPosition
      * Automatically focuses the root position initially
@@ -475,28 +477,25 @@ Ext.define('Spread.grid.Panel', {
     //stripeRows: false,
 
     /**
-     * @cfg {Spread.grid.plugin.Editable}
-     * Configured instance of an Spread.grid.plugin.Editable plugin.
-     * To change the configuration of the plugin, you may just assign your own configured instance here.
+     * @cfg {Object}
+     * Config object to configure a Spread.grid.plugin.Editable plugin.
+     * To change the configuration of the plugin, you may just assign your own config here.
      */
-    editablePluginInstance: Ext.create('Spread.grid.plugin.Editable', {
-    }),
+    editablePluginConfig: {},
 
     /**
-     * @cfg {Spread.grid.plugin.Copyable}
-     * Configured instance of an Spread.grid.plugin.Copyable plugin.
-     * To change the configuration of the plugin, you may just assign your own configured instance here.
+     * @cfg {Object}
+     * Config object to configure a Spread.grid.plugin.Copyable plugin.
+     * To change the configuration of the plugin, you may just assign your own config here.
      */
-    copyablePluginInstance: Ext.create('Spread.grid.plugin.Copyable', {
-    }),
+    copyablePluginConfig: {},
 
     /**
-     * @cfg {Spread.grid.plugin.Pasteable}
-     * Configured instance of an Spread.grid.plugin.Pasteable plugin.
-     * To change the configuration of the plugin, you may just assign your own configured instance here.
+     * @cfg {Object}
+     * Config object to configure a Spread.grid.plugin.Pasteable plugin.
+     * To change the configuration of the plugin, you may just assign your own config here.
      */
-    pasteablePluginInstance: Ext.create('Spread.grid.plugin.Pasteable', {
-    }),
+    pasteablePluginConfig: {},
 
     /**
      * Pre-process the column configuration to avoid incompatibilities
@@ -505,6 +504,9 @@ Ext.define('Spread.grid.Panel', {
     constructor: function(config) {
 
         var me = this;
+
+        // Create instances of plugins
+        this.instantiatePlugins();
 
         // Add events
         this.addEvents(
@@ -654,6 +656,8 @@ Ext.define('Spread.grid.Panel', {
             me.pasteablePluginInstance.autoCommit = me.autoCommit;
         }
 
+        //console.log('my view', me.view);
+
         // View refresh
         me.getView().on('viewrefresh', function() {
 
@@ -704,12 +708,26 @@ Ext.define('Spread.grid.Panel', {
 
     /**
      * @protected
+     * Creates instances of plugins from local configuration
+     * @return void
+     */
+    instantiatePlugins: function() {
+
+        this.editablePluginInstance = Ext.create('Spread.grid.plugin.Editable', this.editablePluginConfig);
+        this.copyablePluginInstance = Ext.create('Spread.grid.plugin.Copyable', this.copyablePluginConfig);
+        this.pasteablePluginInstance = Ext.create('Spread.grid.plugin.Pasteable', this.pasteablePluginConfig);
+    },
+
+    /**
+     * @protected
      * Pays attention to the fact that the developer could define an own viewConfig,
      * so we need to merge-in our spreadPlugins array (apply the defaults)
      * @param {Object} config Grid config object
      * @return void
      */
     manageViewConfig: function(config) {
+
+        this.hasView = false;
 
         var me = this, initSpreadPlugins = function(config) {
 

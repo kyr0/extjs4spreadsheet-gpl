@@ -314,6 +314,7 @@ Ext.define('Spread.grid.View', {
             // Generate cell cover element
             this.cellCoverEl = Ext.DomHelper.append(this.getEl(), {
                 tag: 'div',
+                id: 'cover-el' + Ext.id(),
                 cls: 'spreadsheet-cell-cover'
             });
 

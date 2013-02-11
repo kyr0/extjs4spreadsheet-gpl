@@ -137,6 +137,14 @@ Ext.define('Spread.selection.RangeModel', {
             'cellfocus',
 
             /**
+             * @event cellblur
+             * Fired when a cell blur event happens
+             * @param {Spread.selection.RangeModel} this
+             * @param {Ext.dom.Element} el Element clicked on
+             */
+            'cellblur',
+
+            /**
              * @event tabselect
              * Fired after TAB has been pressed by user to focus (next) cell
              * @param {Spread.selection.RangeModel} this
@@ -263,6 +271,30 @@ Ext.define('Spread.selection.RangeModel', {
 
             // Set indicator flag to reinitialize after store data has been changed
             me.dataChangedRecently = true;
+        });
+
+        // Register edit blur handler
+        me.initEditBlurHandler();
+    },
+
+    /**
+     * @protected
+     * Registers and un-registers a document.body event listener
+     * for clicks outside of the view area to stop editing.
+     * @return void
+     */
+    initEditBlurHandler: function() {
+
+        var me = this;
+
+        // Un-register on grid destroy
+        me.grid.on('destroy', function() {
+            Ext.EventManager.un(document.body, 'mouseup', me.onCellMouseUp);
+        });
+
+        // Listen for mouseup globally (stable method to fetch mouseup)
+        Ext.EventManager.on(document.body, 'mouseup', me.onCellMouseUp, me, {
+            buffer: 50
         });
     },
 
@@ -398,11 +430,6 @@ Ext.define('Spread.selection.RangeModel', {
                 me.onCellMouseDown.apply(me, args);
                 break;
         }
-
-        // Listen for mouseup globally (stable method to fetch mouseup)
-        Ext.EventManager.on(document.body, 'mouseup', this.onCellMouseUp, this, {
-            buffer: 50
-        });
     },
 
     /**
@@ -416,6 +443,7 @@ Ext.define('Spread.selection.RangeModel', {
      * @param {Ext.EventObject} evt Event instance
      * @param {Ext.data.Model} record Data record instance
      * @param {HTMLElement} row Row HTML element reference (<tr>)
+     * @param {Object} eOpts Event options
      * @return void
      */
     onCellMouseDown: function(type, view, cell, rowIndex, cellIndex, evt, record, row, eOpts) {
@@ -506,7 +534,13 @@ Ext.define('Spread.selection.RangeModel', {
      * This handler breaks mouse-dragged range selection by setting the this.mayRangeSelecting flag.
      * @return void
      */
-    onCellMouseUp: function() {
+    onCellMouseUp: function(evt, el) {
+
+        // Fire cellblur event
+        if (!Ext.get(el).hasCls('spreadsheet-cell-cover')) {
+            this.fireEvent('cellblur', this, Ext.get(el));
+        }
+
         this.mayRangeSelecting = false;
     },
 
