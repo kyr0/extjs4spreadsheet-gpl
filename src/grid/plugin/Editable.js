@@ -247,7 +247,7 @@ Ext.define('Spread.grid.plugin.Editable', {
         //console.log('initEventing!', coverEl);
         if (coverEl) {
 
-            console.log('found a view to hook on', coverEl, this.cellCoverEditFieldEl);
+            //console.log('found a view to hook on', coverEl, this.cellCoverEditFieldEl);
 
             // Render the text field
             me.initTextField(coverEl);
