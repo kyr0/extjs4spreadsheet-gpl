@@ -2321,10 +2321,8 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     isPositionEditable: function() {
 
-        console.log('isPositionEditable', this.activePosition);
-
         // Check for row to be editable or not
-
+        // TODO!
 
         // Check for column to be editable or not
         if ((this.activePosition && !this.activePosition.columnHeader.editable) ||
@@ -3294,6 +3292,22 @@ Ext.define('Spread.grid.View', {
         }
     },
 
+    /**
+     * Implements a re-styling of the view after refreshing when edit mode is enabled
+     * @return {*}
+     */
+    refresh: function() {
+
+        var ret = this.callParent(arguments);
+
+        if (this.editable) {
+
+            this.editable.displayCellsEditing(
+                this.editable.editModeStyling && this.editable.editable
+            );
+        }
+        return ret;
+    },
 
     /**
      * Initially shows/Updates the cell cover to cover a new position.

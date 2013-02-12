@@ -385,6 +385,22 @@ Ext.define('Spread.grid.View', {
         }
     },
 
+    /**
+     * Implements a re-styling of the view after refreshing when edit mode is enabled
+     * @return {*}
+     */
+    refresh: function() {
+
+        var ret = this.callParent(arguments);
+
+        if (this.editable) {
+
+            this.editable.displayCellsEditing(
+                this.editable.editModeStyling && this.editable.editable
+            );
+        }
+        return ret;
+    },
 
     /**
      * Initially shows/Updates the cell cover to cover a new position.
