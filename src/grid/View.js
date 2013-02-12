@@ -253,7 +253,9 @@ Ext.define('Spread.grid.View', {
             'beforeeditingenabled',
             'editingenabled',
             'beforeeditingdisabled',
-            'editingdisabled'
+            'editingdisabled',
+            'editablechange',
+            'covercelleditable'
         ]);
 
         // Relay copyable plugin events

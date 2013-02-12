@@ -597,6 +597,25 @@ Ext.define('Spread.grid.Panel', {
             'editingdisabled',
 
             /**
+             * @event covercelleditable
+             * Fires after a cell got covered for editing.
+             * @param {Spread.grid.plugin.Editable} editable Editable plugin instance
+             * @param {Spread.grid.View} view Spread view instance
+             * @param {Spread.selection.Position} position Position to be covered
+             * @param {Ext.dom.Element} coverEl Cover element
+             */
+            'covercelleditable',
+
+            /**
+             * @event editablechange
+             * Fires after the editable flag has changed and all re-rendering has been done.
+             * Use this event if you e.g. want to reload the store "directly" after calling setEditable() etc.
+             * @param {Spread.grid.plugin.Editable} editable Editable plugin instance
+             * @param {Boolean} editable Indicator if the spread is now editable or not
+             */
+            'editablechange',
+
+            /**
              * @event beforecopy
              * @inheritdoc Spread.grid.View#beforecopy
              */
@@ -648,7 +667,9 @@ Ext.define('Spread.grid.Panel', {
             'beforecopy',
             'copy',
             'beforepaste',
-            'paste'
+            'paste',
+            'editablechange',
+            'covercelleditable'
         ]);
 
         // Just relay autoCommit flag to pastable plugin
@@ -659,7 +680,7 @@ Ext.define('Spread.grid.Panel', {
         //console.log('my view', me.view);
 
         // View refresh
-        me.editablePluginInstance.on('covercell', function() {
+        me.editablePluginInstance.on('covercelleditable', function() {
 
             // Handle edit mode initially
             me.setEditable(me.editable);

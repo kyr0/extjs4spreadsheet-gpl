@@ -137,7 +137,7 @@ Ext.onReady(function() {
                 }, {
                     header: 'Login count (cnt)',
                     dataIndex: 'loginCount',
-                    editModeStyling: false,
+                    editable: false,
                     xtype: 'templatecolumn',
                     summaryType: 'count',
                     summaryRenderer: function(value, summaryData, dataIndex) {

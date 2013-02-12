@@ -206,13 +206,23 @@ Ext.define('Spread.grid.plugin.Editable', {
             'editingdisabled',
 
             /**
-             * @event covercell
+             * @event covercelleditable
              * Fires after a cell got covered for editing.
+             * @param {Spread.grid.plugin.Editable} editable Editable plugin instance
              * @param {Spread.grid.View} view Spread view instance
              * @param {Spread.selection.Position} position Position to be covered
              * @param {Ext.dom.Element} coverEl Cover element
              */
-            'covercell'
+            'covercelleditable',
+
+            /**
+             * @event editablechange
+             * Fires after the editable flag has changed and all re-rendering has been done.
+             * Use this event if you e.g. want to reload the store "directly" after calling setEditable() etc.
+             * @param {Spread.grid.plugin.Editable} editable Editable plugin instance
+             * @param {Boolean} editable Indicator if the spread is now editable or not
+             */
+            'editablechange'
         );
 
         // Register eventing hook
@@ -546,7 +556,7 @@ Ext.define('Spread.grid.plugin.Editable', {
         // But hide, until this.setEditing() is called through UI event
         this.cellCoverEditFieldEl.dom.style.display = 'none';
 
-        this.fireEvent('covercell', view, position, coverEl);
+        this.fireEvent('covercelleditable', this, view, position, coverEl);
     },
 
 
@@ -699,8 +709,18 @@ Ext.define('Spread.grid.plugin.Editable', {
 
             // Display cells in read mode
             if (me.editModeStyling) {
-                me.displayCellsEditing(false);
+
+                me.displayCellsEditing(false, function() {
+
+                    // Fire event
+                    me.fireEvent('editablechange', me, allowEditing);
+                });
+            } else {
+
+                // Fire event
+                me.fireEvent('editablechange', me, allowEditing);
             }
+
         } else {
 
             // Set flag
@@ -712,7 +732,16 @@ Ext.define('Spread.grid.plugin.Editable', {
             // Display cells in edit mode
 
             if (me.editModeStyling) {
-                me.displayCellsEditing(true);
+
+                me.displayCellsEditing(true, function() {
+
+                    // Fire event
+                    me.fireEvent('editablechange', me, allowEditing);
+                });
+            } else {
+
+                // Fire event
+                me.fireEvent('editablechange', me, allowEditing);
             }
         }
     },
@@ -720,9 +749,10 @@ Ext.define('Spread.grid.plugin.Editable', {
     /**
      * Displays the grid cells in edit or read mode
      * @param {Boolean} displayEditing Display cells as editing?
+     * @param {Function} [onRenderReady] Function to be called when ready
      * @return void
      */
-    displayCellsEditing: function(displayEditing) {
+    displayCellsEditing: function(displayEditing, onRenderReady) {
 
         var me = this, viewCells = me.view.getEl().query(
             me.view.cellSelector
@@ -778,6 +808,11 @@ Ext.define('Spread.grid.plugin.Editable', {
                     chunkCellProcessor(startIdx, stopIdx);
 
                 }, me.chunkRenderDelay);
+            } else {
+
+                if (onRenderReady && Ext.isFunction(onRenderReady)) {
+                    onRenderReady();
+                }
             }
         };
 

@@ -1721,8 +1721,6 @@ Ext.define('Spread.grid.plugin.Copyable', {
     detectCopyKeyStroke: function(evt) {
 
         if (evt.getKey() === evt.C && evt.ctrlKey) {
-
-            console.log('copy');
             this.copyToClipboard();
         }
     },
@@ -1961,13 +1959,23 @@ Ext.define('Spread.grid.plugin.Editable', {
             'editingdisabled',
 
             /**
-             * @event covercell
+             * @event covercelleditable
              * Fires after a cell got covered for editing.
+             * @param {Spread.grid.plugin.Editable} editable Editable plugin instance
              * @param {Spread.grid.View} view Spread view instance
              * @param {Spread.selection.Position} position Position to be covered
              * @param {Ext.dom.Element} coverEl Cover element
              */
-            'covercell'
+            'covercelleditable',
+
+            /**
+             * @event editablechange
+             * Fires after the editable flag has changed and all re-rendering has been done.
+             * Use this event if you e.g. want to reload the store "directly" after calling setEditable() etc.
+             * @param {Spread.grid.plugin.Editable} editable Editable plugin instance
+             * @param {Boolean} editable Indicator if the spread is now editable or not
+             */
+            'editablechange'
         );
 
         // Register eventing hook
@@ -2301,7 +2309,7 @@ Ext.define('Spread.grid.plugin.Editable', {
         // But hide, until this.setEditing() is called through UI event
         this.cellCoverEditFieldEl.dom.style.display = 'none';
 
-        this.fireEvent('covercell', view, position, coverEl);
+        this.fireEvent('covercelleditable', this, view, position, coverEl);
     },
 
 
@@ -2454,8 +2462,18 @@ Ext.define('Spread.grid.plugin.Editable', {
 
             // Display cells in read mode
             if (me.editModeStyling) {
-                me.displayCellsEditing(false);
+
+                me.displayCellsEditing(false, function() {
+
+                    // Fire event
+                    me.fireEvent('editablechange', me, allowEditing);
+                });
+            } else {
+
+                // Fire event
+                me.fireEvent('editablechange', me, allowEditing);
             }
+
         } else {
 
             // Set flag
@@ -2467,7 +2485,16 @@ Ext.define('Spread.grid.plugin.Editable', {
             // Display cells in edit mode
 
             if (me.editModeStyling) {
-                me.displayCellsEditing(true);
+
+                me.displayCellsEditing(true, function() {
+
+                    // Fire event
+                    me.fireEvent('editablechange', me, allowEditing);
+                });
+            } else {
+
+                // Fire event
+                me.fireEvent('editablechange', me, allowEditing);
             }
         }
     },
@@ -2475,9 +2502,10 @@ Ext.define('Spread.grid.plugin.Editable', {
     /**
      * Displays the grid cells in edit or read mode
      * @param {Boolean} displayEditing Display cells as editing?
+     * @param {Function} [onRenderReady] Function to be called when ready
      * @return void
      */
-    displayCellsEditing: function(displayEditing) {
+    displayCellsEditing: function(displayEditing, onRenderReady) {
 
         var me = this, viewCells = me.view.getEl().query(
             me.view.cellSelector
@@ -2533,6 +2561,11 @@ Ext.define('Spread.grid.plugin.Editable', {
                     chunkCellProcessor(startIdx, stopIdx);
 
                 }, me.chunkRenderDelay);
+            } else {
+
+                if (onRenderReady && Ext.isFunction(onRenderReady)) {
+                    onRenderReady();
+                }
             }
         };
 
@@ -2678,7 +2711,10 @@ Ext.define('Spread.grid.plugin.Pasteable', {
             selectionPositions = selModel.getSelectedPositionData();
 
         if (me.loadMask) {
-            me.view.setLoading(true);
+
+            var loadMask = new Ext.LoadMask(me.view.getEl());
+            loadMask.show();
+            //me.view.setLoading(true);
         }
 
         // Fire interceptable event
@@ -2695,7 +2731,8 @@ Ext.define('Spread.grid.plugin.Pasteable', {
                 me.fireEvent('paste', me, selModel, selectionPositions, pastedDataArray);
 
                 if (me.loadMask) {
-                    me.view.setLoading(false);
+                    //me.view.setLoading(false);
+                    loadMask.hide();
                 }
 
             }, this.view);
@@ -2745,6 +2782,11 @@ Ext.define('Spread.grid.plugin.Pasteable', {
                 newFocusPosition,
                 pastedDataArray[0][0]
             );*/
+            
+            // Never paste on non-editable columns!
+            if (!newFocusPosition.columnHeader.editable) {
+                return;
+            }
 
             // Set data on field of record
             Spread.data.DataMatrix.setValueForPosition(
@@ -2805,38 +2847,27 @@ Ext.define('Spread.grid.plugin.Pasteable', {
             // Update record references
             selectionPositions[i].update();
 
+            // Never paste on non-editable columns!
+            if (!selectionPositions[i].columnHeader.editable) {
+                continue;
+            }
+
             // Matrix-project row and column index of grid (coordinates) onto selected range (coordinates)
             projectedRowIndex = (selectionPositions[i].row-newOriginSelectionPosition.row);
             projectedColumnIndex = (selectionPositions[i].column-newOriginSelectionPosition.column)
 
-            if (!me.useInternalAPIs) {
-
-                if (i==0) {
-                    selectionPositions[i].record.beginEdit();
-                }
-
-                // Performance: BULK editing of records
-                if (lastProjectedRowIndex !== projectedRowIndex &&
-                    selectionPositions[(i-1)]) {
-
-                    //console.log('BULK');
-
-                    // Bulk editing of records (for performance)
-                    selectionPositions[(i-1)].record.endEdit();
-                    selectionPositions[i].record.beginEdit();
-                }
-            }
-
             // Update last projected row index
             lastProjectedRowIndex = projectedRowIndex;
 
-            /*console.log(
+            /*
+            console.log(
                 'setting data values',
                 selectionPositions[i],
                 pastedDataArray[projectedRowIndex][projectedColumnIndex],
                 projectedRowIndex,
                 projectedColumnIndex
-            );*/
+            );
+            */
 
             // Set new data value
             Spread.data.DataMatrix.setValueForPosition(
@@ -2847,18 +2878,11 @@ Ext.define('Spread.grid.plugin.Pasteable', {
             );
         }
 
-        if (!me.useInternalAPIs) {
 
-            // Last endEdit() record call
-            selectionPositions[i-1].record.endEdit();
-
-        } else {
-
-            // Using internal API's we've changed the internal
-            // values now, but we need to refresh the view for
-            // data values to be updates
-            me.view.refresh();
-        }
+        // Using internal API's we've changed the internal
+        // values now, but we need to refresh the view for
+        // data values to be updates
+        me.view.refresh();
 
         // Redraw edit mode styling
         me.handleDirtyMarkOnEditModeStyling();
@@ -3140,7 +3164,9 @@ Ext.define('Spread.grid.View', {
             'beforeeditingenabled',
             'editingenabled',
             'beforeeditingdisabled',
-            'editingdisabled'
+            'editingdisabled',
+            'editablechange',
+            'covercelleditable'
         ]);
 
         // Relay copyable plugin events
@@ -4064,6 +4090,25 @@ Ext.define('Spread.grid.Panel', {
             'editingdisabled',
 
             /**
+             * @event covercelleditable
+             * Fires after a cell got covered for editing.
+             * @param {Spread.grid.plugin.Editable} editable Editable plugin instance
+             * @param {Spread.grid.View} view Spread view instance
+             * @param {Spread.selection.Position} position Position to be covered
+             * @param {Ext.dom.Element} coverEl Cover element
+             */
+            'covercelleditable',
+
+            /**
+             * @event editablechange
+             * Fires after the editable flag has changed and all re-rendering has been done.
+             * Use this event if you e.g. want to reload the store "directly" after calling setEditable() etc.
+             * @param {Spread.grid.plugin.Editable} editable Editable plugin instance
+             * @param {Boolean} editable Indicator if the spread is now editable or not
+             */
+            'editablechange',
+
+            /**
              * @event beforecopy
              * @inheritdoc Spread.grid.View#beforecopy
              */
@@ -4115,7 +4160,9 @@ Ext.define('Spread.grid.Panel', {
             'beforecopy',
             'copy',
             'beforepaste',
-            'paste'
+            'paste',
+            'editablechange',
+            'covercelleditable'
         ]);
 
         // Just relay autoCommit flag to pastable plugin
@@ -4126,7 +4173,7 @@ Ext.define('Spread.grid.Panel', {
         //console.log('my view', me.view);
 
         // View refresh
-        me.editablePluginInstance.on('covercell', function() {
+        me.editablePluginInstance.on('covercelleditable', function() {
 
             // Handle edit mode initially
             me.setEditable(me.editable);

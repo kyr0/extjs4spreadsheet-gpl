@@ -136,7 +136,10 @@ Ext.define('Spread.grid.plugin.Pasteable', {
             selectionPositions = selModel.getSelectedPositionData();
 
         if (me.loadMask) {
-            me.view.setLoading(true);
+
+            var loadMask = new Ext.LoadMask(me.view.getEl());
+            loadMask.show();
+            //me.view.setLoading(true);
         }
 
         // Fire interceptable event
@@ -153,7 +156,8 @@ Ext.define('Spread.grid.plugin.Pasteable', {
                 me.fireEvent('paste', me, selModel, selectionPositions, pastedDataArray);
 
                 if (me.loadMask) {
-                    me.view.setLoading(false);
+                    //me.view.setLoading(false);
+                    loadMask.hide();
                 }
 
             }, this.view);
@@ -203,6 +207,11 @@ Ext.define('Spread.grid.plugin.Pasteable', {
                 newFocusPosition,
                 pastedDataArray[0][0]
             );*/
+
+            // Never paste on non-editable columns!
+            if (!newFocusPosition.columnHeader.editable) {
+                return;
+            }
 
             // Set data on field of record
             Spread.data.DataMatrix.setValueForPosition(
@@ -263,38 +272,27 @@ Ext.define('Spread.grid.plugin.Pasteable', {
             // Update record references
             selectionPositions[i].update();
 
+            // Never paste on non-editable columns!
+            if (!selectionPositions[i].columnHeader.editable) {
+                continue;
+            }
+
             // Matrix-project row and column index of grid (coordinates) onto selected range (coordinates)
             projectedRowIndex = (selectionPositions[i].row-newOriginSelectionPosition.row);
             projectedColumnIndex = (selectionPositions[i].column-newOriginSelectionPosition.column)
 
-            if (!me.useInternalAPIs) {
-
-                if (i==0) {
-                    selectionPositions[i].record.beginEdit();
-                }
-
-                // Performance: BULK editing of records
-                if (lastProjectedRowIndex !== projectedRowIndex &&
-                    selectionPositions[(i-1)]) {
-
-                    //console.log('BULK');
-
-                    // Bulk editing of records (for performance)
-                    selectionPositions[(i-1)].record.endEdit();
-                    selectionPositions[i].record.beginEdit();
-                }
-            }
-
             // Update last projected row index
             lastProjectedRowIndex = projectedRowIndex;
 
-            /*console.log(
+            /*
+            console.log(
                 'setting data values',
                 selectionPositions[i],
                 pastedDataArray[projectedRowIndex][projectedColumnIndex],
                 projectedRowIndex,
                 projectedColumnIndex
-            );*/
+            );
+            */
 
             // Set new data value
             Spread.data.DataMatrix.setValueForPosition(
@@ -305,18 +303,11 @@ Ext.define('Spread.grid.plugin.Pasteable', {
             );
         }
 
-        if (!me.useInternalAPIs) {
 
-            // Last endEdit() record call
-            selectionPositions[i-1].record.endEdit();
-
-        } else {
-
-            // Using internal API's we've changed the internal
-            // values now, but we need to refresh the view for
-            // data values to be updates
-            me.view.refresh();
-        }
+        // Using internal API's we've changed the internal
+        // values now, but we need to refresh the view for
+        // data values to be updates
+        me.view.refresh();
 
         // Redraw edit mode styling
         me.handleDirtyMarkOnEditModeStyling();
