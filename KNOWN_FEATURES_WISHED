@@ -1,0 +1,6 @@
+List of wished features:
+------------------------
+
+#101 Rows to be non-editable (config option via row-class getRowClass() of viewConfigs)
+#102 Rows to be non-selectable (config option via row-class getRowClass() of viewConfigs)
+#103 Example of own, async summary row to be implemented

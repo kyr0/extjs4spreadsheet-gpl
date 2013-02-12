@@ -3,4 +3,3 @@ List of known bugs:
 
 #1 In IE you can move the mouse over cells while double-clicking for editing. This cancels edit mode and selects ranges.
 #3 When clicking outside of the editable area, an selection on an editable cell turns into an edit mode field
-#4 Example of own, async summary row to be implemented

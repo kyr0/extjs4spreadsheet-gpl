@@ -489,21 +489,24 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     onCoverDblClick: function(evt) {
 
-        // Not already editing and not clicked outside of the table area
-        if (!Ext.get(evt.getTarget()).hasCls('x-grid-view') && !this.isEditing) {
+        if (this.fireEvent('beforecoverdblclick', this) !== false) {
 
-            if (this.fireEvent('beforecoverdblclick', this) !== false) {
+            // Not already editing and not clicked outside of the table area
+            if (!Ext.get(evt.getTarget()).hasCls('x-grid-view') && !this.isEditing) {
 
-                // Activates the editor
-                this.setEditing(true);
+                if (this.isPositionEditable()) {
 
-                // Set current value of field in record
-                this.setEditingValue(
-                    Spread.data.DataMatrix.getValueOfPosition(this.activePosition)
-                );
+                    // Activates the editor
+                    this.setEditing(true);
 
-                this.fireEvent('coverdblclick', this);
+                    // Set current value of field in record
+                    this.setEditingValue(
+                        Spread.data.DataMatrix.getValueOfPosition(this.activePosition)
+                    );
+                }
+
             }
+            this.fireEvent('coverdblclick', this);
         }
     },
 
@@ -516,20 +519,20 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     onCoverKeyPressed: function(evt, viewEl) {
 
-        if (Spread.util.Key.isStartEditKey(evt) && !this.isEditing) {
+        if (this.fireEvent('beforecoverkeypressed', this) !== false) {
 
-            //console.log('onCoverKeyPressed', evt.getKey(), evt.getCharCode());
+            if (Spread.util.Key.isStartEditKey(evt) && !this.isEditing) {
 
-            if (this.fireEvent('beforecoverkeypressed', this) !== false) {
+                if (this.isPositionEditable()) {
 
-                // Activates the editor
-                this.setEditing(true);
+                    // Activates the editor
+                    this.setEditing(true);
 
-                // Reset the editor value
-                this.setEditingValue('');
-
-                this.fireEvent('coverkeypressed', this);
+                    // Reset the editor value
+                    this.setEditingValue('');
+                }
             }
+            this.fireEvent('coverkeypressed', this);
         }
     },
 
@@ -559,19 +562,14 @@ Ext.define('Spread.grid.plugin.Editable', {
         this.fireEvent('covercelleditable', this, view, position, coverEl);
     },
 
-
-
-
     /**
      * Checks if the current position is editable
      * @return {Boolean}
      */
     isPositionEditable: function() {
 
-        console.log('isPositionEditable', this.activePosition);
-
         // Check for row to be editable or not
-
+        // TODO!
 
         // Check for column to be editable or not
         if ((this.activePosition && !this.activePosition.columnHeader.editable) ||
@@ -582,8 +580,6 @@ Ext.define('Spread.grid.plugin.Editable', {
         }
         return true;
     },
-
-
 
     /**
      * Sets the editor active or inactive
@@ -600,7 +596,7 @@ Ext.define('Spread.grid.plugin.Editable', {
         }
 
         // Check global and column edit-ability
-        if (!this.isPositionEditable) {
+        if (!this.isPositionEditable()) {
             return false;
         }
 
