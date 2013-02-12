@@ -1615,6 +1615,11 @@ Ext.define('Spread.util.Key', {
 
         var k = evt.normalizeKey(evt.keyCode);
 
+        // Do never start editing when CTRL or CMD was pressed
+        if (evt.ctrlKey) {
+            return false
+        };
+
         return (k >= 48 && k <= 57) || // 0-9
                (k >= 65 && k <= 90) || // a-z
                (k >= 96 && k <= 111) || // numpad keys
@@ -1716,6 +1721,8 @@ Ext.define('Spread.grid.plugin.Copyable', {
     detectCopyKeyStroke: function(evt) {
 
         if (evt.getKey() === evt.C && evt.ctrlKey) {
+
+            console.log('copy');
             this.copyToClipboard();
         }
     },
@@ -2297,6 +2304,32 @@ Ext.define('Spread.grid.plugin.Editable', {
         this.fireEvent('covercell', view, position, coverEl);
     },
 
+
+
+
+    /**
+     * Checks if the current position is editable
+     * @return {Boolean}
+     */
+    isPositionEditable: function() {
+
+        console.log('isPositionEditable', this.activePosition);
+
+        // Check for row to be editable or not
+
+
+        // Check for column to be editable or not
+        if ((this.activePosition && !this.activePosition.columnHeader.editable) ||
+            !this.editable) {
+
+            //console.log('!this.activePosition.columnHeader.editable || !this.editable', !this.activePosition.columnHeader.editable, !this.editable)
+            return false;
+        }
+        return true;
+    },
+
+
+
     /**
      * Sets the editor active or inactive
      * @param {Boolean} doEdit=true Should edit mode be started?
@@ -2312,10 +2345,7 @@ Ext.define('Spread.grid.plugin.Editable', {
         }
 
         // Check global and column edit-ability
-        if ((this.activePosition && !this.activePosition.columnHeader.editable) ||
-            !this.editable) {
-
-            //console.log('!this.activePosition.columnHeader.editable || !this.editable', !this.activePosition.columnHeader.editable, !this.editable)
+        if (!this.isPositionEditable) {
             return false;
         }
 
@@ -2886,7 +2916,7 @@ Ext.define('Spread.grid.View', {
      * @cfg {Number} cellFocusDelay
      * Cell (re-)focus delay in ms
      */
-    cellFocusDelay: 50,
+    cellFocusDelay: 30,
 
     // Deactivate trackOver and row striping by default
     stripeRows: false,

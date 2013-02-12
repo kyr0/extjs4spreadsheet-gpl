@@ -29,7 +29,7 @@ Ext.define('Spread.grid.View', {
      * @cfg {Number} cellFocusDelay
      * Cell (re-)focus delay in ms
      */
-    cellFocusDelay: 50,
+    cellFocusDelay: 30,
 
     // Deactivate trackOver and row striping by default
     stripeRows: false,

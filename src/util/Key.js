@@ -35,6 +35,11 @@ Ext.define('Spread.util.Key', {
 
         var k = evt.normalizeKey(evt.keyCode);
 
+        // Do never start editing when CTRL or CMD was pressed
+        if (evt.ctrlKey) {
+            return false
+        };
+
         return (k >= 48 && k <= 57) || // 0-9
                (k >= 65 && k <= 90) || // a-z
                (k >= 96 && k <= 111) || // numpad keys

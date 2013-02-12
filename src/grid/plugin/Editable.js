@@ -549,6 +549,32 @@ Ext.define('Spread.grid.plugin.Editable', {
         this.fireEvent('covercell', view, position, coverEl);
     },
 
+
+
+
+    /**
+     * Checks if the current position is editable
+     * @return {Boolean}
+     */
+    isPositionEditable: function() {
+
+        console.log('isPositionEditable', this.activePosition);
+
+        // Check for row to be editable or not
+
+
+        // Check for column to be editable or not
+        if ((this.activePosition && !this.activePosition.columnHeader.editable) ||
+            !this.editable) {
+
+            //console.log('!this.activePosition.columnHeader.editable || !this.editable', !this.activePosition.columnHeader.editable, !this.editable)
+            return false;
+        }
+        return true;
+    },
+
+
+
     /**
      * Sets the editor active or inactive
      * @param {Boolean} doEdit=true Should edit mode be started?
@@ -564,10 +590,7 @@ Ext.define('Spread.grid.plugin.Editable', {
         }
 
         // Check global and column edit-ability
-        if ((this.activePosition && !this.activePosition.columnHeader.editable) ||
-            !this.editable) {
-
-            //console.log('!this.activePosition.columnHeader.editable || !this.editable', !this.activePosition.columnHeader.editable, !this.editable)
+        if (!this.isPositionEditable) {
             return false;
         }
 
