@@ -75,8 +75,6 @@ Ext.define('Spread.overrides.Column', {
      */
     initDynamicColumnTdCls: function() {
 
-        //console.log('has view?', this.view);
-
         if (!this.selectable) {
 
             // If not selectable, then editing is impossible

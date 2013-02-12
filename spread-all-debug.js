@@ -79,8 +79,6 @@ Ext.define('Spread.overrides.Column', {
      */
     initDynamicColumnTdCls: function() {
 
-        //console.log('has view?', this.view);
-
         if (!this.selectable) {
 
             // If not selectable, then editing is impossible
@@ -1789,13 +1787,13 @@ Ext.define('Spread.grid.plugin.Editable', {
      * This performance optimization technique is used only when editModeStyling is activated and cells
      * need to be re-inked on this.setDisabled() / grid's setEditable() calls.
      */
-    chunkRenderDelay: 5,
+    chunkRenderDelay: 0.1,
 
     /**
      * @cfg {Number} cellChunkSize
      * Size of the chunks (cells) to render at once (see chunkRenderDelay for further information)
      */
-    cellChunkSize: 50,
+    cellChunkSize: 300,
 
     /**
      * @property {Spread.selection.Position}
@@ -1867,7 +1865,7 @@ Ext.define('Spread.grid.plugin.Editable', {
     editableColumnIndexes: [],
 
     // Internal editable flag
-    editable: true,
+    editable: false,
 
     /**
      * @protected
@@ -1953,7 +1951,16 @@ Ext.define('Spread.grid.plugin.Editable', {
              * Fires when editing gets generally deactivated.
              * @param {Spread.grid.plugin.Editable} editable Editable plugin instance
              */
-            'editingdisabled'
+            'editingdisabled',
+
+            /**
+             * @event covercell
+             * Fires after a cell got covered for editing.
+             * @param {Spread.grid.View} view Spread view instance
+             * @param {Spread.selection.Position} position Position to be covered
+             * @param {Ext.dom.Element} coverEl Cover element
+             */
+            'covercell'
         );
 
         // Register eventing hook
@@ -2125,10 +2132,10 @@ Ext.define('Spread.grid.plugin.Editable', {
     handleDirtyMarkOnEditModeStyling: function() {
 
         // Full redraw
-        this.displayCellsEditing(false);
-
         if (this.view.ownerCt.editModeStyling) {
             this.displayCellsEditing(true);
+        } else {
+            this.displayCellsEditing(false);
         }
     },
 
@@ -2286,6 +2293,8 @@ Ext.define('Spread.grid.plugin.Editable', {
 
         // But hide, until this.setEditing() is called through UI event
         this.cellCoverEditFieldEl.dom.style.display = 'none';
+
+        this.fireEvent('covercell', view, position, coverEl);
     },
 
     /**
@@ -2303,7 +2312,7 @@ Ext.define('Spread.grid.plugin.Editable', {
         }
 
         // Check global and column edit-ability
-        if (!this.activePosition.columnHeader.editable ||
+        if ((this.activePosition && !this.activePosition.columnHeader.editable) ||
             !this.editable) {
 
             //console.log('!this.activePosition.columnHeader.editable || !this.editable', !this.activePosition.columnHeader.editable, !this.editable)
@@ -2440,11 +2449,14 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     displayCellsEditing: function(displayEditing) {
 
-        var me = this, viewCells = me.activePosition.view.getEl().query(
-            this.activePosition.view.cellSelector
+        var me = this, viewCells = me.view.getEl().query(
+            me.view.cellSelector
         ), viewColumns = me.view.getHeaderCt().getGridColumns();
 
-        //console.log('displayCellsEditing', displayEditing);
+        if (Ext.isIE6 || Ext.isIE7 || Ext.isIE8) {
+            me.chunkRenderDelay = 0.3;
+            me.cellChunkSize = 200;
+        }
 
         // Chunk-style cells
         var chunkCellProcessor = function(startIdx, stopIdx) {
@@ -4084,7 +4096,7 @@ Ext.define('Spread.grid.Panel', {
         //console.log('my view', me.view);
 
         // View refresh
-        me.getView().on('viewrefresh', function() {
+        me.editablePluginInstance.on('covercell', function() {
 
             // Handle edit mode initially
             me.setEditable(me.editable);
@@ -4125,9 +4137,6 @@ Ext.define('Spread.grid.Panel', {
 
             // Reference the view on each column
             this.columns[j].view = this;
-
-            // And set panel edit mode styleing
-            this.columns[j].initialPanelEditModeStyling = this.editModeStyling;
         }
     },
 

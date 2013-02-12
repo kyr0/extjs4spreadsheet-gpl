@@ -659,7 +659,7 @@ Ext.define('Spread.grid.Panel', {
         //console.log('my view', me.view);
 
         // View refresh
-        me.getView().on('viewrefresh', function() {
+        me.editablePluginInstance.on('covercell', function() {
 
             // Handle edit mode initially
             me.setEditable(me.editable);
@@ -700,9 +700,6 @@ Ext.define('Spread.grid.Panel', {
 
             // Reference the view on each column
             this.columns[j].view = this;
-
-            // And set panel edit mode styleing
-            this.columns[j].initialPanelEditModeStyling = this.editModeStyling;
         }
     },
 
