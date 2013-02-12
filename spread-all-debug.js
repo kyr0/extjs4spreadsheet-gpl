@@ -1032,7 +1032,9 @@ Ext.define('Spread.selection.RangeModel', {
     onCellMouseUp: function(evt, el) {
 
         // Fire cellblur event
-        if (!Ext.get(el).hasCls('spreadsheet-cell-cover')) {
+        if (!Ext.get(el).hasCls('spreadsheet-cell-cover') &&
+            !Ext.get(el).hasCls('x-grid-cell-inner')) {
+
             this.fireEvent('cellblur', this, Ext.get(el));
         }
 
@@ -2001,7 +2003,10 @@ Ext.define('Spread.grid.plugin.Editable', {
             me.initTextField(coverEl);
 
             // Listen to cover double click
-            coverEl.on('dblclick', me.onCoverDblClick, me);
+            //coverEl.on('dblclick', me.onCoverDblClick, me);
+
+            // Double-click based edit mode handler
+            me.view.getEl().on('dblclick', me.onCoverDblClick, me);
 
             // Listen to cover key pressed (up)
             view.getEl().on('keydown', me.onCoverKeyPressed, me);
@@ -2103,7 +2108,6 @@ Ext.define('Spread.grid.plugin.Editable', {
                 this.getEditingValue(),
                 this.autoCommit
             );
-
 
             // Recolorize for dirty flag!
             this.handleDirtyMarkOnEditModeStyling();
@@ -2212,24 +2216,25 @@ Ext.define('Spread.grid.plugin.Editable', {
      * gets called and chooses if the text field should be shown
      * based on the pre-annotation already made by this.onCellCovered.
      * @param {Ext.EventObject} evt Key event
-     * @param {Ext.dom.Element} coverEl Cell cover element
      * @return void
      */
-    onCoverDblClick: function(evt, coverEl) {
+    onCoverDblClick: function(evt) {
 
-        //console.log('coverdblclick');
+        // Not already editing and not clicked outside of the table area
+        if (!Ext.get(evt.getTarget()).hasCls('x-grid-view') && !this.isEditing) {
 
-        if (this.fireEvent('beforecoverdblclick', this) !== false) {
+            if (this.fireEvent('beforecoverdblclick', this) !== false) {
 
-            // Activates the editor
-            this.setEditing(true);
+                // Activates the editor
+                this.setEditing(true);
 
-            // Set current value of field in record
-            this.setEditingValue(
-                Spread.data.DataMatrix.getValueOfPosition(this.activePosition)
-            );
+                // Set current value of field in record
+                this.setEditingValue(
+                    Spread.data.DataMatrix.getValueOfPosition(this.activePosition)
+                );
 
-            this.fireEvent('coverdblclick', this);
+                this.fireEvent('coverdblclick', this);
+            }
         }
     },
 

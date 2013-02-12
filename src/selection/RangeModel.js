@@ -538,7 +538,9 @@ Ext.define('Spread.selection.RangeModel', {
     onCellMouseUp: function(evt, el) {
 
         // Fire cellblur event
-        if (!Ext.get(el).hasCls('spreadsheet-cell-cover')) {
+        if (!Ext.get(el).hasCls('spreadsheet-cell-cover') &&
+            !Ext.get(el).hasCls('x-grid-cell-inner')) {
+
             this.fireEvent('cellblur', this, Ext.get(el));
         }
 
