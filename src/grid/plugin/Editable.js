@@ -368,6 +368,9 @@ Ext.define('Spread.grid.plugin.Editable', {
         // Fire interceptable event
         if (this.fireEvent('beforeeditfieldblur', this) !== false) {
 
+            // Internal flag to prevent two-time rendering
+            this.view.dataChangedRecently = true;
+
             // Stop editing (mode)
             this.setEditing(false);
 
@@ -377,6 +380,7 @@ Ext.define('Spread.grid.plugin.Editable', {
                 this.getEditingValue(),
                 this.autoCommit
             );
+
 
             // Recolorize for dirty flag!
             this.handleDirtyMarkOnEditModeStyling();

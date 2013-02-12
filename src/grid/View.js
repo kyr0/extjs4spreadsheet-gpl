@@ -46,6 +46,9 @@ Ext.define('Spread.grid.View', {
     // Array of positions currently highlighted
     currentHighlightPositions: [],
 
+    // Internal flag
+    dataChangedRecently: true,
+
     /**
      * @cfg {Number} cellCoverZIndex
      * Value of zIndex for cell covers
@@ -393,11 +396,19 @@ Ext.define('Spread.grid.View', {
 
         var ret = this.callParent(arguments);
 
-        if (this.editable) {
+        //console.log('refresh?!')
 
-            this.editable.displayCellsEditing(
-                this.editable.editModeStyling && this.editable.editable
-            );
+        if (this.dataChangedRecently) {
+            this.dataChangedRecently = false;
+            return ret;
+        } else {
+
+            if (this.editable) {
+
+                this.editable.displayCellsEditing(
+                    this.editable.editModeStyling && this.editable.editable
+                );
+            }
         }
         return ret;
     },
