@@ -1,6 +1,10 @@
 List of wished features:
 ------------------------
 
-#101 Rows to be non-editable (config option via row-class getRowClass() of viewConfigs)
-#102 Rows to be non-selectable (config option via row-class getRowClass() of viewConfigs)
-#103 Example of own, async summary row to be implemented
+#101 Rows to be non-editable (config option via row-class getRowClass() of viewConfigs) / includes paste support [steria mummert]
+#102 Rows to be non-selectable (config option via row-class getRowClass() of viewConfigs) [steria mummert]
+#103 Example of own, async summary row to be implemented [steria mummert]
+#104 Multi-range selection via CTRL+range select (adding selection regions) [tobiu]
+     - Known implications: Copy & paste will increase in complexity
+#105 Sort, Horizontal sort should reapply the previous selection instead of reinitialize(): resetOnHeaderSort, resetOnSort flags
+#106 All Ext JS 4 grid examples working with Spread as demo code to copy & paste
