@@ -382,6 +382,11 @@ Ext.define('Spread.selection.RangeModel', {
 
             // Update root position / record reference
             this.rootPosition.update();
+
+            try {
+                // Try re-focussing
+                this.view.getEl().focus();
+            } catch(e) {}
         }
 
         // May auto-focus root position
