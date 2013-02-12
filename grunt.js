@@ -33,6 +33,7 @@ module.exports = function (grunt) {
                     srcDir('selection/Position.js'),
                     srcDir('selection/RangeModel.js'),
                     srcDir('util/Clipping.js'),
+                    srcDir('util/Key.js'),
                     srcDir('grid/plugin/Copyable.js'),
                     srcDir('grid/plugin/Editable.js'),
                     srcDir('grid/plugin/Pasteable.js'),

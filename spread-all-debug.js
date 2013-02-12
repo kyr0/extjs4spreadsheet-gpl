@@ -1,4 +1,4 @@
-/*! Ext JS 4 SpreadSheets - v1.0-beta1 - 2013-02-11
+/*! Ext JS 4 SpreadSheets - v1.0-beta1 - 2013-02-12
 * http://www.extjs4spreadsheets.com/
 * Copyright (c) 2013 Copyright (C) 2012, 2013 Aron Homberg; GPLv3 and commercially licensed. */
 
@@ -255,9 +255,7 @@ Ext.define('Spread.data.DataMatrix', {
         // Update position
         position.update();
 
-        // @assert(position).not.toBeInstanceOf(Function);
-        // @log('whatever', position);
-        // @dir('whatever', position);
+        //console.log('setValueForPosition', position, newValue);
 
         var fieldName = this.getFieldNameForColumnIndex(position.view, position.column);
 
@@ -843,6 +841,7 @@ Ext.define('Spread.selection.RangeModel', {
         // Handle key eventing using KeyNav
         me.keyNav = new Ext.util.KeyNav({
             target: view.el,
+            eventName: 'keydown',
             ignoreInputFields: false,
             up: me.onKeyUp,
             down: me.onKeyDown,
@@ -959,7 +958,7 @@ Ext.define('Spread.selection.RangeModel', {
         ) {
 
             // Try to select range, if special key was pressed too
-            if (evt.shiftKey) {
+            if (evt.shiftKey && !Spread.util.Key.isStartEditKey(evt)) {
 
                 this.tryToSelectRange();
 
@@ -1120,7 +1119,12 @@ Ext.define('Spread.selection.RangeModel', {
         //console.log('onKeyTab', evt);
 
         this.keyNavigation = true;
-        this.processKeyNavigation('right', evt);
+
+        if (!evt.shiftKey) {
+            this.processKeyNavigation('right', evt);
+        } else {
+            this.processKeyNavigation('left', evt);
+        }
         this.keyNavigation = false;
     },
 
@@ -1231,33 +1235,40 @@ Ext.define('Spread.selection.RangeModel', {
      */
     processKeyNavigation: function(direction, evt) {
 
-        // Fire event
-        this.fireEvent('keynavigate', this, direction, evt);
+        setTimeout(Ext.Function.bind(function() {
 
-        //console.log('processKeyNavigation: ', direction);
+            // Fire event
+            this.fireEvent('keynavigate', this, direction, evt);
 
-        var newCurrentFocusPosition = this.tryMoveToPosition(
-            this.getCurrentFocusPosition(), direction, evt
-        );
+            //console.log('processKeyNavigation: ', direction);
 
-        //console.log('Focus single cell; Reset current range selection.');
+            var newCurrentFocusPosition = this.tryMoveToPosition(
+                this.getCurrentFocusPosition(), direction, evt
+            );
 
-        // Focus a new position
-        if (
-            this.setCurrentFocusPosition(newCurrentFocusPosition)
-        ) {
+            //console.log('Focus single cell; Reset current range selection.');
 
-            // Try to select range, if special key was pressed too
-            if (evt.shiftKey) {
-                this.tryToSelectRange();
-            } else {
+            // Focus a new position
+            if (
+                this.setCurrentFocusPosition(newCurrentFocusPosition)
+            ) {
 
-                // Set origin position
-                this.setOriginSelectionPosition(
-                    newCurrentFocusPosition
-                );
+
+                // Try to select range, if special key was pressed too
+                // Shift + Tab is special navigation behaviour (left navigation without selection)
+                if (evt.shiftKey && evt.getKey() !== evt.TAB) {
+
+                    this.tryToSelectRange();
+
+                } else {
+
+                    // Set origin position
+                    this.setOriginSelectionPosition(
+                        newCurrentFocusPosition
+                    );
+                }
             }
-        }
+        }, this), 50);
     },
 
     /**
@@ -1456,8 +1467,11 @@ Ext.define('Spread.util.Clipping', {
 
         me.el.dom.style.display = "block";
         me.el.dom.value = tsvData;
-        me.el.dom.focus();
-        me.el.dom.select();
+
+        try {
+            me.el.dom.focus();
+            me.el.dom.select();
+        } catch(e) {}
 
         // Re-focus the view
         me.refocusView(view);
@@ -1479,7 +1493,10 @@ Ext.define('Spread.util.Clipping', {
         var me = this;
 
         me.el.dom.style.display = "block";
-        me.el.dom.focus();
+
+        try {
+            me.el.dom.focus();
+        } catch (e) {}
 
         setTimeout(function() {
 
@@ -1552,10 +1569,56 @@ Ext.define('Spread.util.Clipping', {
 
         setTimeout(function() {
 
-            view.getEl().focus();
+            try {
+                view.getEl().focus();
+            } catch (e) {}
+
             me.el.dom.style.display = "none";
 
         }, me.refocusDelay);
+    }
+});
+/**
+ * @class Spread.util.Key
+ * Utility class to determine key codes and possible actions to happen.
+ */
+Ext.define('Spread.util.Key', {
+
+    singleton: true,
+
+    /**
+     * Checks for key code to if editing should be canceled
+     * @param {Ext.EventObject} evt Event object instance
+     * @return {Boolean}
+     */
+    isCancelEditKey: function(evt) {
+
+        var k = evt.normalizeKey(evt.keyCode);
+
+        //console.log('isCancelEditKey?', k);
+
+        return (k >= 33 && k <= 40) ||  // Page Up/Down, End, Home, Left, Up, Right, Down
+            k == evt.RETURN ||
+            k == evt.TAB ||
+            k == evt.ESC ||
+            k == 91 || // Windows key
+            !Ext.isIE && k === 224 || // Mac command key
+            (k >= 44 && k <= 46) // Print Screen, Insert, Delete
+    },
+
+    /**
+     * Checks for key code to if editing should begin
+     * @param {Ext.EventObject} evt Event object instance
+     * @return {Boolean}
+     */
+    isStartEditKey: function(evt) {
+
+        var k = evt.normalizeKey(evt.keyCode);
+
+        return (k >= 48 && k <= 57) || // 0-9
+               (k >= 65 && k <= 90) || // a-z
+               (k >= 96 && k <= 111) || // numpad keys
+               (k >= 186 && k <= 222)
     }
 });
 /**
@@ -1949,8 +2012,8 @@ Ext.define('Spread.grid.plugin.Editable', {
             // Handle TAB and ENTER select while editing (save and focus next cell)
             //view.getSelectionModel().on('tabselect', me.blurEditFieldIfEditing, me);
             //view.getSelectionModel().on('enterselect', me.blurEditFieldIfEditing, me);
-            //view.getSelectionModel().on('beforecellfocus', me.blurEditFieldIfEditing, me);
-            //view.getSelectionModel().on('keynavigate', me.blurEditFieldIfEditing, me);
+            view.getSelectionModel().on('beforecellfocus', me.blurEditFieldIfEditing, me);
+            view.getSelectionModel().on('keynavigate', me.blurEditFieldIfEditing, me);
             view.getSelectionModel().on('cellblur', me.blurEditFieldIfEditing, me);
 
         } else {
@@ -2026,6 +2089,8 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     onEditFieldBlur: function() {
 
+        //console.log('onEditFieldBlur');
+
         // Fire interceptable event
         if (this.fireEvent('beforeeditfieldblur', this) !== false) {
 
@@ -2072,6 +2137,8 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     blurEditFieldIfEditing: function() {
 
+        //console.log('blurEditFieldIfEditing', this.isEditing)
+
         if (this.isEditing) {
             this.onEditFieldBlur();
         }
@@ -2090,17 +2157,10 @@ Ext.define('Spread.grid.plugin.Editable', {
 
         if (this.isEditing) {
 
-            switch (evt.getKey()) {
-                case evt.ENTER:
-                case evt.TAB:
-                case evt.LEFT:
-                case evt.RIGHT:
-                case evt.UP:
-                case evt.DOWN:
-                    this.blurEditFieldIfEditing();
-                    return true;
+            if (Spread.util.Key.isCancelEditKey(evt)) {
+                this.blurEditFieldIfEditing();
+                return true;
             }
-
             //console.log('columns keys allowed? ', me.activePosition.columnHeader.allowedEditKeys);
 
             // If there is a list of allowed keys, check for them
@@ -2162,7 +2222,7 @@ Ext.define('Spread.grid.plugin.Editable', {
         if (this.fireEvent('beforecoverdblclick', this) !== false) {
 
             // Activates the editor
-            this.setEditing();
+            this.setEditing(true);
 
             // Set current value of field in record
             this.setEditingValue(
@@ -2182,25 +2242,19 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     onCoverKeyPressed: function(evt, viewEl) {
 
-        //console.log('????', !evt.isSpecialKey(), !evt.ctrlKey, !this.isEditing);
-
-        // keyCode 91 === Windows / Command key
-        if (!evt.isSpecialKey() && /*!evt.altKey &&*/ !evt.ctrlKey && /*!evt.getKey() === 91 &&*/ !this.isEditing) {
+        if (Spread.util.Key.isStartEditKey(evt) && !this.isEditing) {
 
             //console.log('onCoverKeyPressed', evt.getKey(), evt.getCharCode());
 
-            if (!this.isEditing) {
+            if (this.fireEvent('beforecoverkeypressed', this) !== false) {
 
-                if (this.fireEvent('beforecoverkeypressed', this) !== false) {
+                // Activates the editor
+                this.setEditing(true);
 
-                    // Activates the editor
-                    this.setEditing();
+                // Reset the editor value
+                this.setEditingValue('');
 
-                    // Reset the editor value
-                    this.setEditingValue('');
-
-                    this.fireEvent('coverkeypressed', this);
-                }
+                this.fireEvent('coverkeypressed', this);
             }
         }
     },
@@ -2230,7 +2284,7 @@ Ext.define('Spread.grid.plugin.Editable', {
     },
 
     /**
-     * Sets the editor active
+     * Sets the editor active or inactive
      * @param {Boolean} doEdit=true Should edit mode be started?
      * @return void
      */
@@ -2265,12 +2319,18 @@ Ext.define('Spread.grid.plugin.Editable', {
                 me.cellCoverEditFieldEl.dom.style.display = 'inline';
 
                 // Focus the edit field
-                me.cellCoverEditFieldEl.dom.focus();
+                try {
+                    me.cellCoverEditFieldEl.dom.focus();
+                } catch(e) {}
 
                 // Re-try after a small delay to ensure focus
                 // (e.g. when rendering delay takes place while cell-to-cell edit mode jumps)
                 setTimeout(function() {
-                    me.cellCoverEditFieldEl.dom.focus();
+
+                    try {
+                        me.cellCoverEditFieldEl.dom.focus();
+                    } catch(e) {}
+
                 }, me.retryFieldElFocusDelay);
 
                 this.fireEvent('editingenabled', this);
@@ -2286,7 +2346,9 @@ Ext.define('Spread.grid.plugin.Editable', {
                 // Blur the edit field (and focus view element again to re-enable key-stroke navigation)
                 setTimeout(function() {
 
-                    me.view.focus();
+                    try {
+                        me.view.focus();
+                    } catch(e) {}
 
                 }, me.stopEditingFocusDelay);
 
@@ -3085,7 +3147,10 @@ Ext.define('Spread.grid.View', {
             if (me.autoFocus) {
 
                 setTimeout(function() {
-                    me.getEl().focus();
+                    try {
+                        me.getEl().focus();
+                    } catch(e) {}
+
                 }, me.autoFocusDelay);
             }
 
@@ -3226,7 +3291,9 @@ Ext.define('Spread.grid.View', {
                 me.focusCell(position);
 
                 // Re-focus on view, because focusCell() focus()'es cell <td> element
-                me.getEl().focus();
+                try {
+                    me.getEl().focus();
+                } catch (e) {}
 
             }, me.cellFocusDelay);
 

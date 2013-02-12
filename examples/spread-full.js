@@ -155,7 +155,7 @@ Ext.onReady(function() {
                 maximizable: true,
                 resizable: true,
                 width: 1000,
-                height: 600,
+                height: 300,
                 tbar: [{
                     text: 'Enable edit mode',
                     handler: function() {

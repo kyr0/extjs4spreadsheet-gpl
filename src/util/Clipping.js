@@ -50,8 +50,11 @@ Ext.define('Spread.util.Clipping', {
 
         me.el.dom.style.display = "block";
         me.el.dom.value = tsvData;
-        me.el.dom.focus();
-        me.el.dom.select();
+
+        try {
+            me.el.dom.focus();
+            me.el.dom.select();
+        } catch(e) {}
 
         // Re-focus the view
         me.refocusView(view);
@@ -73,7 +76,10 @@ Ext.define('Spread.util.Clipping', {
         var me = this;
 
         me.el.dom.style.display = "block";
-        me.el.dom.focus();
+
+        try {
+            me.el.dom.focus();
+        } catch (e) {}
 
         setTimeout(function() {
 
@@ -146,7 +152,10 @@ Ext.define('Spread.util.Clipping', {
 
         setTimeout(function() {
 
-            view.getEl().focus();
+            try {
+                view.getEl().focus();
+            } catch (e) {}
+
             me.el.dom.style.display = "none";
 
         }, me.refocusDelay);

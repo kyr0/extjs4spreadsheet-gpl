@@ -347,6 +347,7 @@ Ext.define('Spread.selection.RangeModel', {
         // Handle key eventing using KeyNav
         me.keyNav = new Ext.util.KeyNav({
             target: view.el,
+            eventName: 'keydown',
             ignoreInputFields: false,
             up: me.onKeyUp,
             down: me.onKeyDown,
@@ -463,7 +464,7 @@ Ext.define('Spread.selection.RangeModel', {
         ) {
 
             // Try to select range, if special key was pressed too
-            if (evt.shiftKey) {
+            if (evt.shiftKey && !Spread.util.Key.isStartEditKey(evt)) {
 
                 this.tryToSelectRange();
 
@@ -624,7 +625,12 @@ Ext.define('Spread.selection.RangeModel', {
         //console.log('onKeyTab', evt);
 
         this.keyNavigation = true;
-        this.processKeyNavigation('right', evt);
+
+        if (!evt.shiftKey) {
+            this.processKeyNavigation('right', evt);
+        } else {
+            this.processKeyNavigation('left', evt);
+        }
         this.keyNavigation = false;
     },
 
@@ -735,33 +741,40 @@ Ext.define('Spread.selection.RangeModel', {
      */
     processKeyNavigation: function(direction, evt) {
 
-        // Fire event
-        this.fireEvent('keynavigate', this, direction, evt);
+        setTimeout(Ext.Function.bind(function() {
 
-        //console.log('processKeyNavigation: ', direction);
+            // Fire event
+            this.fireEvent('keynavigate', this, direction, evt);
 
-        var newCurrentFocusPosition = this.tryMoveToPosition(
-            this.getCurrentFocusPosition(), direction, evt
-        );
+            //console.log('processKeyNavigation: ', direction);
 
-        //console.log('Focus single cell; Reset current range selection.');
+            var newCurrentFocusPosition = this.tryMoveToPosition(
+                this.getCurrentFocusPosition(), direction, evt
+            );
 
-        // Focus a new position
-        if (
-            this.setCurrentFocusPosition(newCurrentFocusPosition)
-        ) {
+            //console.log('Focus single cell; Reset current range selection.');
 
-            // Try to select range, if special key was pressed too
-            if (evt.shiftKey) {
-                this.tryToSelectRange();
-            } else {
+            // Focus a new position
+            if (
+                this.setCurrentFocusPosition(newCurrentFocusPosition)
+            ) {
 
-                // Set origin position
-                this.setOriginSelectionPosition(
-                    newCurrentFocusPosition
-                );
+
+                // Try to select range, if special key was pressed too
+                // Shift + Tab is special navigation behaviour (left navigation without selection)
+                if (evt.shiftKey && evt.getKey() !== evt.TAB) {
+
+                    this.tryToSelectRange();
+
+                } else {
+
+                    // Set origin position
+                    this.setOriginSelectionPosition(
+                        newCurrentFocusPosition
+                    );
+                }
             }
-        }
+        }, this), 50);
     },
 
     /**

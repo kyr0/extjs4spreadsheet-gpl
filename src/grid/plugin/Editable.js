@@ -264,8 +264,8 @@ Ext.define('Spread.grid.plugin.Editable', {
             // Handle TAB and ENTER select while editing (save and focus next cell)
             //view.getSelectionModel().on('tabselect', me.blurEditFieldIfEditing, me);
             //view.getSelectionModel().on('enterselect', me.blurEditFieldIfEditing, me);
-            //view.getSelectionModel().on('beforecellfocus', me.blurEditFieldIfEditing, me);
-            //view.getSelectionModel().on('keynavigate', me.blurEditFieldIfEditing, me);
+            view.getSelectionModel().on('beforecellfocus', me.blurEditFieldIfEditing, me);
+            view.getSelectionModel().on('keynavigate', me.blurEditFieldIfEditing, me);
             view.getSelectionModel().on('cellblur', me.blurEditFieldIfEditing, me);
 
         } else {
@@ -341,6 +341,8 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     onEditFieldBlur: function() {
 
+        //console.log('onEditFieldBlur');
+
         // Fire interceptable event
         if (this.fireEvent('beforeeditfieldblur', this) !== false) {
 
@@ -387,6 +389,8 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     blurEditFieldIfEditing: function() {
 
+        //console.log('blurEditFieldIfEditing', this.isEditing)
+
         if (this.isEditing) {
             this.onEditFieldBlur();
         }
@@ -405,17 +409,10 @@ Ext.define('Spread.grid.plugin.Editable', {
 
         if (this.isEditing) {
 
-            switch (evt.getKey()) {
-                case evt.ENTER:
-                case evt.TAB:
-                case evt.LEFT:
-                case evt.RIGHT:
-                case evt.UP:
-                case evt.DOWN:
-                    this.blurEditFieldIfEditing();
-                    return true;
+            if (Spread.util.Key.isCancelEditKey(evt)) {
+                this.blurEditFieldIfEditing();
+                return true;
             }
-
             //console.log('columns keys allowed? ', me.activePosition.columnHeader.allowedEditKeys);
 
             // If there is a list of allowed keys, check for them
@@ -477,7 +474,7 @@ Ext.define('Spread.grid.plugin.Editable', {
         if (this.fireEvent('beforecoverdblclick', this) !== false) {
 
             // Activates the editor
-            this.setEditing();
+            this.setEditing(true);
 
             // Set current value of field in record
             this.setEditingValue(
@@ -497,25 +494,19 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     onCoverKeyPressed: function(evt, viewEl) {
 
-        //console.log('????', !evt.isSpecialKey(), !evt.ctrlKey, !this.isEditing);
-
-        // keyCode 91 === Windows / Command key
-        if (!evt.isSpecialKey() && /*!evt.altKey &&*/ !evt.ctrlKey && /*!evt.getKey() === 91 &&*/ !this.isEditing) {
+        if (Spread.util.Key.isStartEditKey(evt) && !this.isEditing) {
 
             //console.log('onCoverKeyPressed', evt.getKey(), evt.getCharCode());
 
-            if (!this.isEditing) {
+            if (this.fireEvent('beforecoverkeypressed', this) !== false) {
 
-                if (this.fireEvent('beforecoverkeypressed', this) !== false) {
+                // Activates the editor
+                this.setEditing(true);
 
-                    // Activates the editor
-                    this.setEditing();
+                // Reset the editor value
+                this.setEditingValue('');
 
-                    // Reset the editor value
-                    this.setEditingValue('');
-
-                    this.fireEvent('coverkeypressed', this);
-                }
+                this.fireEvent('coverkeypressed', this);
             }
         }
     },
@@ -545,7 +536,7 @@ Ext.define('Spread.grid.plugin.Editable', {
     },
 
     /**
-     * Sets the editor active
+     * Sets the editor active or inactive
      * @param {Boolean} doEdit=true Should edit mode be started?
      * @return void
      */
@@ -580,12 +571,18 @@ Ext.define('Spread.grid.plugin.Editable', {
                 me.cellCoverEditFieldEl.dom.style.display = 'inline';
 
                 // Focus the edit field
-                me.cellCoverEditFieldEl.dom.focus();
+                try {
+                    me.cellCoverEditFieldEl.dom.focus();
+                } catch(e) {}
 
                 // Re-try after a small delay to ensure focus
                 // (e.g. when rendering delay takes place while cell-to-cell edit mode jumps)
                 setTimeout(function() {
-                    me.cellCoverEditFieldEl.dom.focus();
+
+                    try {
+                        me.cellCoverEditFieldEl.dom.focus();
+                    } catch(e) {}
+
                 }, me.retryFieldElFocusDelay);
 
                 this.fireEvent('editingenabled', this);
@@ -601,7 +598,9 @@ Ext.define('Spread.grid.plugin.Editable', {
                 // Blur the edit field (and focus view element again to re-enable key-stroke navigation)
                 setTimeout(function() {
 
-                    me.view.focus();
+                    try {
+                        me.view.focus();
+                    } catch(e) {}
 
                 }, me.stopEditingFocusDelay);
 

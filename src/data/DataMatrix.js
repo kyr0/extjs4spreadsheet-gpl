@@ -44,9 +44,7 @@ Ext.define('Spread.data.DataMatrix', {
         // Update position
         position.update();
 
-        // @assert(position).not.toBeInstanceOf(Function);
-        // @log('whatever', position);
-        // @dir('whatever', position);
+        //console.log('setValueForPosition', position, newValue);
 
         var fieldName = this.getFieldNameForColumnIndex(position.view, position.column);
 

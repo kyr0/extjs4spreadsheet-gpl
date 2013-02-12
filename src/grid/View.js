@@ -307,7 +307,10 @@ Ext.define('Spread.grid.View', {
             if (me.autoFocus) {
 
                 setTimeout(function() {
-                    me.getEl().focus();
+                    try {
+                        me.getEl().focus();
+                    } catch(e) {}
+
                 }, me.autoFocusDelay);
             }
 
@@ -448,7 +451,9 @@ Ext.define('Spread.grid.View', {
                 me.focusCell(position);
 
                 // Re-focus on view, because focusCell() focus()'es cell <td> element
-                me.getEl().focus();
+                try {
+                    me.getEl().focus();
+                } catch (e) {}
 
             }, me.cellFocusDelay);
 
