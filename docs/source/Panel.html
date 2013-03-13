@@ -15,921 +15,349 @@
   </script>
 </head>
 <body onload="prettyPrint(); highlight();">
-  <pre class="prettyprint lang-js"><span id='Spread-grid-Panel'>/**
-</span> * @class Spread.grid.Panel
- * @extends Ext.grid.Panel
+  <pre class="prettyprint lang-js"><span id='Ext-form-Panel'>/**
+</span> * @docauthor Jason Johnston &lt;jason@sencha.com&gt;
+ * 
+ * FormPanel provides a standard container for forms. It is essentially a standard {@link Ext.panel.Panel} which
+ * automatically creates a {@link Ext.form.Basic BasicForm} for managing any {@link Ext.form.field.Field}
+ * objects that are added as descendants of the panel. It also includes conveniences for configuring and
+ * working with the BasicForm and the collection of Fields.
+ * 
+ * # Layout
+ * 
+ * By default, FormPanel is configured with `{@link Ext.layout.container.Anchor layout:'anchor'}` for
+ * the layout of its immediate child items. This can be changed to any of the supported container layouts.
+ * The layout of sub-containers is configured in {@link Ext.container.Container#layout the standard way}.
+ * 
+ * # BasicForm
+ * 
+ * Although **not listed** as configuration options of FormPanel, the FormPanel class accepts all
+ * of the config options supported by the {@link Ext.form.Basic} class, and will pass them along to
+ * the internal BasicForm when it is created.
+ * 
+ * The following events fired by the BasicForm will be re-fired by the FormPanel and can therefore be
+ * listened for on the FormPanel itself:
+ * 
+ * - {@link Ext.form.Basic#beforeaction beforeaction}
+ * - {@link Ext.form.Basic#actionfailed actionfailed}
+ * - {@link Ext.form.Basic#actioncomplete actioncomplete}
+ * - {@link Ext.form.Basic#validitychange validitychange}
+ * - {@link Ext.form.Basic#dirtychange dirtychange}
+ * 
+ * # Field Defaults
+ * 
+ * The {@link #fieldDefaults} config option conveniently allows centralized configuration of default values
+ * for all fields added as descendants of the FormPanel. Any config option recognized by implementations
+ * of {@link Ext.form.Labelable} may be included in this object. See the {@link #fieldDefaults} documentation
+ * for details of how the defaults are applied.
+ * 
+ * # Form Validation
+ * 
+ * With the default configuration, form fields are validated on-the-fly while the user edits their values.
+ * This can be controlled on a per-field basis (or via the {@link #fieldDefaults} config) with the field
+ * config properties {@link Ext.form.field.Field#validateOnChange} and {@link Ext.form.field.Base#checkChangeEvents},
+ * and the FormPanel's config properties {@link #pollForChanges} and {@link #pollInterval}.
+ * 
+ * Any component within the FormPanel can be configured with `formBind: true`. This will cause that
+ * component to be automatically disabled when the form is invalid, and enabled when it is valid. This is most
+ * commonly used for Button components to prevent submitting the form in an invalid state, but can be used on
+ * any component type.
+ * 
+ * For more information on form validation see the following:
+ * 
+ * - {@link Ext.form.field.Field#validateOnChange}
+ * - {@link #pollForChanges} and {@link #pollInterval}
+ * - {@link Ext.form.field.VTypes}
+ * - {@link Ext.form.Basic#doAction BasicForm.doAction clientValidation notes}
+ * 
+ * # Form Submission
+ * 
+ * By default, Ext Forms are submitted through Ajax, using {@link Ext.form.action.Action}. See the documentation for
+ * {@link Ext.form.Basic} for details.
+ *
+ * # Example usage
+ * 
+ *     @example
+ *     Ext.create('Ext.form.Panel', {
+ *         title: 'Simple Form',
+ *         bodyPadding: 5,
+ *         width: 350,
+ * 
+ *         // The form will submit an AJAX request to this URL when submitted
+ *         url: 'save-form.php',
+ * 
+ *         // Fields will be arranged vertically, stretched to full width
+ *         layout: 'anchor',
+ *         defaults: {
+ *             anchor: '100%'
+ *         },
+ * 
+ *         // The fields
+ *         defaultType: 'textfield',
+ *         items: [{
+ *             fieldLabel: 'First Name',
+ *             name: 'first',
+ *             allowBlank: false
+ *         },{
+ *             fieldLabel: 'Last Name',
+ *             name: 'last',
+ *             allowBlank: false
+ *         }],
+ * 
+ *         // Reset and Submit buttons
+ *         buttons: [{
+ *             text: 'Reset',
+ *             handler: function() {
+ *                 this.up('form').getForm().reset();
+ *             }
+ *         }, {
+ *             text: 'Submit',
+ *             formBind: true, //only enabled once the form is valid
+ *             disabled: true,
+ *             handler: function() {
+ *                 var form = this.up('form').getForm();
+ *                 if (form.isValid()) {
+ *                     form.submit({
+ *                         success: function(form, action) {
+ *                            Ext.Msg.alert('Success', action.result.msg);
+ *                         },
+ *                         failure: function(form, action) {
+ *                             Ext.Msg.alert('Failed', action.result.msg);
+ *                         }
+ *                     });
+ *                 }
+ *             }
+ *         }],
+ *         renderTo: Ext.getBody()
+ *     });
  *
- * # Ext JS 4 SpreadSheet panels
- *
- * The grid panel class ist the most important class of Ext JS 4 Spreadsheet component.
- * You can configure all features of a Spreadsheet through the configuration of an instance of Spread.grid.Panel.
- *
- * ## A Simple Spreadsheet
- *
- * A very simple Spreadsheet example is:
- *
- * &lt;code&gt;
- *     // Creating an instance of the Spreadsheet's grid panel
- *     var spreadPanel = new Spread.grid.Panel({
-
-         // Like all grids, a Spreadsheet grid also needs a store
-         store: dataStore,
-
-         // Configure visible grid columns
-         columns: [{
-             header: 'First name',
-             dataIndex: 'firstname',
-
-             // Lets disable selection for first column
-             selectable: false
-         }, {
-             header: 'Last name',
-             renderer: function(value) {
-                 return '&lt;b&gt;' + value + '&lt;/b&gt;';
-             },
-             dataIndex: 'lastname'
-         }]
-     });
-
- * &lt;/code&gt;
- *
- * ## Anatomy of a Spreadsheet
- *
- * A Spreadsheet itself consists of three main classes:
- * &lt;ul&gt;
- *     &lt;li&gt;
- *         &lt;u&gt;The Panel:&lt;/u&gt; &lt;code&gt;Spread.grid.Panel&lt;/code&gt;&lt;br /&gt;
- *         &lt;br /&gt;
- *         This is the master class of a Spreadsheet. All configuration belongs to this class.
- *         Except the View class, you don't need to know about the internals of the other classes
- *         nor their config options and events because every config option and every event is
- *         relayed to the grid panel class itself.&lt;br /&gt;
- *         &lt;br /&gt;
- *         Note: After instantiation of a grid, it's possible to access the View and Selection Model instances
- *         by calling &lt;code&gt;gridPanelInstance.getView()&lt;/code&gt; and &lt;code&gt;gridPanelInstance.getSelectionModel()&lt;/code&gt;.
- *         &lt;br /&gt;
- *         &lt;br /&gt;
- *         xtype: &lt;code&gt;spread&lt;/code&gt;
- *         &lt;br /&gt;
- *         &lt;br /&gt;
- *     &lt;/li&gt;
- *     &lt;li&gt;
- *         &lt;u&gt;The View:&lt;/u&gt; &lt;code&gt;Spread.grid.View&lt;/code&gt;&lt;br /&gt;
- *         &lt;br /&gt;
- *         The view class extends a standard Ext.grid.View. It implements method to renders all spreadsheet-specific UI
- *         elements. It also handles all UI specific events for focusing and selecting cells.
- *
- *         The view of a Spreadsheet comes with it's own plugin architecture.
- *         Features like Spread.grid.plugin.Editable, Spread.grid.plugin.Copyable and Spread.grid.plugin.Pasteable
- *         are loosely coupled with the view instance itself. By default, you never need to care about them, because:
- *         &lt;br /&gt;
- *         - All config options of the grid view are available via the grid panel's &lt;code&gt;viewConfig&lt;/code&gt; object too&lt;br /&gt;
- *         - All view class events are available through the grid panel class too
- *         &lt;br /&gt;
- *         &lt;br /&gt;
- *         xtype: &lt;code&gt;spreadview&lt;/code&gt;
- *         &lt;br /&gt;
- *         &lt;br /&gt;
- *     &lt;/li&gt;
- *     &lt;li&gt;
- *         &lt;u&gt;The Selection Model:&lt;/u&gt; &lt;code&gt;Spread.selection.RangeModel&lt;/code&gt;&lt;br /&gt;
- *         &lt;br /&gt;
- *         The selection model implements all the logic (key/mouse navigation, key/mouse selection) required for
- *         making focusing and selection feels like using a native spreadsheet application.
- *
- *         By default, you never need to care about the selection model, because:&lt;br /&gt;
- *         - All config options of this selection model are available through on the grid panel class too&lt;br /&gt;
- *         - All selecton model events are available on the grid panel class too
- *         &lt;br /&gt;
- *         &lt;br /&gt;
- *         xtype: &lt;code&gt;range&lt;/code&gt;
- *         &lt;br /&gt;
- *         &lt;br /&gt;
- *     &lt;/li&gt;
- * &lt;/ul&gt;
- *
- * ## Grid view customization
- *
- * Like in any standard Ext JS grid you can customize the configuration of the grid's view using the &lt;code&gt;viewConfig&lt;/code&gt;
- * configuration option:
- *
- * &lt;code&gt;
-
-       ...
-       // A config, relayed to Spread.grid.View.
-       // Shows
-       viewConfig: {
-           stripeRows: true
-       },
-      ...
-
-   &lt;/code&gt;
- *
- * ## Using the special header column &lt;code&gt;Spread.grid.column.Header&lt;/code&gt;
- *
- * Next to all standard grid columns you can configure a spreadsheet to contain one or more spreadsheet header columns.
- * Header columns are non-selectable and non-editable and belong to the dataIndex 'id' by default.
- *
- * Like any other grid column, add the spreadheadercolumn instance configuration(s) to the Grid panel's column-configuration:
- *
- * &lt;code&gt;
-
-       ...
-
-       columns: [{
-            xtype: 'spreadheadercolumn',
-            header: 'ID',
-            dataIndex: 'id' // default value
-       }, ...],
-
-       ...
-
-   &lt;/code&gt;
- *
- * &lt;br /&gt;
- *
- * xtype: &lt;code&gt;spreadheadercolumn&lt;/code&gt;
- *
- * ## Customizing grid cell selection: &lt;code&gt;Spread.selection.RangeModel&lt;/code&gt;
- *
- * The special Range Selection Model that comes with Ext JS 4 SpreadSheet is the heart of the SpreadSheet implementation.
- * It implements the logic behind the native-like feeling when using the SpreadSheet grid. There are two configurations
- * possible then configuring the selection model:
- *
- * &lt;ul&gt;
- *     &lt;li&gt;&lt;code&gt;autoFocusRootPosition&lt;/code&gt; (default: true) &amp;ndash; Automatically focuses the top- and -left-most cell which is selectable after view rendering&lt;/li&gt;
- *     &lt;li&gt;&lt;code&gt;enableKeyNav&lt;/code&gt; (default: true) &amp;ndash; En-/disabled the navigation using arrow keys, shift key + arrow keys&lt;/li&gt;
- * &lt;/ul&gt;
- *
- * You can simply set these both options on the grid panel instance.
- *
- * ### Disabling selection of cells of specific columns
- *
- * If you'd like to disable the cells of a column from being selected by the user, just set the &lt;code&gt;selectable&lt;/code&gt; flag to &lt;code&gt;false&lt;/code&gt;.
- *
-   &lt;code&gt;
-       ...
-       columns: [{
-           header: 'Firstname',
-           dataIndex: 'firstname',
-           selectable: false,
-           ...
-       }, ...],
-       ...
-   &lt;/code&gt;
- *
- * &lt;strong&gt;Note: Instead of header columns, all columns in a spreadsheet grid are selectable by  because of &lt;code&gt;Spread.grid.overrides.Column&lt;/code&gt;.&lt;/strong&gt;
- *
- * &lt;br /&gt;
- *
- * xtype: &lt;code&gt;range&lt;/code&gt;
- *
- * ## Editing of cells data using &lt;code&gt;Spread.grid.plugin.Editing&lt;/code&gt;
- *
- * Cells of Ext JS 4 SpreadSheet can be edited like a standard Ext JS 4 grid. To gain a look and feel like using a
- * native spreadsheet application, there is a special plaintext editor getting active when start typing or double-clicking
- * on a grid cell. &lt;strong&gt;There is currently no support for Ext JS editor fields&lt;/strong&gt; for the gain of being consistent
- * with the native spreadsheet look &amp; feel.
- *
- * ### En-/disabling grid cell editing of the whole grid
- *
- * You can enable or disable grid editing on configuration time by setting the &lt;code&gt;editable&lt;/code&gt; config option:
- *
- * &lt;code&gt;
-       ...
-       editable: false,
-       ...
-   &lt;/code&gt;
- *
- * After instantiation (at runtime), you can access the SpreadSheet grid panel instance (e.g. using &lt;code&gt;Ext.getCmp(...)&lt;/code&gt;)
- * and call the method &lt;code&gt;setEditable((Boolean) isEditable)&lt;/code&gt; to en-/disable editing at runtime:
- *
- * &lt;code&gt;
-
-       Ext.getCmp('$gridPanelId').setEditable(false);
-
-   &lt;/code&gt;
- *
- * &lt;strong&gt;Note: Disabling editing mode globally means that editing gets disabled on all columns, ignoring what you
- * configured for the columns before. Enabling edit mode globally means that editing gets enabled only on those
- * columns, editing was enabled by configuration.&lt;/strong&gt;
- *
- * ### Disabling editing of cells of specific columns
- *
- * If you'd like to disable editing of cell data for a column, just set the &lt;code&gt;editable&lt;/code&gt; flag to &lt;code&gt;false&lt;/code&gt;.
- *
-   &lt;code&gt;
-       ...
-       columns: [{
-           header: 'Firstname',
-           dataIndex: 'firstname',
-           editable: false,
-           ...
-       }, ...],
-       ...
-   &lt;/code&gt;
- *
- * &lt;strong&gt;Note: Instead of header columns, all columns in a spreadsheet grid are editable by default because of &lt;code&gt;Spread.grid.overrides.Column&lt;/code&gt;.&lt;/strong&gt;
- *
- * ### Colorization of editable cells
- *
- * Ext JS 4 SpreadSheet has a special feature to colorize the cell background of cells, which are editable.
- * By default this color is light yellow (see &quot;Special Styling (CSS)&quot; section if you'd like to change this).
- * You can en-/disable this feature by setting the &lt;code&gt;enableEditModeStyling&lt;/code&gt; config
- * option in grid panel configuration:
- *
- * &lt;code&gt;
-       ...
-       enableEditModeStyling: true, // default value
-       ...
-   &lt;/code&gt;
- *
- * &lt;strong&gt;Note that &lt;code&gt;editModeStyling&lt;/code&gt; can cause problems when using special cell background colors.&lt;/strong&gt;
- *
- * ### Advanced editing configuration
- *
- * The editing plugin features several configuration options. If you'd like to change the editing behaviour, instantiate
- * the grid panel with &lt;strong&gt;a configured instance&lt;/strong&gt; of &lt;code&gt;Spread.grid.plugin.Editing&lt;/code&gt; like shown below:
- *
- * &lt;code&gt;
-
-       ...
-
-       editablePluginInstance: Ext.create('Spread.grid.plugin.Editable', {
-           editModeStyling: false, // disallows edit mode styling even if activated on columns
-           ...
-       }),
-
-       ...
-
-   &lt;/code&gt;
- *
- * ## Cell data pre-processor functions
- *
- * Every column in a spreadsheet grid panel can be configured to use a custom getter and setter function
- * to read data from the record to be displayed or copied (reader function) or to pre-process pasted data
- * or edited values before getting written to a data record (writer function).
- *
- * ### Column based cell reader function
- *
- * Registering a cell data reader hook is easy. Simply set the &lt;code&gt;cellreader&lt;/code&gt; property to a function:
- *
- * &lt;code&gt;
-       ...
-       columns: [{
-           header: 'Firstname',
-           dataIndex: 'firstname',
-           cellreader: function(value, position) {
-               // transform cell data value here...
-               return value;
-           }
-           ...
-       }, ...],
-       ...
-   &lt;/code&gt;
- *
- * As you can see, the reader function gets called with two arguments:
- *
- * &lt;ul&gt;
- *     &lt;li&gt; &lt;code&gt;value&lt;/code&gt; &amp;ndash; The data value read from cell data record field&lt;/li&gt;
- *     &lt;li&gt; &lt;code&gt;position Spread.selection.Position&lt;/code&gt; &amp;ndash; The cell's position&lt;/li&gt;
- * &lt;/ul&gt;
- *
- * &lt;strong&gt;The return value will be used for rendering cell data, value to be used in cell editor, copying cell data.&lt;/strong&gt;
- *
- * ### Column based cell writer function
- *
- * Simply set the &lt;code&gt;cellwriter&lt;/code&gt; property to a function:
- *
- * &lt;code&gt;
-       ...
-       columns: [{
-           header: 'Firstname',
-           dataIndex: 'firstname',
-           cellwriter: function(newValue, position) {
-               // pre-process new cell data value here before it's getting written to the data record...
-               return newValue;
-           }
-           ...
-       }, ...],
-       ...
-   &lt;/code&gt;
- *
- * As you can see, the writer function gets called with two arguments:
- *
- * &lt;ul&gt;
- *     &lt;li&gt; &lt;code&gt;newValue&lt;/code&gt; &amp;ndash; The data value to be written to the cell data record field&lt;/li&gt;
- *     &lt;li&gt; &lt;code&gt;position Spread.selection.Position&lt;/code&gt; &amp;ndash; The cell's position&lt;/li&gt;
- * &lt;/ul&gt;
- *
- * &lt;strong&gt;The return value will be used to be written to the data record.
- * The new value may be supplied by pasting data into the cell or field editor.&lt;/strong&gt;
- *
- * ## Auto-Committing of cell data on edit/paste
- *
- * When cell data gets changed by editing or pasting data the underlaying grid row's store record can be automatically
- * changed when auto-committing is enabled on the column and the grid panel. This prevents the red arrow dirty marker
- * from being displayed.
- *
- * Auto-committing of cell data is disabled by default on the grid panel but enabled on each grid column by default.
- * This means that you can enable auto-committing easily and globally by setting the &lt;code&gt;autoCommit&lt;/code&gt; config
- * option to &lt;code&gt;true&lt;/code&gt; on the grid panel instance:
- *
- * &lt;code&gt;
-
-       ...,
-       autoCommit: true,
-       ...
-
-   &lt;/code&gt;
- *
- * ### Disabling auto committing for specific columns
- *
- * To disable auto committing of cell data on the cells of specific columns simply set the &lt;code&gt;autoCommit&lt;/code&gt; config
- * option of a grid column to &lt;code&gt;false&lt;/code&gt;:
- *
- * &lt;code&gt;
-       ...,
-       columns: [{
-           header: 'Lastname',
-           dataIndex: 'lastname',
-           autoCommit: false
-       }, ...],
-       ...
-   &lt;/code&gt;
- *
- * ## Advanced: Event capturing
- *
- * In some special cases you may want to capture spreadsheet grid events to execute custom application code when needed.
- * E.g. you want to execute special logic when a cell gets covered (selection of a cell happened and covering view element
- * has been rendered and placed over the specific cell).
- *
- * For such purpose you may simply add an event listener to the specific grid event using the &lt;code&gt;listeners&lt;/code&gt;
- * configuration option, bind an event handler to the instance using Ext.getCmp(...).on('covercell', function() {...})
- * or use the MVC's controller infrastructure to select a component and bind it's events:
- *
-   &lt;code&gt;
-       ...
-       listeners: {
-
-           // Simple listening to a View's event (relayed)
-           covercell: function() {
-               console.log('External listener to covercell', arguments);
-           }
-       },
-       ...
-   &lt;/code&gt;
- *
- * &lt;strong&gt; Note that any special spreadsheet event fired by sub-components of the grid panel: the grid's view,
- * editable, pasteable and copyable plugin get relayed to the grid panel itself. So you don't need to care about these
- * sub-component instances for event handling.
- *
- * To capture selection model events, call &lt;code&gt;grid.getSelectionModel().on('$selectionModelEventName', function() {...})&lt;/code&gt;.
- * &lt;/strong&gt;
- *
- * ## Advanced: Custom styling
- *
- * Customizing the look of the spreadsheet grid can be accomplished by changing configuration options of the &lt;code&gt;viewConfig&lt;/code&gt;
- * configuration option (see above). But if that doesn't help you may want to override CSS rules to e.g. change the color of the
- * background color when &lt;code&gt;editModeStyling&lt;/code&gt; is enabled. Therefore you would just need to include your own
- * CSS stylesheet file or append a &lt;code&gt;style&lt;/code&gt;-tag to the &lt;code&gt;head&lt;/code&gt;-section of your web page containing something like this:
- *
- * &lt;code&gt;
-
-     .x-grid-row .spreadsheet-cell-editable .x-grid-cell-inner {
-         background-color: #cfffff;
-     }
-
-     .x-grid-row .spreadsheet-cell-editable-dirty .x-grid-cell-inner {
-         background-color: #cfffff;
-         background-image: url(&quot;dirty.gif&quot;);
-         background-position: 0 0;
-         background-repeat: no-repeat;
-     }
-
-   &lt;/code&gt;
- *
- * &lt;strong&gt;Just copy and paste the CSS selectors of resources/spread.css to change the style of your spreadsheet grid.
- * Ensure to prepend your own styling rules.&lt;/strong&gt;
- *
- * ## Advanced: Special copy &amp; paste behaviour customization
- *
- * For fine tuning and in special cases you may want to change the default configuration of the pasteable and copyable
- * plugins of the spreadsheet grid panel. Thanks to the dependency injection architecture of the spreadsheet grid
- * implementation you can simply create your own plugin instance and inject it into the spreadsheet grid panel instance
- * configuration:
- *
- * &lt;code&gt;
-
-       ...
-
-       copyablePluginInstance: Ext.create('Spread.grid.plugin.Copyable', {
-
-           // Overriding a method on instance level to change the keystroke for copying.
-           // Using this it's CTRL+O instead of C but only for this instance of the spreadsheet gird.
-           detectCopyKeyStroke: function(evt) {
-
-              if (evt.getKey() === evt.O &amp;&amp; evt.ctrlKey) {
-                  this.copyToClipboard();
-              }
-          },
-           ...
-       }),
-
-       pasteablePluginInstance: Ext.create('Spread.grid.plugin.Pasteable', {
-           useInternalAPIs: true, // Enabling an experimental feature, much faster but dangerous
-           ...
-       }),
-
-       ...
-
-   &lt;/code&gt;
-
-
-   &lt;code&gt;
-
-        new Spread.grid.Panel({
-
-             title: 'Spreadsheet of users (generated sample data)',
-
-             store: localDataStore,
-
-             // Setting if editing is allowed initially
-             editable: true,
-
-             // Configure visible grid columns
-             columns: [
-                 {
-                     xtype: 'spreadheadercolumn',
-                     header: 'ID'
-                 },
-                 {
-                     header: 'Last name&lt;br&gt;(editable)',
-                     renderer: function (value) {
-                         return '&lt;i&gt;' + value + '&lt;/i&gt;';
-                     },
-                     dataIndex: 'lastname',
-                     flex: 1
-                 },
-                 {
-                     allowedEditKeys: '0123456789.',
-                     header: 'Age&lt;br&gt;(editable)',
-                     dataIndex: 'age',
-                     xtype: 'numbercolumn'
-                 },
-                 {
-                     header: 'Birthday &lt;br&gt;(not editable)',
-                     dataIndex: 'birthday',
-                     xtype: 'datecolumn',
-                     editable: false
-                 }
-             ]
-         })
-    &lt;/code&gt;
  */
-Ext.define('Spread.grid.Panel', {
+Ext.define('Ext.form.Panel', {
+    extend:'Ext.panel.Panel',
+    mixins: {
+        fieldAncestor: 'Ext.form.FieldAncestor'
+    },
+    alias: 'widget.form',
+    alternateClassName: ['Ext.FormPanel', 'Ext.form.FormPanel'],
+    requires: ['Ext.form.Basic', 'Ext.util.TaskRunner'],
 
-    extend: 'Ext.grid.Panel',
-
-    alias: 'widget.spread',
-
-<span id='Spread-grid-Panel-property-viewType'>    // use spread view
-</span>    viewType: 'spreadview',
-
-<span id='Spread-grid-Panel-cfg-autoFocusRootPosition'>    /**
-</span>     * @cfg {Boolean} autoFocusRootPosition
-     * Automatically focuses the root position initially
+<span id='Ext-form-Panel-cfg-pollForChanges'>    /**
+</span>     * @cfg {Boolean} pollForChanges
+     * If set to `true`, sets up an interval task (using the {@link #pollInterval}) in which the
+     * panel's fields are repeatedly checked for changes in their values. This is in addition to the normal detection
+     * each field does on its own input element, and is not needed in most cases. It does, however, provide a
+     * means to absolutely guarantee detection of all changes including some edge cases in some browsers which
+     * do not fire native events. Defaults to `false`.
      */
-    autoFocusRootPosition: true,
 
-<span id='Spread-grid-Panel-cfg-enableKeyNav'>    /**
-</span>     * @cfg {Boolean} enableKeyNav
-     * Turns on/off keyboard navigation within the grid.
+<span id='Ext-form-Panel-cfg-pollInterval'>    /**
+</span>     * @cfg {Number} pollInterval
+     * Interval in milliseconds at which the form's fields are checked for value changes. Only used if
+     * the {@link #pollForChanges} option is set to `true`. Defaults to 500 milliseconds.
      */
-    enableKeyNav: true,
 
-<span id='Spread-grid-Panel-cfg-editable'>    /**
-</span>     * @cfg {Boolean} editable
-     * Configures if the grid is in edit mode initially
+<span id='Ext-form-Panel-cfg-layout'>    /**
+</span>     * @cfg {String} layout
+     * The {@link Ext.container.Container#layout} for the form panel's immediate child items.
+     * Defaults to `'anchor'`.
      */
-    editable: true,
+    layout: 'anchor',
 
-<span id='Spread-grid-Panel-cfg-autoCommit'>    /**
-</span>     * @cfg {Boolean} autoCommit
-     * Automatically commit changed records or wait for manually store.sync() / record.commit()?
-     * (Generally, can be specially configured per column config too)
-     */
-    autoCommit: false,
+<span id='Ext-form-Panel-property-ariaRole'>    ariaRole: 'form',
+</span>    
+<span id='Ext-form-Panel-property-basicFormConfigs'>    basicFormConfigs: [
+</span>        'api', 
+        'baseParams', 
+        'errorReader', 
+        'method', 
+        'paramOrder',
+        'paramsAsHash',
+        'reader',
+        'standardSubmit',
+        'timeout',
+        'trackResetOnLoad',
+        'url',
+        'waitMsgTarget',
+        'waitTitle'
+    ],
 
-<span id='Spread-grid-Panel-cfg-editModeStyling'>    /**
-</span>     * @cfg {Boolean} editModeStyling
-     * Allows to style the cells when in edit mode
-     */
-    editModeStyling: true,
+<span id='Ext-form-Panel-method-initComponent'>    initComponent: function() {
+</span>        var me = this;
 
-<span id='Spread-grid-Panel-property-columnLines'>    // Show column lines by default
-</span>    columnLines: true,
+        if (me.frame) {
+            me.border = false;
+        }
 
-    // Internal flag
-    //stripeRows: false,
+        me.initFieldAncestor();
+        me.callParent();
 
-<span id='Spread-grid-Panel-cfg-editablePluginInstance'>    /**
-</span>     * @cfg {Spread.grid.plugin.Editable}
-     * Configured instance of an Spread.grid.plugin.Editable plugin.
-     * To change the configuration of the plugin, you may just assign your own configured instance here.
-     */
-    editablePluginInstance: Ext.create('Spread.grid.plugin.Editable', {
-    }),
-
-<span id='Spread-grid-Panel-cfg-copyablePluginInstance'>    /**
-</span>     * @cfg {Spread.grid.plugin.Copyable}
-     * Configured instance of an Spread.grid.plugin.Copyable plugin.
-     * To change the configuration of the plugin, you may just assign your own configured instance here.
-     */
-    copyablePluginInstance: Ext.create('Spread.grid.plugin.Copyable', {
-    }),
-
-<span id='Spread-grid-Panel-cfg-pasteablePluginInstance'>    /**
-</span>     * @cfg {Spread.grid.plugin.Pasteable}
-     * Configured instance of an Spread.grid.plugin.Pasteable plugin.
-     * To change the configuration of the plugin, you may just assign your own configured instance here.
-     */
-    pasteablePluginInstance: Ext.create('Spread.grid.plugin.Pasteable', {
-    }),
-
-<span id='Spread-grid-Panel-method-constructor'>    /**
-</span>     * Pre-process the column configuration to avoid incompatibilities
-     * @return void
-     */
-    constructor: function(config) {
-
-        var me = this;
-
-        // Add events
-        this.addEvents(
-
-<span id='Spread-grid-Panel-event-beforecovercell'>            /**
-</span>             * @event beforecovercell
-             * @inheritdoc Spread.grid.View#beforecovercell
+        me.relayEvents(me.form, [
+<span id='Ext-form-Panel-event-beforeaction'>            /**
+</span>             * @event beforeaction
+             * @inheritdoc Ext.form.Basic#beforeaction
              */
-            'beforecovercell',
-
-<span id='Spread-grid-Panel-event-covercell'>            /**
-</span>             * @event covercell
-             * @inheritdoc Spread.grid.View#covercell
+            'beforeaction',
+<span id='Ext-form-Panel-event-actionfailed'>            /**
+</span>             * @event actionfailed
+             * @inheritdoc Ext.form.Basic#actionfailed
              */
-            'covercell',
-
-
-<span id='Spread-grid-Panel-event-beforehighlightcells'>            /**
-</span>             * @event beforehighlightcells
-             * @inheritdoc Spread.grid.View#beforehighlightcells
+            'actionfailed',
+<span id='Ext-form-Panel-event-actioncomplete'>            /**
+</span>             * @event actioncomplete
+             * @inheritdoc Ext.form.Basic#actioncomplete
              */
-            'beforehighlightcells',
-
-<span id='Spread-grid-Panel-event-beforehighlightcells'>            /**
-</span>             * @event beforehighlightcells
-             * @inheritdoc Spread.grid.View#beforehighlightcells
+            'actioncomplete',
+<span id='Ext-form-Panel-event-validitychange'>            /**
+</span>             * @event validitychange
+             * @inheritdoc Ext.form.Basic#validitychange
              */
-            'highlightcells',
-
-<span id='Spread-grid-Panel-event-beforeeditfieldblur'>            /**
-</span>             * @event beforeeditfieldblur
-             * @inheritdoc Spread.grid.View#beforeeditfieldblur
+            'validitychange',
+<span id='Ext-form-Panel-event-dirtychange'>            /**
+</span>             * @event dirtychange
+             * @inheritdoc Ext.form.Basic#dirtychange
              */
-            'beforeeditfieldblur',
-
-<span id='Spread-grid-Panel-event-editfieldblur'>            /**
-</span>             * @event editfieldblur
-             * @inheritdoc Spread.grid.View#editfieldblur
-             */
-            'editfieldblur',
-
-<span id='Spread-grid-Panel-event-beforecoverdblclick'>            /**
-</span>             * @event beforecoverdblclick
-             * @inheritdoc Spread.grid.View#beforecoverdblclick
-             */
-            'beforecoverdblclick',
-
-<span id='Spread-grid-Panel-event-coverdblclick'>            /**
-</span>             * @event coverdblclick
-             * @inheritdoc Spread.grid.View#coverdblclick
-             */
-            'coverdblclick',
-
-<span id='Spread-grid-Panel-event-beforecoverkeypressed'>            /**
-</span>             * @event beforecoverkeypressed
-             * @inheritdoc Spread.grid.View#beforecoverkeypressed
-             */
-            'beforecoverkeypressed',
-
-<span id='Spread-grid-Panel-event-coverkeypressed'>            /**
-</span>             * @event coverkeypressed
-             * @inheritdoc Spread.grid.View#coverkeypressed
-             */
-            'coverkeypressed',
-
-<span id='Spread-grid-Panel-event-beforeeditingenabled'>            /**
-</span>             * @event beforeeditingenabled
-             * @inheritdoc Spread.grid.View#beforeeditingenabled
-             */
-            'beforeeditingenabled',
-
-<span id='Spread-grid-Panel-event-editingenabled'>            /**
-</span>             * @event editingenabled
-             * @inheritdoc Spread.grid.View#editingenabled
-             */
-            'editingenabled',
-
-<span id='Spread-grid-Panel-event-beforeeditingdisabled'>            /**
-</span>             * @event beforeeditingdisabled
-             * @inheritdoc Spread.grid.View#beforeeditingdisabled
-             */
-            'beforeeditingdisabled',
-
-<span id='Spread-grid-Panel-event-editingdisabled'>            /**
-</span>             * @event editingdisabled
-             * @inheritdoc Spread.grid.View#editingdisabled
-             */
-            'editingdisabled',
-
-<span id='Spread-grid-Panel-event-beforecopy'>            /**
-</span>             * @event beforecopy
-             * @inheritdoc Spread.grid.View#beforecopy
-             */
-            'beforecopy',
-
-<span id='Spread-grid-Panel-event-copy'>            /**
-</span>             * @event copy
-             * @inheritdoc Spread.grid.View#copy
-             */
-            'copy',
-
-<span id='Spread-grid-Panel-event-beforepaste'>            /**
-</span>             * @event beforepaste
-             * @inheritdoc Spread.grid.View#beforepaste
-             */
-            'beforepaste',
-
-<span id='Spread-grid-Panel-event-paste'>            /**
-</span>             * @event paste
-             * @inheritdoc Spread.grid.View#paste
-             */
-            'paste'
-        );
-
-        // Manage the view config instance configuration
-        me.manageViewConfig(config);
-
-        // Manage the selection model instance configuration
-        me.manageSelectionModelConfig(config);
-
-        me.callParent(arguments);
-
-        // Relay events of view
-        me.relayEvents(me.getView(), [
-            'beforecovercell',
-            'covercell',
-            'beforehighlightcells',
-            'highlightcells',
-            'beforeeditfieldblur',
-            'editfieldblur',
-            'beforecoverdblclick',
-            'coverdblclick',
-            'beforecoverkeypressed',
-            'coverkeypressed',
-            'beforeeditingenabled',
-            'editingenabled',
-            'beforeeditingdisabled',
-            'editingdisabled',
-            'beforecopy',
-            'copy',
-            'beforepaste',
-            'paste'
+            'dirtychange'
         ]);
 
-        // Just relay autoCommit flag to pastable plugin
-        if (me.pasteablePluginInstance) {
-            me.pasteablePluginInstance.autoCommit = me.autoCommit;
+        // Start polling if configured
+        if (me.pollForChanges) {
+            me.startPolling(me.pollInterval || 500);
         }
+    },
 
-        // View refresh
-        me.getView().on('viewready', function() {
+<span id='Ext-form-Panel-method-initItems'>    initItems: function() {
+</span>        // Create the BasicForm
+        var me = this;
 
-            // Handle edit mode initially
-            me.setEditable(me.editable);
+        me.form = me.createForm();
+        me.callParent();
+    },
 
-            // Set edit mode styling
-            me.setEditModeStyling(me.editModeStyling);
+<span id='Ext-form-Panel-method-afterFirstLayout'>    // Initialize the BasicForm after all layouts have been completed.
+</span>    afterFirstLayout: function() {
+        this.callParent();
+        this.form.initialize();
+    },
+
+<span id='Ext-form-Panel-method-createForm'>    /**
+</span>     * @private
+     */
+    createForm: function() {
+        var cfg = {},
+            props = this.basicFormConfigs,
+            len = props.length,
+            i = 0,
+            prop;
+            
+        for (; i &lt; len; ++i) {
+            prop = props[i];
+            cfg[prop] = this[prop];
+        }
+        return new Ext.form.Basic(this, cfg);
+    },
+
+<span id='Ext-form-Panel-method-getForm'>    /**
+</span>     * Provides access to the {@link Ext.form.Basic Form} which this Panel contains.
+     * @return {Ext.form.Basic} The {@link Ext.form.Basic Form} which this Panel contains.
+     */
+    getForm: function() {
+        return this.form;
+    },
+
+<span id='Ext-form-Panel-method-loadRecord'>    /**
+</span>     * Loads an {@link Ext.data.Model} into this form (internally just calls {@link Ext.form.Basic#loadRecord})
+     * See also {@link Ext.form.Basic#trackResetOnLoad trackResetOnLoad}.
+     * @param {Ext.data.Model} record The record to load
+     * @return {Ext.form.Basic} The Ext.form.Basic attached to this FormPanel
+     */
+    loadRecord: function(record) {
+        return this.getForm().loadRecord(record);
+    },
+
+<span id='Ext-form-Panel-method-getRecord'>    /**
+</span>     * Returns the currently loaded Ext.data.Model instance if one was loaded via {@link #loadRecord}.
+     * @return {Ext.data.Model} The loaded instance
+     */
+    getRecord: function() {
+        return this.getForm().getRecord();
+    },
+
+<span id='Ext-form-Panel-method-getValues'>    /**
+</span>     * Convenience function for fetching the current value of each field in the form. This is the same as calling
+     * {@link Ext.form.Basic#getValues this.getForm().getValues()}.
+     *
+     * @inheritdoc Ext.form.Basic#getValues
+     */
+    getValues: function(asString, dirtyOnly, includeEmptyText, useDataValues) {
+        return this.getForm().getValues(asString, dirtyOnly, includeEmptyText, useDataValues);
+    },
+
+<span id='Ext-form-Panel-method-beforeDestroy'>    beforeDestroy: function() {
+</span>        this.stopPolling();
+        this.form.destroy();
+        this.callParent();
+    },
+
+<span id='Ext-form-Panel-method-load'>    /**
+</span>     * This is a proxy for the underlying BasicForm's {@link Ext.form.Basic#load} call.
+     * @param {Object} options The options to pass to the action (see {@link Ext.form.Basic#load} and
+     * {@link Ext.form.Basic#doAction} for details)
+     */
+    load: function(options) {
+        this.form.load(options);
+    },
+
+<span id='Ext-form-Panel-method-submit'>    /**
+</span>     * This is a proxy for the underlying BasicForm's {@link Ext.form.Basic#submit} call.
+     * @param {Object} options The options to pass to the action (see {@link Ext.form.Basic#submit} and
+     * {@link Ext.form.Basic#doAction} for details)
+     */
+    submit: function(options) {
+        this.form.submit(options);
+    },
+
+<span id='Ext-form-Panel-method-startPolling'>    /**
+</span>     * Start an interval task to continuously poll all the fields in the form for changes in their
+     * values. This is normally started automatically by setting the {@link #pollForChanges} config.
+     * @param {Number} interval The interval in milliseconds at which the check should run.
+     */
+    startPolling: function(interval) {
+        this.stopPolling();
+        var task = new Ext.util.TaskRunner(interval);
+        task.start({
+            interval: 0,
+            run: this.checkChange,
+            scope: this
         });
+        this.pollTask = task;
     },
 
-<span id='Spread-grid-Panel-method-initComponent'>    /**
-</span>     * @protected
-     * Initialize the columns before rendering them
+<span id='Ext-form-Panel-method-stopPolling'>    /**
+</span>     * Stop a running interval task that was started by {@link #startPolling}.
      */
-    initComponent: function() {
-
-        //console.log('cols? ', this.columns);
-
-        // Initialize columns
-        this.initColumns();
-
-        return this.callParent(arguments);
-    },
-
-<span id='Spread-grid-Panel-method-initColumns'>    /**
-</span>     * @protected
-     * Initializes the columns by referencing the view onto them
-     * @return void
-     */
-    initColumns: function() {
-
-        //console.log('gridColumns', this.columns);
-
-        // Assign the plugin to the columns too
-        for (var j=0; j&lt;this.columns.length; j++) {
-
-            // Reference the view on each column
-            this.columns[j].view = this;
-
-            // And set panel edit mode styleing
-            this.columns[j].initialPanelEditModeStyling = this.editModeStyling;
+    stopPolling: function() {
+        var task = this.pollTask;
+        if (task) {
+            task.stopAll();
+            delete this.pollTask;
         }
     },
 
-<span id='Spread-grid-Panel-method-manageViewConfig'>    /**
-</span>     * @protected
-     * Pays attention to the fact that the developer could define an own viewConfig,
-     * so we need to merge-in our spreadPlugins array (apply the defaults)
-     * @param {Object} config Grid config object
-     * @return void
+<span id='Ext-form-Panel-method-checkChange'>    /**
+</span>     * Forces each field within the form panel to
+     * {@link Ext.form.field.Field#checkChange check if its value has changed}.
      */
-    manageViewConfig: function(config) {
+    checkChange: function() {
+        var fields = this.form.getFields().items,
+            f,
+            fLen   = fields.length,
+            field;
 
-        var me = this, initSpreadPlugins = function(config) {
-
-            // Init plugins array
-            config.viewConfig.spreadPlugins = [];
-
-            // Add default plugins
-            config.viewConfig.spreadPlugins.push(
-                me.editablePluginInstance,
-                me.copyablePluginInstance,
-                me.pasteablePluginInstance
-            );
-        };
-
-        // User specified it's on viewConfig
-        if (config.viewConfig) {
-
-            // Maintain merging of spreadPlugins viewConfig section
-            if (config.viewConfig.spreadPlugins &amp;&amp; Ext.isArray(config.viewConfig.spreadPlugins)) {
-
-                // Merges a plugin into spreadPlugins array if forgotten to be defined
-                var pluginCheckMerge = function(classRef, pluginConfig) {
-
-                    var pluginFound = false;
-
-                    // Search for configured plugin
-                    for (var i=0; i&lt;config.viewConfig.spreadPlugins.length; i++) {
-                        if (config.viewConfig.spreadPlugins[i] instanceof classRef) {
-                            pluginFound = true;
-                        }
-                    }
-
-                    if (!pluginFound) {
-                        config.viewConfig.spreadPlugins.push(pluginConfig);
-                    }
-                };
-
-                // Add plugins, forgotten by developer
-                pluginCheckMerge(Spread.grid.plugin.Editable, this.editablePluginInstance);
-                pluginCheckMerge(Spread.grid.plugin.Copyable, this.copyablePluginInstance);
-                pluginCheckMerge(Spread.grid.plugin.Pasteable, this.pasteablePluginInstance);
-
-            } else {
-
-                // Initialize
-                initSpreadPlugins(config);
-            }
-
-            // Lazy apply stripeRows config
-            if (Ext.isDefined(config.viewConfig.stripeRows)) {
-                config.viewConfig.stripeRows = config.viewConfig.stripeRows;
-            } else {
-                config.viewConfig.stripeRows = this.stripeRows;
-            }
-
-        } else {
-
-            // Init the view config object
-            config.viewConfig = {};
-
-            // Initialize
-            initSpreadPlugins(config);
+        for (f = 0; f &lt; fLen; f++) {
+            fields[f].checkChange();
         }
-
-        // console.log('viewConfig', config.viewConfig);
-    },
-
-<span id='Spread-grid-Panel-method-manageSelectionModelConfig'>    /**
-</span>     * @protected
-     * Simply merges the selection model specific options into the selModel configuration dynamically.
-     * @param {Object} config Grid config object
-     * @return void
-     */
-    manageSelectionModelConfig: function(config) {
-
-        var selModelConfig = {
-            selType: 'range'
-        };
-
-        // Apply autoFocusRootPosition
-        if (Ext.isDefined(config.autoFocusRootPosition)) {
-            selModelConfig.autoFocusRootPosition = config.autoFocusRootPosition;
-        } else {
-            selModelConfig.autoFocusRootPosition = this.autoFocusRootPosition;
-        }
-
-        // Apply enableKeyNav
-        if (Ext.isDefined(config.enableKeyNav)) {
-            selModelConfig.enableKeyNav = config.enableKeyNav;
-        } else {
-            selModelConfig.enableKeyNav = this.enableKeyNav;
-        }
-
-        //console.log('selModelConfig', selModelConfig);
-
-        // Assign selection model instance
-        this.selModel = selModelConfig;
-    },
-
-<span id='Spread-grid-Panel-method-setEditable'>    /**
-</span>     * Enables/Disables editing grid-wide (overriding the column configuration at runtime)
-     * @param {Boolean} allowEditing Is editing allowed?
-     * @return void
-     */
-    setEditable: function(allowEditing) {
-
-        // Set internal flag
-        this.editable = allowEditing;
-
-        // Call the editable plugin to handle edit mode switch
-        if (this.getView().editable &amp;&amp; this.getView().editable.setDisabled) {
-
-            // Set editable disabled on plugin instance
-            this.getView().editable.setDisabled(this.editable);
-
-            // Set autoCommit flag
-            this.getView().editable.autoCommit = this.autoCommit;
-
-        } else {
-            throw &quot;You want the grid to be editable, but editing plugin isn't activated!&quot;;
-        }
-    },
-
-<span id='Spread-grid-Panel-method-setEditModeStyling'>    /**
-</span>     * Enables/Disables the edit mode styling on the whole grid
-     * @param {Boolean} editModeStyling Allow edit mode styling?
-     * @return void
-     */
-    setEditModeStyling: function(editModeStyling) {
-
-        // Set internal flag
-        this.editModeStyling = editModeStyling;
-
-        // Call the editable plugin to handle edit mode style switch
-        if (this.getView().editable &amp;&amp; this.getView().editable.displayCellsEditing) {
-
-            // Set flag
-            this.getView().editable.editModeStyling = this.editModeStyling;
-
-            // Re-render cells
-            if (this.editModeStyling &amp;&amp; this.editable) {
-
-                // Render editable and styled
-                this.getView().editable.displayCellsEditing(true);
-
-            } else {
-
-                // Render un-styled
-                this.getView().editable.displayCellsEditing(false);
-            }
-
-
-        } else {
-            throw &quot;You want the grid to change it's edit mode styling, but editing plugin isn't activated!&quot;;
-        }
-    },
-
-<span id='Spread-grid-Panel-method-isEditable'>    /**
-</span>     * Returns true if grid is in edit mode
-     * @return {Boolean}
-     */
-    isEditable: function() {
-        return this.editable;
     }
-});</pre>
+});
+</pre>
 </body>
 </html>

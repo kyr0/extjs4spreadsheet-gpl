@@ -46,6 +46,9 @@ Ext.define('Spread.selection.RangeModel', {
 <span id='Spread-selection-RangeModel-property-initialViewRefresh'>    // Internal indicator flag
 </span>    initialViewRefresh: true,
 
+<span id='Spread-selection-RangeModel-property-dataChangedRecently'>    // Internal indicator flag
+</span>    dataChangedRecently: false,
+
 <span id='Spread-selection-RangeModel-property-keyNav'>    // Internal keyNav reference
 </span>    keyNav: null,
 
@@ -149,6 +152,14 @@ Ext.define('Spread.selection.RangeModel', {
              * @param {Spread.selection.Position} position Cell position object reference
              */
             'cellfocus',
+
+<span id='Spread-selection-RangeModel-event-cellblur'>            /**
+</span>             * @event cellblur
+             * Fired when a cell blur event happens
+             * @param {Spread.selection.RangeModel} this
+             * @param {Ext.dom.Element} el Element clicked on
+             */
+            'cellblur',
 
 <span id='Spread-selection-RangeModel-event-tabselect'>            /**
 </span>             * @event tabselect
@@ -271,7 +282,37 @@ Ext.define('Spread.selection.RangeModel', {
         });
 
         // On data change (e.g. filtering)
-        me.view.store.on('datachanged', me.reinitialize, me);
+        me.view.store.on('datachanged', function() {
+
+            //console.log('datachanged!');
+
+            // Set indicator flag to reinitialize after store data has been changed
+            me.dataChangedRecently = true;
+        });
+
+        // Register edit blur handler
+        me.initEditBlurHandler();
+    },
+
+<span id='Spread-selection-RangeModel-method-initEditBlurHandler'>    /**
+</span>     * @protected
+     * Registers and un-registers a document.body event listener
+     * for clicks outside of the view area to stop editing.
+     * @return void
+     */
+    initEditBlurHandler: function() {
+
+        var me = this;
+
+        // Un-register on grid destroy
+        me.grid.on('destroy', function() {
+            Ext.EventManager.un(document.body, 'mouseup', me.onCellMouseUp);
+        });
+
+        // Listen for mouseup globally (stable method to fetch mouseup)
+        Ext.EventManager.on(document.body, 'mouseup', me.onCellMouseUp, me, {
+            buffer: 50
+        });
     },
 
 <span id='Spread-selection-RangeModel-method-reinitialize'>    /**
@@ -287,7 +328,12 @@ Ext.define('Spread.selection.RangeModel', {
         this.initRootPosition();
 
         // Auto-focus the root position initially
-        this.setCurrentFocusPosition(this.rootPosition);
+        try {
+
+            // This may fail due to non-rendered circumstances
+            this.setCurrentFocusPosition(this.rootPosition);
+
+        } catch (e) {}
 
         // Set the origin to the root position too
         this.setOriginSelectionPosition(this.rootPosition);
@@ -318,6 +364,7 @@ Ext.define('Spread.selection.RangeModel', {
         // Handle key eventing using KeyNav
         me.keyNav = new Ext.util.KeyNav({
             target: view.el,
+            eventName: 'keydown',
             ignoreInputFields: false,
             up: me.onKeyUp,
             down: me.onKeyDown,
@@ -340,14 +387,35 @@ Ext.define('Spread.selection.RangeModel', {
 
         //console.log('view refresh happened');
 
-        // Update root position / record reference
-        this.rootPosition.update();
+        if (this.dataChangedRecently) {
+
+            // Reset root position
+            this.reinitialize();
+
+            // Reset flag
+            this.dataChangedRecently = false;
+
+        } else {
+
+            // Update root position / record reference
+            this.rootPosition.update();
+
+            try {
+                // Try re-focussing
+                this.view.getEl().focus();
+            } catch(e) {}
+        }
 
         // May auto-focus root position
         if (this.autoFocusRootPosition &amp;&amp; this.initialViewRefresh) {
 
             // Auto-focus the root position initially
-            this.setCurrentFocusPosition(this.rootPosition);
+            try {
+
+                // This may fail due to non-rendered circumstances
+                this.setCurrentFocusPosition(this.rootPosition);
+
+            } catch (e) {}
 
             // Set the origin to the root position too
             this.setOriginSelectionPosition(this.rootPosition);
@@ -385,11 +453,6 @@ Ext.define('Spread.selection.RangeModel', {
                 me.onCellMouseDown.apply(me, args);
                 break;
         }
-
-        // Listen for mouseup globally (stable method to fetch mouseup)
-        Ext.EventManager.on(document.body, 'mouseup', this.onCellMouseUp, this, {
-            buffer: 50
-        });
     },
 
 <span id='Spread-selection-RangeModel-method-onCellMouseDown'>    /**
@@ -403,6 +466,7 @@ Ext.define('Spread.selection.RangeModel', {
      * @param {Ext.EventObject} evt Event instance
      * @param {Ext.data.Model} record Data record instance
      * @param {HTMLElement} row Row HTML element reference (&lt;tr&gt;)
+     * @param {Object} eOpts Event options
      * @return void
      */
     onCellMouseDown: function(type, view, cell, rowIndex, cellIndex, evt, record, row, eOpts) {
@@ -422,7 +486,7 @@ Ext.define('Spread.selection.RangeModel', {
         ) {
 
             // Try to select range, if special key was pressed too
-            if (evt.shiftKey) {
+            if (evt.shiftKey &amp;&amp; !Spread.util.Key.isStartEditKey(evt)) {
 
                 this.tryToSelectRange();
 
@@ -493,7 +557,15 @@ Ext.define('Spread.selection.RangeModel', {
      * This handler breaks mouse-dragged range selection by setting the this.mayRangeSelecting flag.
      * @return void
      */
-    onCellMouseUp: function() {
+    onCellMouseUp: function(evt, el) {
+
+        // Fire cellblur event
+        if (!Ext.get(el).hasCls('spreadsheet-cell-cover') &amp;&amp;
+            !Ext.get(el).hasCls('x-grid-cell-inner')) {
+
+            this.fireEvent('cellblur', this, Ext.get(el));
+        }
+
         this.mayRangeSelecting = false;
     },
 
@@ -577,7 +649,12 @@ Ext.define('Spread.selection.RangeModel', {
         //console.log('onKeyTab', evt);
 
         this.keyNavigation = true;
-        this.processKeyNavigation('right', evt);
+
+        if (!evt.shiftKey) {
+            this.processKeyNavigation('right', evt);
+        } else {
+            this.processKeyNavigation('left', evt);
+        }
         this.keyNavigation = false;
     },
 
@@ -688,33 +765,40 @@ Ext.define('Spread.selection.RangeModel', {
      */
     processKeyNavigation: function(direction, evt) {
 
-        // Fire event
-        this.fireEvent('keynavigate', this, direction, evt);
+        setTimeout(Ext.Function.bind(function() {
 
-        //console.log('processKeyNavigation: ', direction);
+            // Fire event
+            this.fireEvent('keynavigate', this, direction, evt);
 
-        var newCurrentFocusPosition = this.tryMoveToPosition(
-            this.getCurrentFocusPosition(), direction, evt
-        );
+            //console.log('processKeyNavigation: ', direction);
 
-        //console.log('Focus single cell; Reset current range selection.');
+            var newCurrentFocusPosition = this.tryMoveToPosition(
+                this.getCurrentFocusPosition(), direction, evt
+            );
 
-        // Focus a new position
-        if (
-            this.setCurrentFocusPosition(newCurrentFocusPosition)
-        ) {
+            //console.log('Focus single cell; Reset current range selection.');
 
-            // Try to select range, if special key was pressed too
-            if (evt.shiftKey) {
-                this.tryToSelectRange();
-            } else {
+            // Focus a new position
+            if (
+                this.setCurrentFocusPosition(newCurrentFocusPosition)
+            ) {
 
-                // Set origin position
-                this.setOriginSelectionPosition(
-                    newCurrentFocusPosition
-                );
+
+                // Try to select range, if special key was pressed too
+                // Shift + Tab is special navigation behaviour (left navigation without selection)
+                if (evt.shiftKey &amp;&amp; evt.getKey() !== evt.TAB) {
+
+                    this.tryToSelectRange();
+
+                } else {
+
+                    // Set origin position
+                    this.setOriginSelectionPosition(
+                        newCurrentFocusPosition
+                    );
+                }
             }
-        }
+        }, this), 50);
     },
 
 <span id='Spread-selection-RangeModel-method-tryMoveToPosition'>    /**
