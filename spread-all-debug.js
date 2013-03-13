@@ -10426,6 +10426,10 @@ Ext.define('Spread.data.TSVTransformer', {
             // Add line break
             if (currentRow !== selectionPositions[i].row &&
                 currentRow !== -1) {
+
+                if (tsvText[tsvText.length-1] == this.columnSeparator) {
+                    tsvText = tsvText.substring(0, tsvText.length - 1); // Remove trailing tabulator
+                }
                 tsvText = this.addLineBreak(tsvText);
             }
             currentRow = selectionPositions[i].row;
@@ -10439,8 +10443,6 @@ Ext.define('Spread.data.TSVTransformer', {
                 tsvText = this.addTabulator(tsvText);
             }
         }
-        //console.log('tsvText', tsvText);
-
         return tsvText;
     },
 
@@ -10454,10 +10456,7 @@ Ext.define('Spread.data.TSVTransformer', {
         var dataArray = [],
             rows = clipboardData.split(this.lineSeparator);
 
-        //console.log('transformToArray', clipboardData, rows);
-
         for (var i=0; i<(rows.length-1); i++) {
-
             dataArray.push(
                 rows[i].split(this.columnSeparator)
             );
