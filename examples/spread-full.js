@@ -95,7 +95,7 @@ Ext.onReady(function() {
                     },
                     dataIndex: 'lastname'
                 }, {
-                    allowedEditKeys: '0123456789.',
+                    allowedEditKeys: '0123456789.-',
                     header: 'Age',
                     //hidden: true,
                     dataIndex: 'age',
