@@ -20,8 +20,7 @@ Ext.define('Spread.util.Key', {
             k == evt.TAB ||
             k == evt.ESC ||
             k == 91 || // Windows key
-            (!Ext.isIE && k === 224) || // Mac command key
-            (k == 44 || k == 46) // Print Screen, Insert, Delete
+            (!Ext.isIE && k === 224)
     },
 
     /**
