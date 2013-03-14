@@ -6,6 +6,8 @@ Ext.define('Spread.util.Key', {
 
     singleton: true,
 
+    specialKeyPressedBefore: null,
+
     /**
      * Checks for key code to if editing should be canceled
      * @param {Ext.EventObject} evt Event object instance
@@ -30,11 +32,25 @@ Ext.define('Spread.util.Key', {
      */
     isStartEditKey: function(evt) {
 
-        var k = evt.normalizeKey(evt.keyCode);
+        var me = this,
+            k = evt.normalizeKey(evt.keyCode);
+
+        //console.log('isStartEditKey?', k, evt.ctrlKey);
+
+        if (me.specialKeyPressedBefore) {
+            me.specialKeyPressedBefore = false;
+            return false;
+        }
 
         // Do never start editing when CTRL or CMD was pressed
+        // Or last key was 91 in IE (windows key) and now someone presses a different key
         if (evt.ctrlKey) {
-            return false
+            return false;
+        }
+
+        // Windows key
+        if (k === 91) {
+            me.specialKeyPressedBefore = true;
         }
 
         return (k >= 48 && k <= 57) || // 0-9

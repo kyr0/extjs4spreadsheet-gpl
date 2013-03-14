@@ -769,7 +769,6 @@ Ext.define('Spread.selection.RangeModel', {
                 this.setCurrentFocusPosition(newCurrentFocusPosition)
             ) {
 
-
                 // Try to select range, if special key was pressed too
                 // Shift + Tab is special navigation behaviour (left navigation without selection)
                 if (evt.shiftKey && evt.getKey() !== evt.TAB) {
