@@ -381,7 +381,6 @@ Ext.define('Spread.grid.plugin.Editable', {
                 this.autoCommit
             );
 
-
             // Recolorize for dirty flag!
             this.handleDirtyMarkOnEditModeStyling();
 
@@ -448,9 +447,6 @@ Ext.define('Spread.grid.plugin.Editable', {
                         String.fromCharCode(evt.getCharCode())
                     ) === -1 && evt.getKey() !== evt.BACKSPACE)
                 {
-                    console.log('char pressed: ' + String.fromCharCode(evt.getCharCode()));
-                    console.log('allowed keys:' + me.activePosition.columnHeader.allowedEditKeys)
-
                     evt.stopEvent();
                 }
             }

@@ -70,7 +70,7 @@ Ext.define('Spread.data.TSVTransformer', {
         var dataArray = [],
             rows = clipboardData.split(this.lineSeparator);
 
-        for (var i=0; i<(rows.length-1); i++) {
+        for (var i=0; i<rows.length; i++) {
             dataArray.push(
                 rows[i].split(this.columnSeparator)
             );

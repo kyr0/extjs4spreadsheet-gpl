@@ -10456,7 +10456,7 @@ Ext.define('Spread.data.TSVTransformer', {
         var dataArray = [],
             rows = clipboardData.split(this.lineSeparator);
 
-        for (var i=0; i<(rows.length-1); i++) {
+        for (var i=0; i<rows.length; i++) {
             dataArray.push(
                 rows[i].split(this.columnSeparator)
             );
@@ -12164,12 +12164,42 @@ Ext.define('Spread.util.Clipping', {
         me.el.dom.value = tsvData;
 
         try {
+
             me.el.dom.focus();
-            me.el.dom.select();
+
+            // To let the os copy selected text
+            me.selectClippingText();
+
         } catch(e) {}
 
         // Re-focus the view
         me.refocusView(view);
+    },
+
+    /**
+     * @protected
+     * Selects the contents of the text area.
+     * Used to make use of the operating system's default behaviour
+     * of copying and pasting when a text area is focused and selected.
+     * @return void
+     */
+    selectClippingText: function() {
+
+        var me = this,
+            range;
+
+        // Code to prevent time-async double-paste os behaviours
+        if (Ext.isIE) {
+
+            range = me.el.dom.createTextRange();
+            range.collapse(true);
+            range.moveStart('character', 0);
+            range.moveEnd('character', me.el.dom.value.length + 1);
+            range.select();
+
+        } else {
+            me.el.dom.select();
+        }
     },
 
     /**
@@ -12190,10 +12220,17 @@ Ext.define('Spread.util.Clipping', {
         me.el.dom.style.display = "block";
 
         try {
+
             me.el.dom.focus();
+
+            // Code to prevent time-async double-paste os behaviours
+            me.selectClippingText();
+
         } catch (e) {}
 
         setTimeout(function() {
+
+            //console.log('Fetch data from clipboard: ', me.el.dom.value.length);
 
             // Call callback with pasted data
             pasteDataCallback(me.el.dom.value);
@@ -12221,7 +12258,7 @@ Ext.define('Spread.util.Clipping', {
                 cls: 'clipboard-textarea',
                 style: {
                     display: 'none',
-                    zIndex: -200,
+                    zIndex: -400,
                     position: 'absolute',
                     left: '0px',
                     top: '0px',
@@ -12781,7 +12818,6 @@ Ext.define('Spread.grid.plugin.Editable', {
                 this.autoCommit
             );
 
-
             // Recolorize for dirty flag!
             this.handleDirtyMarkOnEditModeStyling();
 
@@ -12826,7 +12862,7 @@ Ext.define('Spread.grid.plugin.Editable', {
      * Handles special keys (ENTER, TAB) and
      * allowed input character limiting.
      * @param {Ext.EventObject} evt Key event
-     * @return void
+     * @return {Boolean}
      */
     onEditFieldKeyPressed: function(evt) {
 
@@ -12835,13 +12871,10 @@ Ext.define('Spread.grid.plugin.Editable', {
         if (this.isEditing) {
 
             if (Spread.util.Key.isCancelEditKey(evt)) {
-
-                console.log('is cancel edit key!');
-
                 this.blurEditFieldIfEditing();
                 return true;
             }
-            console.log('columns keys allowed? ', me.activePosition.columnHeader.allowedEditKeys);
+            //console.log('columns keys allowed? ', me.activePosition.columnHeader.allowedEditKeys);
 
             // If there is a list of allowed keys, check for them
             if (me.activePosition.columnHeader.allowedEditKeys.length > 0) {
@@ -12851,9 +12884,6 @@ Ext.define('Spread.grid.plugin.Editable', {
                         String.fromCharCode(evt.getCharCode())
                     ) === -1 && evt.getKey() !== evt.BACKSPACE)
                 {
-                    console.log('char pressed: ' + String.fromCharCode(evt.getCharCode()));
-                    console.log('allowed keys:' + me.activePosition.columnHeader.allowedEditKeys)
-
                     evt.stopEvent();
                 }
             }
@@ -13377,8 +13407,12 @@ Ext.define('Spread.grid.plugin.Pasteable', {
 
             this.prepareForClipboardPaste(function(clipboardData) {
 
+                //console.log('Clipboard data:', clipboardData);
+
                 // Call the transformer to transform and insert data
                 var pastedDataArray = Spread.data.TSVTransformer.transformToArray(clipboardData);
+
+                //console.log('Pasted data array:', pastedDataArray);
 
                 // Call the method to paste the data into the store
                 me.updateRecordFieldsInStore(pastedDataArray, selectionPositions, selModel);
@@ -13492,6 +13526,7 @@ Ext.define('Spread.grid.plugin.Pasteable', {
         // Selection exists, change data for cells in selection
         //console.log('change data inside selection: ', selectionPositions, pastedDataArray);
 
+        var newOriginSelectionPosition = selectionPositions[0].update();
         var projectedColumnIndex = 0;
         var projectedRowIndex = 0;
         var lastProjectedRowIndex = 0;
@@ -13708,7 +13743,7 @@ Ext.define('Spread.selection.Position', {
      * Updates the position object and it's internal references.
      * This is useful when view has been refreshed and record or
      * cell or row of the position has been changed.
-     * @return void
+     * @return {Spread.selection.Position}
      */
     update: function() {
 
