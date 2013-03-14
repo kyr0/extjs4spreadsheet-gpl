@@ -6,6 +6,7 @@ Ext.define('Spread.util.Key', {
 
     singleton: true,
 
+    // Internal flag
     specialKeyPressedBefore: null,
 
     /**
@@ -48,8 +49,8 @@ Ext.define('Spread.util.Key', {
             return false;
         }
 
-        // Windows key
-        if (k === 91) {
+        // Windows key in IE is a special key
+        if (Ext.isIE && k === 91) {
             me.specialKeyPressedBefore = true;
         }
 

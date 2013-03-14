@@ -288,7 +288,7 @@ Ext.define('Spread.grid.plugin.Editable', {
             //view.getSelectionModel().on('enterselect', me.blurEditFieldIfEditing, me);
             view.getSelectionModel().on('beforecellfocus', me.blurEditFieldIfEditing, me);
             view.getSelectionModel().on('keynavigate', me.blurEditFieldIfEditing, me);
-            view.getSelectionModel().on('cellblur', me.blurEditFieldIfEditing, me);
+            //view.getSelectionModel().on('cellblur', me.blurEditFieldIfEditing, me);
 
         } else {
             throw "Cover element not found, initializing editing failed! Please check proper view rendering.";
@@ -500,6 +500,8 @@ Ext.define('Spread.grid.plugin.Editable', {
             if (!Ext.get(evt.getTarget()).hasCls('x-grid-view') && !this.isEditing) {
 
                 if (this.isPositionEditable()) {
+
+                    //console.log('onCoverDblClick, setEditable!');
 
                     // Activates the editor
                     this.setEditing(true);
