@@ -542,6 +542,8 @@ Ext.define('Spread.selection.RangeModel', {
      */
     onCellMouseUp: function(evt, el) {
 
+        this.mayRangeSelecting = false;
+
         //console.log('cell mouse up -> blur', Ext.get(el));
 
         // Fire cellblur event
@@ -551,8 +553,6 @@ Ext.define('Spread.selection.RangeModel', {
 
             this.fireEvent('cellblur', this, Ext.get(el));
         }
-
-        this.mayRangeSelecting = false;
     },
 
     /**
