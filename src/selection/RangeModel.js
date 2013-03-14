@@ -293,9 +293,9 @@ Ext.define('Spread.selection.RangeModel', {
         });
 
         // Listen for mouseup globally (stable method to fetch mouseup)
-        Ext.EventManager.on(document.body, 'mouseup', me.onCellMouseUp, me, {
+        Ext.EventManager.on(document.body, 'mouseup', me.onCellMouseUp, me/*, {
             buffer: 50
-        });
+        }*/);
     },
 
     /**
