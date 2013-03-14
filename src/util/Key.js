@@ -15,15 +15,13 @@ Ext.define('Spread.util.Key', {
 
         var k = evt.normalizeKey(evt.keyCode);
 
-        //console.log('isCancelEditKey?', k);
-
         return (k >= 33 && k <= 40) ||  // Page Up/Down, End, Home, Left, Up, Right, Down
             k == evt.RETURN ||
             k == evt.TAB ||
             k == evt.ESC ||
             k == 91 || // Windows key
-            !Ext.isIE && k === 224 || // Mac command key
-            (k >= 44 && k <= 46) // Print Screen, Insert, Delete
+            (!Ext.isIE && k === 224) || // Mac command key
+            (k == 44 || k == 46) // Print Screen, Insert, Delete
     },
 
     /**

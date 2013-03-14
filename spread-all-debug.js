@@ -12835,10 +12835,13 @@ Ext.define('Spread.grid.plugin.Editable', {
         if (this.isEditing) {
 
             if (Spread.util.Key.isCancelEditKey(evt)) {
+
+                console.log('is cancel edit key!');
+
                 this.blurEditFieldIfEditing();
                 return true;
             }
-            //console.log('columns keys allowed? ', me.activePosition.columnHeader.allowedEditKeys);
+            console.log('columns keys allowed? ', me.activePosition.columnHeader.allowedEditKeys);
 
             // If there is a list of allowed keys, check for them
             if (me.activePosition.columnHeader.allowedEditKeys.length > 0) {
@@ -12848,6 +12851,9 @@ Ext.define('Spread.grid.plugin.Editable', {
                         String.fromCharCode(evt.getCharCode())
                     ) === -1 && evt.getKey() !== evt.BACKSPACE)
                 {
+                    console.log('char pressed: ' + String.fromCharCode(evt.getCharCode()));
+                    console.log('allowed keys:' + me.activePosition.columnHeader.allowedEditKeys)
+
                     evt.stopEvent();
                 }
             }
@@ -12896,6 +12902,8 @@ Ext.define('Spread.grid.plugin.Editable', {
         if (this.fireEvent('beforecoverdblclick', this) !== false) {
 
             // Not already editing and not clicked outside of the table area
+            // TODO: Issue #4 is related to this. We need to check if there really was a click on the cover el.
+            //       This is complicated because of IE providing a different element than every other browser.
             if (!Ext.get(evt.getTarget()).hasCls('x-grid-view') && !this.isEditing) {
 
                 if (this.isPositionEditable()) {
@@ -14672,15 +14680,13 @@ Ext.define('Spread.util.Key', {
 
         var k = evt.normalizeKey(evt.keyCode);
 
-        //console.log('isCancelEditKey?', k);
-
         return (k >= 33 && k <= 40) ||  // Page Up/Down, End, Home, Left, Up, Right, Down
             k == evt.RETURN ||
             k == evt.TAB ||
             k == evt.ESC ||
             k == 91 || // Windows key
-            !Ext.isIE && k === 224 || // Mac command key
-            (k >= 44 && k <= 46) // Print Screen, Insert, Delete
+            (!Ext.isIE && k === 224) || // Mac command key
+            (k == 44 || k == 46) // Print Screen, Insert, Delete
     },
 
     /**

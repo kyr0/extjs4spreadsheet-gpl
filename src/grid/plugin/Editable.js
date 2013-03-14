@@ -426,7 +426,7 @@ Ext.define('Spread.grid.plugin.Editable', {
      * Handles special keys (ENTER, TAB) and
      * allowed input character limiting.
      * @param {Ext.EventObject} evt Key event
-     * @return void
+     * @return {Boolean}
      */
     onEditFieldKeyPressed: function(evt) {
 
@@ -448,6 +448,9 @@ Ext.define('Spread.grid.plugin.Editable', {
                         String.fromCharCode(evt.getCharCode())
                     ) === -1 && evt.getKey() !== evt.BACKSPACE)
                 {
+                    console.log('char pressed: ' + String.fromCharCode(evt.getCharCode()));
+                    console.log('allowed keys:' + me.activePosition.columnHeader.allowedEditKeys)
+
                     evt.stopEvent();
                 }
             }
@@ -496,6 +499,8 @@ Ext.define('Spread.grid.plugin.Editable', {
         if (this.fireEvent('beforecoverdblclick', this) !== false) {
 
             // Not already editing and not clicked outside of the table area
+            // TODO: Issue #4 is related to this. We need to check if there really was a click on the cover el.
+            //       This is complicated because of IE providing a different element than every other browser.
             if (!Ext.get(evt.getTarget()).hasCls('x-grid-view') && !this.isEditing) {
 
                 if (this.isPositionEditable()) {
