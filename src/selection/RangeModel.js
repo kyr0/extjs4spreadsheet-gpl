@@ -602,7 +602,7 @@ Ext.define('Spread.selection.RangeModel', {
      */
     onKeyLeft: function(evt) {
 
-        if (Ext.get(evt.target).hasCls('spreadsheet-cell-cover-edit-field')) {
+        if (Ext.get(evt.getTarget()).hasCls('spreadsheet-cell-cover-edit-field')) {
             return;
         }
 
@@ -622,7 +622,7 @@ Ext.define('Spread.selection.RangeModel', {
      */
     onKeyRight: function(evt) {
 
-        if (Ext.get(evt.target).hasCls('spreadsheet-cell-cover-edit-field')) {
+        if (Ext.get(evt.getTarget()).hasCls('spreadsheet-cell-cover-edit-field')) {
             return;
         }
 

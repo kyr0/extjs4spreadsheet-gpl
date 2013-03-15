@@ -496,24 +496,27 @@ Ext.define('Spread.grid.plugin.Editable', {
 
         if (this.fireEvent('beforecoverdblclick', this) !== false) {
 
-            // Not already editing and not clicked outside of the table area
-            // TODO: Issue #4 is related to this. We need to check if there really was a click on the cover el.
-            //       This is complicated because of IE providing a different element than every other browser.
-            if (!Ext.get(evt.getTarget()).hasCls('x-grid-view') && !this.isEditing) {
+            var clickTargetElId = evt.getTarget().id,
+                currentPosCellElId = this.view.getSelectionModel().getCurrentFocusPosition().cellEl.id;
 
-                if (this.isPositionEditable()) {
+            // Clicked on grid view
+            // ...and not already editing
+            // ...and clicked on cell cover of the current selected cell position
+            // ...and if position is generally editable
+            if (!Ext.get(evt.getTarget()).hasCls('x-grid-view') &&
+                !this.isEditing &&
+                clickTargetElId.indexOf(currentPosCellElId) > -1 &&
+                this.isPositionEditable()) {
 
-                    //console.log('onCoverDblClick, setEditable!');
+                //console.log('onCoverDblClick, setEditable!');
 
-                    // Activates the editor
-                    this.setEditing(true);
+                // Activates the editor
+                this.setEditing(true);
 
-                    // Set current value of field in record
-                    this.setEditingValue(
-                        Spread.data.DataMatrix.getValueOfPosition(this.activePosition)
-                    );
-                }
-
+                // Set current value of field in record
+                this.setEditingValue(
+                    Spread.data.DataMatrix.getValueOfPosition(this.activePosition)
+                );
             }
             this.fireEvent('coverdblclick', this);
         }
