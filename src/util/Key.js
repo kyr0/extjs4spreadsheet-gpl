@@ -18,7 +18,7 @@ Ext.define('Spread.util.Key', {
 
         var k = evt.normalizeKey(evt.keyCode);
 
-        return (k >= 33 && k <= 40) ||  // Page Up/Down, End, Home, Left, Up, Right, Down
+        return ((k >= 33 && k <= 40) && k != 37 && k != 39) ||  // Page Up/Down, End, Home, Up, Down
             k == evt.RETURN ||
             k == evt.TAB ||
             k == evt.ESC ||

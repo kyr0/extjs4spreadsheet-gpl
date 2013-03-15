@@ -1,11 +1,11 @@
 /**
  * @class Spread.overrides.Column
- * @overrides Ext.grid.Column
+ * @overrides Ext.grid.column.Column
  * Overrides to the standard gird column to implement spreadsheet-specific features.
  */
 Ext.define('Spread.overrides.Column', {
 
-    override: 'Ext.grid.Column',
+    override: 'Ext.grid.column.Column',
 
     /**
      * @cfg {Boolean} selectable

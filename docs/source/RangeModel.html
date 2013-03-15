@@ -310,9 +310,9 @@ Ext.define('Spread.selection.RangeModel', {
         });
 
         // Listen for mouseup globally (stable method to fetch mouseup)
-        Ext.EventManager.on(document.body, 'mouseup', me.onCellMouseUp, me, {
+        Ext.EventManager.on(document.body, 'mouseup', me.onCellMouseUp, me/*, {
             buffer: 50
-        });
+        }*/);
     },
 
 <span id='Spread-selection-RangeModel-method-reinitialize'>    /**
@@ -559,14 +559,17 @@ Ext.define('Spread.selection.RangeModel', {
      */
     onCellMouseUp: function(evt, el) {
 
+        this.mayRangeSelecting = false;
+
+        //console.log('cell mouse up -&gt; blur', Ext.get(el));
+
         // Fire cellblur event
         if (!Ext.get(el).hasCls('spreadsheet-cell-cover') &amp;&amp;
-            !Ext.get(el).hasCls('x-grid-cell-inner')) {
+            !Ext.get(el).hasCls('x-grid-cell-inner') &amp;&amp;
+            !Ext.get(el).hasCls('spreadsheet-cell-cover-edit-field')) {
 
             this.fireEvent('cellblur', this, Ext.get(el));
         }
-
-        this.mayRangeSelecting = false;
     },
 
 <span id='Spread-selection-RangeModel-method-onKeyUp'>    /**
@@ -782,7 +785,6 @@ Ext.define('Spread.selection.RangeModel', {
             if (
                 this.setCurrentFocusPosition(newCurrentFocusPosition)
             ) {
-
 
                 // Try to select range, if special key was pressed too
                 // Shift + Tab is special navigation behaviour (left navigation without selection)

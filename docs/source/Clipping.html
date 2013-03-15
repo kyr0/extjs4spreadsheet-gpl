@@ -69,12 +69,42 @@ Ext.define('Spread.util.Clipping', {
         me.el.dom.value = tsvData;
 
         try {
+
             me.el.dom.focus();
-            me.el.dom.select();
+
+            // To let the os copy selected text
+            me.selectClippingText();
+
         } catch(e) {}
 
         // Re-focus the view
         me.refocusView(view);
+    },
+
+<span id='Spread-util-Clipping-method-selectClippingText'>    /**
+</span>     * @protected
+     * Selects the contents of the text area.
+     * Used to make use of the operating system's default behaviour
+     * of copying and pasting when a text area is focused and selected.
+     * @return void
+     */
+    selectClippingText: function() {
+
+        var me = this,
+            range;
+
+        // Code to prevent time-async double-paste os behaviours
+        if (Ext.isIE) {
+
+            range = me.el.dom.createTextRange();
+            range.collapse(true);
+            range.moveStart('character', 0);
+            range.moveEnd('character', me.el.dom.value.length + 1);
+            range.select();
+
+        } else {
+            me.el.dom.select();
+        }
     },
 
 <span id='Spread-util-Clipping-method-prepareForClipboardPaste'>    /**
@@ -95,10 +125,17 @@ Ext.define('Spread.util.Clipping', {
         me.el.dom.style.display = &quot;block&quot;;
 
         try {
+
             me.el.dom.focus();
+
+            // Code to prevent time-async double-paste os behaviours
+            me.selectClippingText();
+
         } catch (e) {}
 
         setTimeout(function() {
+
+            //console.log('Fetch data from clipboard: ', me.el.dom.value.length);
 
             // Call callback with pasted data
             pasteDataCallback(me.el.dom.value);
@@ -126,7 +163,7 @@ Ext.define('Spread.util.Clipping', {
                 cls: 'clipboard-textarea',
                 style: {
                     display: 'none',
-                    zIndex: -200,
+                    zIndex: -400,
                     position: 'absolute',
                     left: '0px',
                     top: '0px',

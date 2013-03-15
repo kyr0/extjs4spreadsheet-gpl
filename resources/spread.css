@@ -8,7 +8,6 @@
     height: 0px;
     margin: 0px;
     padding: 0px;
-    cursor: cell;
 }
 
 .x-grid-row .spreadsheet-cell-unselectable {
@@ -31,7 +30,6 @@
 }
 
 .x-grid-row {
-    cursor: cell;
 }
 
 .spreadsheet-view-default .x-grid-cell-header {

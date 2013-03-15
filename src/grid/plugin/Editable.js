@@ -434,6 +434,8 @@ Ext.define('Spread.grid.plugin.Editable', {
         if (this.isEditing) {
 
             if (Spread.util.Key.isCancelEditKey(evt)) {
+
+                //console.log('is cancel edit key')
                 this.blurEditFieldIfEditing();
                 return true;
             }
@@ -525,6 +527,12 @@ Ext.define('Spread.grid.plugin.Editable', {
      * @return void
      */
     onCoverKeyPressed: function(evt, viewEl) {
+
+        // no key is pressed on a cover,
+        // if we're editing...
+        if (this.isEditing) {
+            return;
+        }
 
         if (this.fireEvent('beforecoverkeypressed', this) !== false) {
 

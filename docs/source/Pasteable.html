@@ -164,8 +164,12 @@ Ext.define('Spread.grid.plugin.Pasteable', {
 
             this.prepareForClipboardPaste(function(clipboardData) {
 
+                //console.log('Clipboard data:', clipboardData);
+
                 // Call the transformer to transform and insert data
                 var pastedDataArray = Spread.data.TSVTransformer.transformToArray(clipboardData);
+
+                //console.log('Pasted data array:', pastedDataArray);
 
                 // Call the method to paste the data into the store
                 me.updateRecordFieldsInStore(pastedDataArray, selectionPositions, selModel);
@@ -279,6 +283,7 @@ Ext.define('Spread.grid.plugin.Pasteable', {
         // Selection exists, change data for cells in selection
         //console.log('change data inside selection: ', selectionPositions, pastedDataArray);
 
+        var newOriginSelectionPosition = selectionPositions[0].update();
         var projectedColumnIndex = 0;
         var projectedRowIndex = 0;
         var lastProjectedRowIndex = 0;
