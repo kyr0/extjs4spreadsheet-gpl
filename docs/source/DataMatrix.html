@@ -52,7 +52,7 @@ Ext.define('Spread.data.DataMatrix', {
      * @param {Mixed} newValue New cell value
      * @param {Boolean} [autoCommit=false] Should the record be automatically committed after change
      * @param {Boolean} [useInternalAPIs=false] Force to use the internal Model API's
-     * @return {String[]}
+     * @return {String}
      */
     setValueForPosition: function(position, newValue, autoCommit, useInternalAPIs) {
 
@@ -61,12 +61,15 @@ Ext.define('Spread.data.DataMatrix', {
         // Update position
         position.update();
 
-        //console.log('setValueForPosition', position, newValue);
-
-        var fieldName = this.getFieldNameForColumnIndex(position.view, position.column);
+        var fieldName = this.getFieldNameForColumnIndex(position.view, position.column), fieldType;
 
         if (!position.record) {
             throw &quot;No record found for row index: &quot; + position.row;
+        }
+
+        // Caching type name on record instance
+        if (!position.record['__' + fieldName + '_type']) {
+            position.record['__' + fieldName + '_type'] = this.getTypeForFieldName(fieldName, position.record);
         }
 
         // Check for pre-processor
@@ -75,6 +78,18 @@ Ext.define('Spread.data.DataMatrix', {
 
             // Call pre-processor for value writing / change before write
             newValue = position.columnHeader.cellwriter(newValue, position);
+
+        } else {
+
+            // Auto-preprocessor (type conversion)
+
+            // Casting the new value from text received from the text input field into the origin data type
+            newValue = this.castFromString(newValue, position.record['__' + fieldName + '_type']);
+        }
+
+        // Do not change the record's value if it hasn't changed
+        if (position.record.get(fieldName) == newValue) {
+            return newValue;
         }
 
         if (useInternalAPIs) {
@@ -98,6 +113,54 @@ Ext.define('Spread.data.DataMatrix', {
             position.record.commit();
         }
         return ret;
+    },
+
+<span id='Spread-data-DataMatrix-method-getTypeForFieldName'>    /**
+</span>     * Returns the primitive type of a field of a record,
+     * known by it's field name (dataIndex on column).
+     * Returns either: auto, int, float, bool, string or date.
+     * @param {String} fieldName Name of the field
+     * @param {Ext.data.Model} record Record instance
+     * @return {String}
+     */
+    getTypeForFieldName: function(fieldName, record) {
+
+        var type = 'auto';
+
+        record.fields.each(function(field) {
+
+            // Found the field and it's special type
+            if (field.name === fieldName &amp;&amp;
+                field.type.type !== 'auto') {
+
+                type = field.type.type;
+            }
+        });
+        return type;
+    },
+
+<span id='Spread-data-DataMatrix-method-castFromString'>    /**
+</span>     * Casts a input string (coming from a text input field)
+     * into an object or primitive type. Allowed are all Ext.data.Field types.
+     * @param {String} stringValue String value to be casted
+     * @param {String} typeName Name of the type. Either: auto, int, float, bool, string or date.
+     * @return {*}
+     */
+    castFromString: function(stringValue, typeName) {
+
+        switch(typeName) {
+            case 'bool':
+                return (stringValue == 'true');
+            case 'int':
+                return parseInt(stringValue);
+            case 'float':
+                return parseFloat(stringValue);
+            case 'auto':
+            case 'string':
+                return stringValue.valueOf();
+            case 'date':
+                return new Date(stringValue);
+        }
     },
 
 <span id='Spread-data-DataMatrix-method-getValueOfPosition'>    /**

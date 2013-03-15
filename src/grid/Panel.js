@@ -282,6 +282,13 @@
  *
  * ### Column based cell writer function
  *
+ * If you configure a <code>cellwriter</code>-function for a column, the data which gets pasted or
+ * submitted after leaving the edit mode (the text input field) of a cell, will be processed by this function.
+ *
+ * The first argument contains the new value (String). The second argument holds a reference to the current
+ * focused cell position (Spread.selection.Position). The value you return in the <code>cellwriter</code> function
+ * is the value which gets written onto the data record.
+ *
  * Simply set the <code>cellwriter</code> property to a function:
  *
  * <code>
@@ -297,6 +304,11 @@
        }, ...],
        ...
    </code>
+ *
+ * Attention: If you DONT SET a cellwriter, the spreadsheet tries to automatically cast the datatype
+ * of the incoming new value (String) into the data type defined in the model (type) - e.g. int -> parseInt,
+ * float -> parseFloat and so on. If you do not set a data type in the model or set the
+ * data type to 'auto' String values will be stored. Have a look at Spread.data.DataMatrix for details.
  *
  * As you can see, the writer function gets called with two arguments:
  *
@@ -611,7 +623,7 @@ Ext.define('Spread.grid.Panel', {
              * Fires after the editable flag has changed and all re-rendering has been done.
              * Use this event if you e.g. want to reload the store "directly" after calling setEditable() etc.
              * @param {Spread.grid.plugin.Editable} editable Editable plugin instance
-             * @param {Boolean} editable Indicator if the spread is now editable or not
+             * @param {Boolean} isEditable Indicator if the spread is now editable or not
              */
             'editablechange',
 

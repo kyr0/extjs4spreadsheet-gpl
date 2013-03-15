@@ -35,7 +35,7 @@ Ext.define('Spread.data.DataMatrix', {
      * @param {Mixed} newValue New cell value
      * @param {Boolean} [autoCommit=false] Should the record be automatically committed after change
      * @param {Boolean} [useInternalAPIs=false] Force to use the internal Model API's
-     * @return {String[]}
+     * @return {String}
      */
     setValueForPosition: function(position, newValue, autoCommit, useInternalAPIs) {
 
@@ -44,12 +44,15 @@ Ext.define('Spread.data.DataMatrix', {
         // Update position
         position.update();
 
-        //console.log('setValueForPosition', position, newValue);
-
-        var fieldName = this.getFieldNameForColumnIndex(position.view, position.column);
+        var fieldName = this.getFieldNameForColumnIndex(position.view, position.column), fieldType;
 
         if (!position.record) {
             throw "No record found for row index: " + position.row;
+        }
+
+        // Caching type name on record instance
+        if (!position.record['__' + fieldName + '_type']) {
+            position.record['__' + fieldName + '_type'] = this.getTypeForFieldName(fieldName, position.record);
         }
 
         // Check for pre-processor
@@ -58,6 +61,18 @@ Ext.define('Spread.data.DataMatrix', {
 
             // Call pre-processor for value writing / change before write
             newValue = position.columnHeader.cellwriter(newValue, position);
+
+        } else {
+
+            // Auto-preprocessor (type conversion)
+
+            // Casting the new value from text received from the text input field into the origin data type
+            newValue = this.castFromString(newValue, position.record['__' + fieldName + '_type']);
+        }
+
+        // Do not change the record's value if it hasn't changed
+        if (position.record.get(fieldName) == newValue) {
+            return newValue;
         }
 
         if (useInternalAPIs) {
@@ -81,6 +96,54 @@ Ext.define('Spread.data.DataMatrix', {
             position.record.commit();
         }
         return ret;
+    },
+
+    /**
+     * Returns the primitive type of a field of a record,
+     * known by it's field name (dataIndex on column).
+     * Returns either: auto, int, float, bool, string or date.
+     * @param {String} fieldName Name of the field
+     * @param {Ext.data.Model} record Record instance
+     * @return {String}
+     */
+    getTypeForFieldName: function(fieldName, record) {
+
+        var type = 'auto';
+
+        record.fields.each(function(field) {
+
+            // Found the field and it's special type
+            if (field.name === fieldName &&
+                field.type.type !== 'auto') {
+
+                type = field.type.type;
+            }
+        });
+        return type;
+    },
+
+    /**
+     * Casts a input string (coming from a text input field)
+     * into an object or primitive type. Allowed are all Ext.data.Field types.
+     * @param {String} stringValue String value to be casted
+     * @param {String} typeName Name of the type. Either: auto, int, float, bool, string or date.
+     * @return {*}
+     */
+    castFromString: function(stringValue, typeName) {
+
+        switch(typeName) {
+            case 'bool':
+                return (stringValue == 'true');
+            case 'int':
+                return parseInt(stringValue);
+            case 'float':
+                return parseFloat(stringValue);
+            case 'auto':
+            case 'string':
+                return stringValue.valueOf();
+            case 'date':
+                return new Date(stringValue);
+        }
     },
 
     /**
@@ -505,6 +568,13 @@ Ext.define('Spread.data.TSVTransformer', {
  *
  * ### Column based cell writer function
  *
+ * If you configure a <code>cellwriter</code>-function for a column, the data which gets pasted or
+ * submitted after leaving the edit mode (the text input field) of a cell, will be processed by this function.
+ *
+ * The first argument contains the new value (String). The second argument holds a reference to the current
+ * focused cell position (Spread.selection.Position). The value you return in the <code>cellwriter</code> function
+ * is the value which gets written onto the data record.
+ *
  * Simply set the <code>cellwriter</code> property to a function:
  *
  * <code>
@@ -520,6 +590,11 @@ Ext.define('Spread.data.TSVTransformer', {
        }, ...],
        ...
    </code>
+ *
+ * Attention: If you DONT SET a cellwriter, the spreadsheet tries to automatically cast the datatype
+ * of the incoming new value (String) into the data type defined in the model (type) - e.g. int -> parseInt,
+ * float -> parseFloat and so on. If you do not set a data type in the model or set the
+ * data type to 'auto' String values will be stored. Have a look at Spread.data.DataMatrix for details.
  *
  * As you can see, the writer function gets called with two arguments:
  *
@@ -834,7 +909,7 @@ Ext.define('Spread.grid.Panel', {
              * Fires after the editable flag has changed and all re-rendering has been done.
              * Use this event if you e.g. want to reload the store "directly" after calling setEditable() etc.
              * @param {Spread.grid.plugin.Editable} editable Editable plugin instance
-             * @param {Boolean} editable Indicator if the spread is now editable or not
+             * @param {Boolean} isEditable Indicator if the spread is now editable or not
              */
             'editablechange',
 
@@ -2386,7 +2461,7 @@ Ext.define('Spread.grid.plugin.Editable', {
              * Fires after the editable flag has changed and all re-rendering has been done.
              * Use this event if you e.g. want to reload the store "directly" after calling setEditable() etc.
              * @param {Spread.grid.plugin.Editable} editable Editable plugin instance
-             * @param {Boolean} editable Indicator if the spread is now editable or not
+             * @param {Boolean} isEditable Indicator if the spread is now editable or not
              */
             'editablechange'
         );
@@ -2650,6 +2725,34 @@ Ext.define('Spread.grid.plugin.Editable', {
         }
     },
 
+    // Internal method for checking if a user clicked on a cell cover
+    // which is covering the currently focused cell.
+    isOriginCellClick: function(evt) {
+
+        var clickedOnCell = false,
+            clickTargetElIdTextParent = evt.getTarget().parentNode.parentNode.id,
+            clickTargetElIdText = evt.getTarget().parentNode.id,
+            clickTargetElId = evt.getTarget().id,
+            currentPosCellElId = this.view.getSelectionModel().getCurrentFocusPosition().cellEl.id;
+
+        if (Ext.isIE) {
+
+            if (clickTargetElId.indexOf(currentPosCellElId) > -1 ||
+                clickTargetElIdText.indexOf(currentPosCellElId) > -1 ||
+                clickTargetElIdTextParent.indexOf(currentPosCellElId) > -1) {
+                clickedOnCell = true;
+            }
+
+        } else {
+
+            if (clickTargetElId.indexOf(currentPosCellElId) > -1) {
+                clickedOnCell = true;
+            }
+        }
+        return clickedOnCell;
+    },
+
+
     /**
      * @protected
      * When a user double-clicks on a cell cover, this method
@@ -2662,16 +2765,13 @@ Ext.define('Spread.grid.plugin.Editable', {
 
         if (this.fireEvent('beforecoverdblclick', this) !== false) {
 
-            var clickTargetElId = evt.getTarget().id,
-                currentPosCellElId = this.view.getSelectionModel().getCurrentFocusPosition().cellEl.id;
-
             // Clicked on grid view
             // ...and not already editing
             // ...and clicked on cell cover of the current selected cell position
             // ...and if position is generally editable
             if (!Ext.get(evt.getTarget()).hasCls('x-grid-view') &&
                 !this.isEditing &&
-                clickTargetElId.indexOf(currentPosCellElId) > -1 &&
+                this.isOriginCellClick(evt) &&
                 this.isPositionEditable()) {
 
                 //console.log('onCoverDblClick, setEditable!');

@@ -9,10 +9,22 @@ Ext.onReady(function() {
         text: 'Show Spreadsheet',
         handler: function() {
 
-            var fields = ['id', 'firstname', 'lastname', 'age', 'birthday', 'isMember', 'loginCount'],
+            var fields = [
+                    {name: 'id', type: 'int'},
+                    {name: 'firstname'},
+                    {name: 'lastname'},
+                    {name: 'age', type: 'int'},
+                    {name: 'birthday', type: 'date'},
+                    {name: 'isMember', type: 'boolean'},
+                    {name: 'loginCount', type: 'int'}
+                ],
                 dataGenerator = function(count) {
 
-                    var data = [];
+                    var data = [], curDate = new Date();
+
+                    // Clear milliseconds because toString() will loose them
+                    // and data change will be detected false-positively...
+                    curDate.setMilliseconds(0);
 
                     // Generate data rows
                     for (var i=0; i<count; i++) {
@@ -22,7 +34,7 @@ Ext.onReady(function() {
                             firstname: 'Eddie ' + (i+1),
                             lastname: 'Crash ' + (i+1),
                             age: parseInt(i+20),
-                            birthday: new Date(),
+                            birthday: curDate,
                             isMember: i % 2 ? true : false,
                             loginCount: parseInt(Math.random()) + i
                         });
@@ -100,6 +112,7 @@ Ext.onReady(function() {
                     //hidden: true,
                     dataIndex: 'age',
                     xtype: 'numbercolumn',
+                    format: '0,000',
                     summaryType: 'sum',
                     summaryRenderer: function(value, summaryData, dataIndex) {
                         return '<b>' + value + '</b>';
@@ -124,7 +137,8 @@ Ext.onReady(function() {
                         // Meta-data is accessible through position.record etc.
 
                         return value;
-                    },
+                    }
+                    /*
                     cellwriter: function(value, position) {
 
                         //console.log('[Before] Writing value: ', value, ' to ', position);
@@ -134,6 +148,7 @@ Ext.onReady(function() {
 
                         return value;
                     }
+                    */
                 }, {
                     header: 'Login count (cnt)',
                     dataIndex: 'loginCount',

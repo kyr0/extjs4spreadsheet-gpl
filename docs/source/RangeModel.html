@@ -361,15 +361,24 @@ Ext.define('Spread.selection.RangeModel', {
             tabIndex: -1
         });
 
-        // Handle key eventing using KeyNav
+        // DO NOT handle input field events to allow
+        // left &amp; right caret positioning while editing
+        me.keyNav = new Ext.util.KeyNav({
+            target: view.el,
+            eventName: 'keydown',
+            ignoreInputFields: true,
+            right: me.onKeyRight,
+            left: me.onKeyLeft,
+            scope: me
+        });
+
+        // DO handle input field events
         me.keyNav = new Ext.util.KeyNav({
             target: view.el,
             eventName: 'keydown',
             ignoreInputFields: false,
             up: me.onKeyUp,
             down: me.onKeyDown,
-            right: me.onKeyRight,
-            left: me.onKeyLeft,
             tab: me.onKeyTab,
             enter: me.onKeyEnter,
             scope: me
@@ -610,11 +619,16 @@ Ext.define('Spread.selection.RangeModel', {
      */
     onKeyLeft: function(evt) {
 
+        if (Ext.get(evt.getTarget()).hasCls('spreadsheet-cell-cover-edit-field')) {
+            return;
+        }
+
         if (!this.getCurrentFocusPosition()) return;
 
         this.keyNavigation = true;
         this.processKeyNavigation('left', evt);
         this.keyNavigation = false;
+
     },
 
 <span id='Spread-selection-RangeModel-method-onKeyRight'>    /**
@@ -625,11 +639,16 @@ Ext.define('Spread.selection.RangeModel', {
      */
     onKeyRight: function(evt) {
 
+        if (Ext.get(evt.getTarget()).hasCls('spreadsheet-cell-cover-edit-field')) {
+            return;
+        }
+
         if (!this.getCurrentFocusPosition()) return;
 
         this.keyNavigation = true;
         this.processKeyNavigation('right', evt);
         this.keyNavigation = false;
+
     },
 
 <span id='Spread-selection-RangeModel-method-onKeyTab'>    /**

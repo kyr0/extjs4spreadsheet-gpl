@@ -220,7 +220,7 @@ Ext.define('Spread.grid.plugin.Editable', {
              * Fires after the editable flag has changed and all re-rendering has been done.
              * Use this event if you e.g. want to reload the store "directly" after calling setEditable() etc.
              * @param {Spread.grid.plugin.Editable} editable Editable plugin instance
-             * @param {Boolean} editable Indicator if the spread is now editable or not
+             * @param {Boolean} isEditable Indicator if the spread is now editable or not
              */
             'editablechange'
         );
@@ -484,6 +484,34 @@ Ext.define('Spread.grid.plugin.Editable', {
         }
     },
 
+    // Internal method for checking if a user clicked on a cell cover
+    // which is covering the currently focused cell.
+    isOriginCellClick: function(evt) {
+
+        var clickedOnCell = false,
+            clickTargetElIdTextParent = evt.getTarget().parentNode.parentNode.id,
+            clickTargetElIdText = evt.getTarget().parentNode.id,
+            clickTargetElId = evt.getTarget().id,
+            currentPosCellElId = this.view.getSelectionModel().getCurrentFocusPosition().cellEl.id;
+
+        if (Ext.isIE) {
+
+            if (clickTargetElId.indexOf(currentPosCellElId) > -1 ||
+                clickTargetElIdText.indexOf(currentPosCellElId) > -1 ||
+                clickTargetElIdTextParent.indexOf(currentPosCellElId) > -1) {
+                clickedOnCell = true;
+            }
+
+        } else {
+
+            if (clickTargetElId.indexOf(currentPosCellElId) > -1) {
+                clickedOnCell = true;
+            }
+        }
+        return clickedOnCell;
+    },
+
+
     /**
      * @protected
      * When a user double-clicks on a cell cover, this method
@@ -496,16 +524,13 @@ Ext.define('Spread.grid.plugin.Editable', {
 
         if (this.fireEvent('beforecoverdblclick', this) !== false) {
 
-            var clickTargetElId = evt.getTarget().id,
-                currentPosCellElId = this.view.getSelectionModel().getCurrentFocusPosition().cellEl.id;
-
             // Clicked on grid view
             // ...and not already editing
             // ...and clicked on cell cover of the current selected cell position
             // ...and if position is generally editable
             if (!Ext.get(evt.getTarget()).hasCls('x-grid-view') &&
                 !this.isEditing &&
-                clickTargetElId.indexOf(currentPosCellElId) > -1 &&
+                this.isOriginCellClick(evt) &&
                 this.isPositionEditable()) {
 
                 //console.log('onCoverDblClick, setEditable!');

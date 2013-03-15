@@ -237,7 +237,7 @@ Ext.define('Spread.grid.plugin.Editable', {
              * Fires after the editable flag has changed and all re-rendering has been done.
              * Use this event if you e.g. want to reload the store &quot;directly&quot; after calling setEditable() etc.
              * @param {Spread.grid.plugin.Editable} editable Editable plugin instance
-             * @param {Boolean} editable Indicator if the spread is now editable or not
+             * @param {Boolean} isEditable Indicator if the spread is now editable or not
              */
             'editablechange'
         );
@@ -451,6 +451,8 @@ Ext.define('Spread.grid.plugin.Editable', {
         if (this.isEditing) {
 
             if (Spread.util.Key.isCancelEditKey(evt)) {
+
+                //console.log('is cancel edit key')
                 this.blurEditFieldIfEditing();
                 return true;
             }
@@ -499,6 +501,34 @@ Ext.define('Spread.grid.plugin.Editable', {
         }
     },
 
+<span id='Spread-grid-plugin-Editable-method-isOriginCellClick'>    // Internal method for checking if a user clicked on a cell cover
+</span>    // which is covering the currently focused cell.
+    isOriginCellClick: function(evt) {
+
+        var clickedOnCell = false,
+            clickTargetElIdTextParent = evt.getTarget().parentNode.parentNode.id,
+            clickTargetElIdText = evt.getTarget().parentNode.id,
+            clickTargetElId = evt.getTarget().id,
+            currentPosCellElId = this.view.getSelectionModel().getCurrentFocusPosition().cellEl.id;
+
+        if (Ext.isIE) {
+
+            if (clickTargetElId.indexOf(currentPosCellElId) &gt; -1 ||
+                clickTargetElIdText.indexOf(currentPosCellElId) &gt; -1 ||
+                clickTargetElIdTextParent.indexOf(currentPosCellElId) &gt; -1) {
+                clickedOnCell = true;
+            }
+
+        } else {
+
+            if (clickTargetElId.indexOf(currentPosCellElId) &gt; -1) {
+                clickedOnCell = true;
+            }
+        }
+        return clickedOnCell;
+    },
+
+
 <span id='Spread-grid-plugin-Editable-method-onCoverDblClick'>    /**
 </span>     * @protected
      * When a user double-clicks on a cell cover, this method
@@ -511,24 +541,24 @@ Ext.define('Spread.grid.plugin.Editable', {
 
         if (this.fireEvent('beforecoverdblclick', this) !== false) {
 
-            // Not already editing and not clicked outside of the table area
-            // TODO: Issue #4 is related to this. We need to check if there really was a click on the cover el.
-            //       This is complicated because of IE providing a different element than every other browser.
-            if (!Ext.get(evt.getTarget()).hasCls('x-grid-view') &amp;&amp; !this.isEditing) {
+            // Clicked on grid view
+            // ...and not already editing
+            // ...and clicked on cell cover of the current selected cell position
+            // ...and if position is generally editable
+            if (!Ext.get(evt.getTarget()).hasCls('x-grid-view') &amp;&amp;
+                !this.isEditing &amp;&amp;
+                this.isOriginCellClick(evt) &amp;&amp;
+                this.isPositionEditable()) {
 
-                if (this.isPositionEditable()) {
+                //console.log('onCoverDblClick, setEditable!');
 
-                    //console.log('onCoverDblClick, setEditable!');
+                // Activates the editor
+                this.setEditing(true);
 
-                    // Activates the editor
-                    this.setEditing(true);
-
-                    // Set current value of field in record
-                    this.setEditingValue(
-                        Spread.data.DataMatrix.getValueOfPosition(this.activePosition)
-                    );
-                }
-
+                // Set current value of field in record
+                this.setEditingValue(
+                    Spread.data.DataMatrix.getValueOfPosition(this.activePosition)
+                );
             }
             this.fireEvent('coverdblclick', this);
         }
@@ -542,6 +572,12 @@ Ext.define('Spread.grid.plugin.Editable', {
      * @return void
      */
     onCoverKeyPressed: function(evt, viewEl) {
+
+        // no key is pressed on a cover,
+        // if we're editing...
+        if (this.isEditing) {
+            return;
+        }
 
         if (this.fireEvent('beforecoverkeypressed', this) !== false) {
 
