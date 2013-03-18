@@ -150,7 +150,7 @@ Ext.define('Spread.grid.plugin.Pasteable', {
                 //console.log('Clipboard data:', clipboardData);
 
                 // Call the transformer to transform and insert data
-                var pastedDataArray = Spread.data.TSVTransformer.transformToArray(clipboardData);
+                var pastedDataArray = Spread.util.TSVTransformer.transformToArray(clipboardData);
 
                 //console.log('Pasted data array:', pastedDataArray);
 
@@ -192,7 +192,7 @@ Ext.define('Spread.grid.plugin.Pasteable', {
             selModel.originSelectionPosition = newOriginSelectionPosition;
 
             // Try selecting range
-            selModel.tryToSelectRange(true);
+            selModel.selectFocusRange(true);
         }
 
         // Do nothing, if nothing is selected or nothing was pasted
@@ -204,7 +204,7 @@ Ext.define('Spread.grid.plugin.Pasteable', {
         // Single cell paste, just set data on focus position
         if (pastedDataArray.length === 1 && pastedDataArray[0].length === 1) {
 
-            var newFocusPosition = selectionPositions[0].update();
+            var newFocusPosition = selectionPositions[0].validate();
 
             /*console.log(
                 'setting data value',
@@ -218,8 +218,7 @@ Ext.define('Spread.grid.plugin.Pasteable', {
             }
 
             // Set data on field of record
-            Spread.data.DataMatrix.setValueForPosition(
-                newFocusPosition,
+            newFocusPosition.setValue(
                 pastedDataArray[0][0],
                 me.autoCommit
             );
@@ -233,7 +232,7 @@ Ext.define('Spread.grid.plugin.Pasteable', {
         // Build real selectionPositions array
         if (selectionPositions.length === 1) {
 
-            var newOriginSelectionPosition = selectionPositions[0].update(),
+            var newOriginSelectionPosition = selectionPositions[0].validate(),
                 newFocusPosColumnIndex = newOriginSelectionPosition.column,
                 newFocusPosRowIndex = newOriginSelectionPosition.row,
                 newFocusPosition = null;
@@ -266,7 +265,7 @@ Ext.define('Spread.grid.plugin.Pasteable', {
         // Selection exists, change data for cells in selection
         //console.log('change data inside selection: ', selectionPositions, pastedDataArray);
 
-        var newOriginSelectionPosition = selectionPositions[0].update();
+        var newOriginSelectionPosition = selectionPositions[0].validate();
         var projectedColumnIndex = 0;
         var projectedRowIndex = 0;
         var lastProjectedRowIndex = 0;
@@ -275,7 +274,7 @@ Ext.define('Spread.grid.plugin.Pasteable', {
         for (var i=0; i<selectionPositions.length; i++) {
 
             // Update record references
-            selectionPositions[i].update();
+            selectionPositions[i].validate();
 
             // Never paste on non-editable columns!
             if (!selectionPositions[i].columnHeader.editable) {
@@ -300,8 +299,7 @@ Ext.define('Spread.grid.plugin.Pasteable', {
             */
 
             // Set new data value
-            Spread.data.DataMatrix.setValueForPosition(
-                selectionPositions[i],
+            selectionPositions[i].setValue(
                 pastedDataArray[projectedRowIndex][projectedColumnIndex],
                 me.autoCommit,
                 me.useInternalAPIs

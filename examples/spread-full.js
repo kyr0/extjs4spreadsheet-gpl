@@ -98,8 +98,7 @@ Ext.onReady(function() {
                     header: 'ID'
                 }, {
                     header: 'First name',
-                    dataIndex: 'firstname',
-                    selectable: false
+                    dataIndex: 'firstname'
                 }, {
                     header: 'Last name',
                     renderer: function(value) {
@@ -150,7 +149,7 @@ Ext.onReady(function() {
                     }
                     */
                 }, {
-                    header: 'Login count (cnt)',
+                    header: 'Login count (cnt) [non-editable]',
                     dataIndex: 'loginCount',
                     editable: false,
                     xtype: 'templatecolumn',

@@ -1,9 +1,9 @@
 /**
- * @class Spread.data.TSVTransformer
+ * @class Spread.util.TSVTransformer
  * @private
  * Internal class for transforming data pasted from native spreadsheet applications to TSV and back.
  */
-Ext.define('Spread.data.TSVTransformer', {
+Ext.define('Spread.util.TSVTransformer', {
 
     singleton: true,
 
@@ -35,7 +35,7 @@ Ext.define('Spread.data.TSVTransformer', {
         for (var i=0; i<selectionPositions.length; i++) {
 
             // Update record first
-            selectionPositions[i].update();
+            selectionPositions[i].validate();
 
             // Add line break
             if (currentRow !== selectionPositions[i].row &&
@@ -57,6 +57,10 @@ Ext.define('Spread.data.TSVTransformer', {
                 tsvText = this.addTabulator(tsvText);
             }
         }
+
+        // Standard-conformity by adding one ending line feed
+        tsvText = this.addLineBreak(tsvText);
+
         return tsvText;
     },
 
@@ -70,7 +74,7 @@ Ext.define('Spread.data.TSVTransformer', {
         var dataArray = [],
             rows = clipboardData.split(this.lineSeparator);
 
-        for (var i=0; i<rows.length; i++) {
+        for (var i=0; i<(rows.length-1); i++) {
             dataArray.push(
                 rows[i].split(this.columnSeparator)
             );
@@ -103,6 +107,6 @@ Ext.define('Spread.data.TSVTransformer', {
      * @return {String}
      */
     addValue: function(tsvText, position) {
-        return tsvText += Spread.data.DataMatrix.getValueOfPosition(position);
+        return tsvText += position.getValue();
     }
 });

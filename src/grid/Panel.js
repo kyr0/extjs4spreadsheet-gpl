@@ -308,7 +308,7 @@
  * Attention: If you DONT SET a cellwriter, the spreadsheet tries to automatically cast the datatype
  * of the incoming new value (String) into the data type defined in the model (type) - e.g. int -> parseInt,
  * float -> parseFloat and so on. If you do not set a data type in the model or set the
- * data type to 'auto' String values will be stored. Have a look at Spread.data.DataMatrix for details.
+ * data type to 'auto' String values will be stored. Have a look at Spread.selection.Position#setValue for details.
  *
  * As you can see, the writer function gets called with two arguments:
  *
@@ -444,6 +444,8 @@ Ext.define('Spread.grid.Panel', {
 
     extend: 'Ext.grid.Panel',
 
+    requires: ['Spread.command.Commander'],
+
     alias: 'widget.spread',
 
     // use spread view
@@ -510,6 +512,13 @@ Ext.define('Spread.grid.Panel', {
     pasteablePluginConfig: {},
 
     /**
+     * @cfg {Object}
+     * Config object to configure a Spread.grid.plugin.ClearRange plugin.
+     * To change the configuration of the plugin, you may just assign your own config here.
+     */
+    clearRangePluginConfig: {},
+
+    /**
      * Pre-process the column configuration to avoid incompatibilities
      * @return void
      */
@@ -534,7 +543,6 @@ Ext.define('Spread.grid.Panel', {
              * @inheritdoc Spread.grid.View#covercell
              */
             'covercell',
-
 
             /**
              * @event beforehighlightcells
@@ -720,6 +728,18 @@ Ext.define('Spread.grid.Panel', {
     },
 
     /**
+     * Returns the Commander API
+     * @return {Spread.command.Commander}
+     */
+    getCommander: function() {
+
+        // Create and return an instance of the commander
+        return Ext.create('Spread.command.Commander', {
+            grid: this
+        });
+    },
+
+    /**
      * @protected
      * Initializes the columns by referencing the view onto them
      * @return void
@@ -746,6 +766,7 @@ Ext.define('Spread.grid.Panel', {
         this.editablePluginInstance = Ext.create('Spread.grid.plugin.Editable', this.editablePluginConfig);
         this.copyablePluginInstance = Ext.create('Spread.grid.plugin.Copyable', this.copyablePluginConfig);
         this.pasteablePluginInstance = Ext.create('Spread.grid.plugin.Pasteable', this.pasteablePluginConfig);
+        this.clearRangePluginInstance = Ext.create('Spread.grid.plugin.ClearRange', this.clearRangePluginConfig);
     },
 
     /**
@@ -768,7 +789,8 @@ Ext.define('Spread.grid.Panel', {
             config.viewConfig.spreadPlugins.push(
                 me.editablePluginInstance,
                 me.copyablePluginInstance,
-                me.pasteablePluginInstance
+                me.pasteablePluginInstance,
+                me.clearRangePluginInstance
             );
         };
 
@@ -799,6 +821,7 @@ Ext.define('Spread.grid.Panel', {
                 pluginCheckMerge(Spread.grid.plugin.Editable, this.editablePluginInstance);
                 pluginCheckMerge(Spread.grid.plugin.Copyable, this.copyablePluginInstance);
                 pluginCheckMerge(Spread.grid.plugin.Pasteable, this.pasteablePluginInstance);
+                pluginCheckMerge(Spread.grid.plugin.ClearRange, this.clearRangePluginInstance);
 
             } else {
 

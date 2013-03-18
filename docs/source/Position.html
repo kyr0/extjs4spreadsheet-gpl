@@ -154,13 +154,13 @@ Ext.define('Spread.selection.Position', {
         });
     },
 
-<span id='Spread-selection-Position-method-update'>    /**
-</span>     * Updates the position object and it's internal references.
+<span id='Spread-selection-Position-method-validate'>    /**
+</span>     * (Re)validates the position object and it's internal references.
      * This is useful when view has been refreshed and record or
      * cell or row of the position has been changed.
      * @return {Spread.selection.Position}
      */
-    update: function() {
+    validate: function() {
 
         this.record = this.view.getStore().getAt(this.row);
 
@@ -181,6 +181,188 @@ Ext.define('Spread.selection.Position', {
         //console.log('Position update()ed ', this);
 
         return this;
+    },
+
+<span id='Spread-selection-Position-method-getFieldName'>    /**
+</span>     * Get field name by fetching the dataIndex
+     * of a given column index from column header container of the view.
+     * @return {String}
+     */
+    getFieldName: function() {
+
+        var me = this,
+            header = me.view.getHeaderAtIndex(me.column);
+
+        if (header) {
+            return header.dataIndex;
+        } else {
+            throw &quot;No column found for column index: &quot; + me.column;
+        }
+    },
+
+<span id='Spread-selection-Position-method-getType'>    /**
+</span>     * Returns the primitive type of the position.
+     * Returns either: auto, int, float, bool, string or date.
+     * @return {String}
+     */
+    getType: function() {
+
+        var me = this,
+            type = 'auto',
+            fieldName = me.getFieldName();
+
+        // Caching type name on record instance
+        if (!me.record['__' + fieldName + '_type']) {
+
+            me.record.fields.each(function(field) {
+
+                // Found the field and it's special type
+                if (field.name === fieldName &amp;&amp;
+                    field.type.type !== 'auto') {
+
+                    type = field.type.type;
+                }
+            });
+            return me.record['__' + fieldName + '_type'] = type;
+        }
+        return me.record['__' + fieldName + '_type'];
+    },
+
+<span id='Spread-selection-Position-method-castNewValue'>    /**
+</span>     * Casts a new value into the primitive type
+     * needed by the position's under-laying model.
+     * @param {String} newValue New value
+     * @return {*}
+     */
+    castNewValue: function(newValue) {
+
+        var me = this;
+
+        // null or undefined
+        if (!Ext.isDefined(newValue) || newValue === null) {
+            return newValue;
+        }
+
+        // Do casting
+        switch(me.getType()) {
+            case 'bool':
+                return (newValue == 'true');
+            case 'int':
+                return parseInt(newValue);
+            case 'float':
+                return parseFloat(newValue);
+            case 'auto':
+            case 'string':
+                return newValue.valueOf();
+            case 'date':
+                return new Date(newValue);
+        }
+    },
+
+<span id='Spread-selection-Position-method-setValue'>    /**
+</span>     * Returns, what Ext.data.Model's set() returns.
+     * (An array of modified field names or null if nothing was modified)
+     *
+     * @param {Mixed} newValue New cell value
+     * @param {Boolean} [autoCommit=false] Should the record be automatically committed after change
+     * @param {Boolean} [useInternalAPIs=false] Force to use the internal Model API's
+     * @return {String}
+     */
+    setValue: function(newValue, autoCommit, useInternalAPIs) {
+
+        var me = this,
+            fieldName,
+            ret;
+
+
+        // Update position
+        me.validate();
+
+        if (!autoCommit &amp;&amp; !me.columnHeader.autoCommit) {
+            //useInternalAPIs = true;
+        }
+
+        // Fetch field name
+        fieldName = me.getFieldName();
+
+        if (!me.record) {
+            throw &quot;No record found for row index: &quot; + me.row;
+        }
+
+        // Check for pre-processor
+        if (me.columnHeader.cellwriter &amp;&amp;
+            Ext.isFunction(me.columnHeader.cellwriter)) {
+
+            // Call pre-processor for value writing / change before write
+            newValue = me.columnHeader.cellwriter(newValue, me);
+
+        } else {
+
+            // Auto-preprocessor (type conversion)
+
+            // Casting the new value from text received from
+            // the text input field into the origin data type
+            newValue = me.castNewValue(newValue);
+        }
+
+        // Do not change the record's value if it hasn't changed
+        if (me.record.get(fieldName) == newValue) {
+            return newValue;
+        }
+
+        if (useInternalAPIs) {
+
+            ret = me.record[
+                me.record.persistenceProperty
+            ][fieldName] = newValue;
+
+            // Set record dirty
+            me.record.setDirty();
+
+        } else {
+
+            // Set new value
+            ret = me.record.set(fieldName, newValue);
+        }
+        // Automatically commit if wanted
+        if (autoCommit &amp;&amp;
+            me.columnHeader.autoCommit) {
+
+            me.record.commit();
+        }
+        return ret;
+    },
+
+<span id='Spread-selection-Position-method-getValue'>    /**
+</span>     * Returns the value of the position
+     * @return {*}
+     */
+    getValue: function() {
+
+        var me = this,
+            fieldName, value;
+
+        // Update position
+        me.validate();
+
+        // Fetch field name
+        fieldName = me.getFieldName();
+
+        if (!me.record) {
+            throw &quot;No record found for row index: &quot; + me.row;
+        }
+
+        // Fetch raw value
+        value = me.record.get(fieldName);
+
+        // Check for pre-processor
+        if (me.columnHeader.cellreader &amp;&amp;
+            Ext.isFunction(me.columnHeader.cellreader)) {
+
+            // Call pre-processor for value reading
+            value = me.columnHeader.cellreader(value, me);
+        }
+        return value;
     }
 });</pre>
 </body>

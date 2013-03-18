@@ -1,6 +1,8 @@
 /**
  * @class Spread.grid.plugin.Editable
  * Allows the spreadsheet to get edited by a text field as known from standard spreadsheet applications.
+ *
+ * TODO: Support string fields without allowedKeys config to enter special chars!
  */
 Ext.define('Spread.grid.plugin.Editable', {
 
@@ -375,8 +377,7 @@ Ext.define('Spread.grid.plugin.Editable', {
             this.setEditing(false);
 
             // Write changed value back to record/field
-            Spread.data.DataMatrix.setValueForPosition(
-                this.activePosition,
+            this.activePosition.setValue(
                 this.getEditingValue(),
                 this.autoCommit
             );
@@ -540,7 +541,7 @@ Ext.define('Spread.grid.plugin.Editable', {
 
                 // Set current value of field in record
                 this.setEditingValue(
-                    Spread.data.DataMatrix.getValueOfPosition(this.activePosition)
+                    this.activePosition.getValue()
                 );
             }
             this.fireEvent('coverdblclick', this);

@@ -15,28 +15,28 @@
   </script>
 </head>
 <body onload="prettyPrint(); highlight();">
-  <pre class="prettyprint lang-js"><span id='Spread-data-TSVTransformer'>/**
-</span> * @class Spread.data.TSVTransformer
+  <pre class="prettyprint lang-js"><span id='Spread-util-TSVTransformer'>/**
+</span> * @class Spread.util.TSVTransformer
  * @private
  * Internal class for transforming data pasted from native spreadsheet applications to TSV and back.
  */
-Ext.define('Spread.data.TSVTransformer', {
+Ext.define('Spread.util.TSVTransformer', {
 
     singleton: true,
 
-<span id='Spread-data-TSVTransformer-property-lineSeparator'>    /**
+<span id='Spread-util-TSVTransformer-property-lineSeparator'>    /**
 </span>     * @property {String} lineSeparator
      * Line separator char sequence
      */
     lineSeparator: '\n',
 
-<span id='Spread-data-TSVTransformer-property-columnSeparator'>    /**
+<span id='Spread-util-TSVTransformer-property-columnSeparator'>    /**
 </span>     * @property {String} columnSeparator
      * Column separator char sequence
      */
     columnSeparator: '\t',
 
-<span id='Spread-data-TSVTransformer-method-transformToTSV'>    /**
+<span id='Spread-util-TSVTransformer-method-transformToTSV'>    /**
 </span>     * Transforms plain array data into TSV plaintext
      * @param {Array} selectionPositions Array of selected position instances
      * @return {String}
@@ -52,7 +52,7 @@ Ext.define('Spread.data.TSVTransformer', {
         for (var i=0; i&lt;selectionPositions.length; i++) {
 
             // Update record first
-            selectionPositions[i].update();
+            selectionPositions[i].validate();
 
             // Add line break
             if (currentRow !== selectionPositions[i].row &amp;&amp;
@@ -77,7 +77,7 @@ Ext.define('Spread.data.TSVTransformer', {
         return tsvText;
     },
 
-<span id='Spread-data-TSVTransformer-method-transformToArray'>    /**
+<span id='Spread-util-TSVTransformer-method-transformToArray'>    /**
 </span>     * Transforms pasted TSV data into plain array data
      * @param {String} clipboardData Pasted TSV or Excel plain clipboard data
      * @return {Array}
@@ -95,7 +95,7 @@ Ext.define('Spread.data.TSVTransformer', {
         return dataArray;
     },
 
-<span id='Spread-data-TSVTransformer-method-addLineBreak'>    /**
+<span id='Spread-util-TSVTransformer-method-addLineBreak'>    /**
 </span>     * Adds line break chars to buffer
      * @param {String} tsvText Current buffer
      * @return {String}
@@ -104,7 +104,7 @@ Ext.define('Spread.data.TSVTransformer', {
         return tsvText + this.lineSeparator;
     },
 
-<span id='Spread-data-TSVTransformer-method-addTabulator'>    /**
+<span id='Spread-util-TSVTransformer-method-addTabulator'>    /**
 </span>     * Adds a tabulator char to buffer
      * @param {String} tsvText Current buffer
      * @return {String}
@@ -113,14 +113,14 @@ Ext.define('Spread.data.TSVTransformer', {
         return tsvText + this.columnSeparator;
     },
 
-<span id='Spread-data-TSVTransformer-method-addValue'>    /**
+<span id='Spread-util-TSVTransformer-method-addValue'>    /**
 </span>     * Adds the value to the buffer
      * @param {String} tsvText Current buffer
      * @param {Spread.selection.Position} position Position reference
      * @return {String}
      */
     addValue: function(tsvText, position) {
-        return tsvText += Spread.data.DataMatrix.getValueOfPosition(position);
+        return tsvText += position.getValue();
     }
 });</pre>
 </body>

@@ -17,10 +17,13 @@
  * Using the interceptable eventing of this selection model, it's possible
  * to extend the selection and focussing logic.
  *
+ * TODO: Select cell on click / key nav -> allows clearing by DEL directly!
  */
 Ext.define('Spread.selection.RangeModel', {
 
     extend: 'Ext.selection.Model',
+
+    requires: ['Spread.selection.Range'],
 
     alias: 'selection.range',
 
@@ -60,12 +63,12 @@ Ext.define('Spread.selection.RangeModel', {
     enableKeyNav: true,
 
     /**
-     * @property {Array}
+     * @property {Spread.selection.Range}
      * Internal array which contains all
      * position objects, identifying the current
      * range of selected cells.
      */
-    currentSelectionRange: [],
+    currentSelectionRange: Ext.create('Spread.selection.Range'),
 
     /**
      * @property {Spread.selection.Position}
@@ -390,7 +393,7 @@ Ext.define('Spread.selection.RangeModel', {
         } else {
 
             // Update root position / record reference
-            this.rootPosition.update();
+            this.rootPosition.validate();
 
             try {
                 // Try re-focussing
@@ -480,7 +483,7 @@ Ext.define('Spread.selection.RangeModel', {
             // Try to select range, if special key was pressed too
             if (evt.shiftKey && !Spread.util.Key.isStartEditKey(evt)) {
 
-                this.tryToSelectRange();
+                this.selectFocusRange();
 
             } else {
 
@@ -538,7 +541,7 @@ Ext.define('Spread.selection.RangeModel', {
             ) {
 
                 // Try selecting a range
-                this.tryToSelectRange();
+                this.selectFocusRange();
             }
         }
     },
@@ -718,7 +721,7 @@ Ext.define('Spread.selection.RangeModel', {
             //console.log('FOCUS ', this.getCurrentFocusPosition().row + ',' + this.getCurrentFocusPosition().column);
 
             // Reset current selection range
-            this.currentSelectionRange = [];
+            this.currentSelectionRange = Ext.create('Spread.selection.Range');
 
             // Inform the view to focus the cell
             this.view.coverCell(position);
@@ -792,7 +795,7 @@ Ext.define('Spread.selection.RangeModel', {
                 // Shift + Tab is special navigation behaviour (left navigation without selection)
                 if (evt.shiftKey && evt.getKey() !== evt.TAB) {
 
-                    this.tryToSelectRange();
+                    this.selectFocusRange();
 
                 } else {
 
@@ -845,14 +848,14 @@ Ext.define('Spread.selection.RangeModel', {
         return new Spread.selection.Position(this.view, newPosition.column, newPosition.row);
     },
 
+
     /**
      * @protected
-     * Tries to select a range by information from _previously_ internally set
+     * Creates a range of positions from _previously_ internally set
      * this.originSelectionPosition and (to) this.currentFocusPosition.
-     * @param {Boolean} [virtual=false] Virtual calculation but no UI change
-     * @return void
+     * @return {Spread.selection.Range}
      */
-    tryToSelectRange: function(virtual) {
+    createFocusRange: function() {
 
         // private method to interpolate numbers and return them as index array
         var interpolate = function(startIdx, endIdx) {
@@ -865,7 +868,7 @@ Ext.define('Spread.selection.RangeModel', {
             return indexes;
         };
 
-        //console.log('tryToSelectRange: ', this.getOriginSelectionPosition(), ' to ', this.getCurrentFocusPosition());
+        //console.log('createFocusRange: ', this.getOriginSelectionPosition(), ' to ', this.getCurrentFocusPosition());
 
         /*
         console.log('SELECT RANGE FROM ', this.getOriginSelectionPosition().row + ',' + this.getOriginSelectionPosition().column,
@@ -909,7 +912,7 @@ Ext.define('Spread.selection.RangeModel', {
                     Ext.Array.indexOf(columnIndexes, colIndex) > -1) {
 
                     // Fetch already-updated position instance
-                    selPosition = new Spread.selection.Position(this.view, colIndex, rowIndex).update();
+                    selPosition = new Spread.selection.Position(this.view, colIndex, rowIndex).validate();
 
                     // Only add position to selection if column isn't hidden currently
                     if (!selPosition.columnHeader.hidden) {
@@ -919,15 +922,26 @@ Ext.define('Spread.selection.RangeModel', {
             }
         }
 
-        //console.log('SELECTED', selectedPositions);
+        return Ext.create('Spread.selection.Range', {
+            positions: selectedPositions
+        });
+    },
+
+
+    /**
+     * @protected
+     * Tries to select a range by information from _previously_ internally set
+     * this.originSelectionPosition and (to) this.currentFocusPosition.
+     * @param {Boolean} [virtual=false] Virtual calculation but no UI change
+     * @return void
+     */
+    selectFocusRange: function(virtual) {
 
         // Update local selection range cache
-        this.currentSelectionRange = selectedPositions;
+        this.currentSelectionRange = this.createFocusRange();
 
-        // Tell the view which cells to highlight
-        if (!virtual) {
-            this.view.highlightCells(selectedPositions);
-        }
+        // Select the range
+        this.currentSelectionRange.select(this, virtual);
     },
 
     /**
@@ -939,13 +953,21 @@ Ext.define('Spread.selection.RangeModel', {
 
         var selectionToTransform;
 
-        if (this.currentSelectionRange.length === 0) {
+        if (this.currentSelectionRange.count() === 0) {
             selectionToTransform = [this.currentFocusPosition];
         } else {
-            selectionToTransform = this.currentSelectionRange;
+            selectionToTransform = this.currentSelectionRange.toArray();
         }
         //console.log('transform to array', selectionToTransform);
 
         return selectionToTransform;
+    },
+
+    /**
+     * Returns the current selection range
+     * @return {Spread.selection.Range}
+     */
+    getCurrentSelectionRange: function() {
+        return this.currentSelectionRange;
     }
 });

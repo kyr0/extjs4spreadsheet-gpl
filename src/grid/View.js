@@ -443,7 +443,7 @@ Ext.define('Spread.grid.View', {
             }
 
             // Update position
-            position.update();
+            position.validate();
 
             var tdEl = Ext.get(position.cellEl),
                 coverElSize, coverElPosition;
@@ -494,6 +494,11 @@ Ext.define('Spread.grid.View', {
     /**
      * Highlights a range of cells identified by Spread.selection.Position instances.
      * Before highlighting, previously highlighted cells get un-highlighted again.
+     *
+     * TODO: Refactor to use a Spread.selection.Range to remember all current highlighted cells.
+     * TODO: Maybe rewrite / reimplement a new method highlightCell() which does take care of the current positions view
+     * TODO: Or maybe just rewrite to use a Range!!
+     *
      * @param {Array} positions Array of position instances
      * @return void
      */
@@ -504,7 +509,7 @@ Ext.define('Spread.grid.View', {
             for (var i=0; i<me.currentHighlightPositions.length; i++) {
 
                 // (Un-)highlight visually by adding/removing CSS class
-                Ext.fly(me.currentHighlightPositions[i].update().cellEl)
+                Ext.fly(me.currentHighlightPositions[i].validate().cellEl)
                     .down('div')[methodName]('spreadsheet-cell-selection-cover');
             }
         };
@@ -531,6 +536,13 @@ Ext.define('Spread.grid.View', {
             // Fire event
             this.fireEvent('highlightcells', this, positions);
         }
+    },
+
+    /**
+     *
+     */
+    highlightCell: function() {
+
     },
 
     /**

@@ -1,288 +1,125 @@
 /**
- * @class Spread.data.DataMatrix
- * @private
- * Internal class for data matrix operation logic.
- * Implements methods for changing data/reading data of grid cells/records.
+ * @class Spread.selection.Range
+ * Represents a set of Spread.selection.Position instances
+ * and it's helper methods and attributes.
  */
-Ext.define('Spread.data.DataMatrix', {
-
-    singleton: true,
+Ext.define('Spread.selection.Range', {
 
     /**
-     * Get field name for column index by fetching the dataIndex
-     * of a given column index from column header container of the view.
-     * @param {Spread.grid.View} view View instance
-     * @param {Number} columnIndex Column index
-     * @return {String}
+     * @property {Array} positions
+     * Selection positions
      */
-    getFieldNameForColumnIndex: function(view, columnIndex) {
+    positions: [],
 
-        var header = view.getHeaderAtIndex(columnIndex);
+    // private constructor
+    constructor: function(config) {
 
-        if (header) {
-            return header.dataIndex;
-        } else {
-            throw "No column found for column index: " + columnIndex;
-        }
+        // Apply the positions onto the instance
+        Ext.apply(this, config);
     },
 
     /**
-     * Sets a new value of a cell identified by row and column index.
-     * Returns, what Ext.data.Model's set() returns.
-     * (An array of modified field names or null if nothing was modified)
-     *
-     * @param {Spread.selection.Position} position Position reference
-     * @param {Mixed} newValue New cell value
-     * @param {Boolean} [autoCommit=false] Should the record be automatically committed after change
-     * @param {Boolean} [useInternalAPIs=false] Force to use the internal Model API's
-     * @return {String}
+     * Calls the callback method for each position in the store
+     * @param {Function} cb Callback called for each position. Arguments: position, index, length
+     * @param {Function} [onComplete] Function that gets called when all interation processing is done
+     * @return void
      */
-    setValueForPosition: function(position, newValue, autoCommit, useInternalAPIs) {
+    each: function(cb, onComplete) {
+        var me = this;
+        for (var i=0; i<me.positions.length; i++) {
 
-        //useInternalAPIs = true;
-
-        // Update position
-        position.update();
-
-        var fieldName = this.getFieldNameForColumnIndex(position.view, position.column), fieldType;
-
-        if (!position.record) {
-            throw "No record found for row index: " + position.row;
-        }
-
-        // Caching type name on record instance
-        if (!position.record['__' + fieldName + '_type']) {
-            position.record['__' + fieldName + '_type'] = this.getTypeForFieldName(fieldName, position.record);
-        }
-
-        // Check for pre-processor
-        if (position.columnHeader.cellwriter &&
-            Ext.isFunction(position.columnHeader.cellwriter)) {
-
-            // Call pre-processor for value writing / change before write
-            newValue = position.columnHeader.cellwriter(newValue, position);
-
-        } else {
-
-            // Auto-preprocessor (type conversion)
-
-            // Casting the new value from text received from the text input field into the origin data type
-            newValue = this.castFromString(newValue, position.record['__' + fieldName + '_type']);
-        }
-
-        // Do not change the record's value if it hasn't changed
-        if (position.record.get(fieldName) == newValue) {
-            return newValue;
-        }
-
-        if (useInternalAPIs) {
-
-            var ret = position.record[
-                position.record.persistenceProperty
-            ][fieldName] = newValue;
-
-            // Set record dirty
-            position.record.setDirty();
-
-        } else {
-
-            // Set new value
-            var ret = position.record.set(fieldName, newValue);
-        }
-        // Automatically commit if wanted
-        if (autoCommit &&
-            position.columnHeader.autoCommit) {
-
-            position.record.commit();
-        }
-        return ret;
-    },
-
-    /**
-     * Returns the primitive type of a field of a record,
-     * known by it's field name (dataIndex on column).
-     * Returns either: auto, int, float, bool, string or date.
-     * @param {String} fieldName Name of the field
-     * @param {Ext.data.Model} record Record instance
-     * @return {String}
-     */
-    getTypeForFieldName: function(fieldName, record) {
-
-        var type = 'auto';
-
-        record.fields.each(function(field) {
-
-            // Found the field and it's special type
-            if (field.name === fieldName &&
-                field.type.type !== 'auto') {
-
-                type = field.type.type;
+            if (Ext.isFunction(cb)) {
+                cb(me.positions[i], i, me.positions.length);
             }
-        });
-        return type;
-    },
+        }
 
-    /**
-     * Casts a input string (coming from a text input field)
-     * into an object or primitive type. Allowed are all Ext.data.Field types.
-     * @param {String} stringValue String value to be casted
-     * @param {String} typeName Name of the type. Either: auto, int, float, bool, string or date.
-     * @return {*}
-     */
-    castFromString: function(stringValue, typeName) {
-
-        switch(typeName) {
-            case 'bool':
-                return (stringValue == 'true');
-            case 'int':
-                return parseInt(stringValue);
-            case 'float':
-                return parseFloat(stringValue);
-            case 'auto':
-            case 'string':
-                return stringValue.valueOf();
-            case 'date':
-                return new Date(stringValue);
+        if (Ext.isFunction(onComplete)) {
+            onComplete();
         }
     },
 
     /**
-     * Returns the value of a cell identified by row and column index.
-     * @param {Spread.selection.Position} position Position reference
-     * @return {Mixed}
+     * Removes all positions from the range
+     * @return void
      */
-    getValueOfPosition: function(position) {
+    removeAll: function() {
+        this.positions = [];
+    },
 
-        // Update position
-        position.update();
+    /**
+     * Adds a position to the range
+     * @param {Spread.selection.Position} position Position instance
+     * @return void
+     */
+    add: function(position) {
+        this.positions.push(position);
+    },
 
-        var fieldName = this.getFieldNameForColumnIndex(position.view, position.column),
-            value = null;
+    /**
+     * Selects all positions of this range
+     * @param {Spread.selection.RangeModel} selModel Selection model reference
+     * @param {Boolean} [virtual=false] Virtual selections do not update the view visually
+     * @return void
+     */
+    select: function(selModel, virtual) {
 
-        if (!position.record) {
-            throw "No record found for row index: " + position.row;
+        selModel.currentSelectionRange = this;
+
+        if (!virtual) {
+            selModel.view.highlightCells(this.positions);
         }
+    },
 
-        // Fetch raw value
-        value = position.record.get(fieldName);
+    /**
+     * Returns the count of positions stored inside this range
+     * @return {Number}
+     */
+    count: function() {
+        return this.positions.length;
+    },
 
-        // Check for pre-processor
-        if (position.columnHeader.cellreader &&
-            Ext.isFunction(position.columnHeader.cellreader)) {
+    /**
+     * Returns all positions stored in this range as array
+     * @return {Array}
+     */
+    toArray: function() {
+        return this.positions;
+    },
 
-            // Call pre-processor for value reading
-            value = position.columnHeader.cellreader(value, position);
-        }
-        return value;
+    /**
+     * Returns the first position in the range
+     * @return {Spread.selection.Position}
+     */
+    getFirst: function() {
+        return this.positions[0];
+    },
+
+    /**
+     * Returns the last position in the range
+     * @return {Spread.selection.Position}
+     */
+    getLast: function() {
+        return this.positions[this.positions.length-1];
     }
 });
 /**
- * @class Spread.data.TSVTransformer
- * @private
- * Internal class for transforming data pasted from native spreadsheet applications to TSV and back.
+ * Ext.spread.command.Commander
+ * Class that implements a public command API for a more
+ * simple usage of the spreads features.
  */
-Ext.define('Spread.data.TSVTransformer', {
+Ext.define('Spread.command.Commander', {
 
-    singleton: true,
-
-    /**
-     * @property {String} lineSeparator
-     * Line separator char sequence
-     */
-    lineSeparator: '\n',
+    requires: ['Spread.selection.Range'],
 
     /**
-     * @property {String} columnSeparator
-     * Column separator char sequence
+     * Selects a range
+     * @return {Spread.selection.Range}
      */
-    columnSeparator: '\t',
+    select: function() {
 
-    /**
-     * Transforms plain array data into TSV plaintext
-     * @param {Array} selectionPositions Array of selected position instances
-     * @return {String}
-     */
-    transformToTSV: function(selectionPositions) {
-
-        var currentRow = -1,
-            tsvText = '';
-
-        //console.log('transformToTSV', selectionPositions);
-
-        // Loop to already well-ordered array
-        for (var i=0; i<selectionPositions.length; i++) {
-
-            // Update record first
-            selectionPositions[i].update();
-
-            // Add line break
-            if (currentRow !== selectionPositions[i].row &&
-                currentRow !== -1) {
-
-                if (tsvText[tsvText.length-1] == this.columnSeparator) {
-                    tsvText = tsvText.substring(0, tsvText.length - 1); // Remove trailing tabulator
-                }
-                tsvText = this.addLineBreak(tsvText);
-            }
-            currentRow = selectionPositions[i].row;
-
-            // Add cell value
-            tsvText = this.addValue(tsvText, selectionPositions[i]);
-
-            // Add tabulator
-            if (selectionPositions[i+1] &&
-                selectionPositions[i+1].column !== selectionPositions[+1].view.getSelectionModel().rootPosition.column) {
-                tsvText = this.addTabulator(tsvText);
-            }
-        }
-        return tsvText;
-    },
-
-    /**
-     * Transforms pasted TSV data into plain array data
-     * @param {String} clipboardData Pasted TSV or Excel plain clipboard data
-     * @return {Array}
-     */
-    transformToArray: function(clipboardData) {
-
-        var dataArray = [],
-            rows = clipboardData.split(this.lineSeparator);
-
-        for (var i=0; i<rows.length; i++) {
-            dataArray.push(
-                rows[i].split(this.columnSeparator)
-            );
-        }
-        return dataArray;
-    },
-
-    /**
-     * Adds line break chars to buffer
-     * @param {String} tsvText Current buffer
-     * @return {String}
-     */
-    addLineBreak: function(tsvText) {
-        return tsvText + this.lineSeparator;
-    },
-
-    /**
-     * Adds a tabulator char to buffer
-     * @param {String} tsvText Current buffer
-     * @return {String}
-     */
-    addTabulator: function(tsvText) {
-        return tsvText + this.columnSeparator;
-    },
-
-    /**
-     * Adds the value to the buffer
-     * @param {String} tsvText Current buffer
-     * @param {Spread.selection.Position} position Position reference
-     * @return {String}
-     */
-    addValue: function(tsvText, position) {
-        return tsvText += Spread.data.DataMatrix.getValueOfPosition(position);
     }
+
+    // TODO
 });
 /**
  * @class Spread.grid.Panel
@@ -594,7 +431,7 @@ Ext.define('Spread.data.TSVTransformer', {
  * Attention: If you DONT SET a cellwriter, the spreadsheet tries to automatically cast the datatype
  * of the incoming new value (String) into the data type defined in the model (type) - e.g. int -> parseInt,
  * float -> parseFloat and so on. If you do not set a data type in the model or set the
- * data type to 'auto' String values will be stored. Have a look at Spread.data.DataMatrix for details.
+ * data type to 'auto' String values will be stored. Have a look at Spread.selection.Position#setValue for details.
  *
  * As you can see, the writer function gets called with two arguments:
  *
@@ -730,6 +567,8 @@ Ext.define('Spread.grid.Panel', {
 
     extend: 'Ext.grid.Panel',
 
+    requires: ['Spread.command.Commander'],
+
     alias: 'widget.spread',
 
     // use spread view
@@ -796,6 +635,13 @@ Ext.define('Spread.grid.Panel', {
     pasteablePluginConfig: {},
 
     /**
+     * @cfg {Object}
+     * Config object to configure a Spread.grid.plugin.ClearRange plugin.
+     * To change the configuration of the plugin, you may just assign your own config here.
+     */
+    clearRangePluginConfig: {},
+
+    /**
      * Pre-process the column configuration to avoid incompatibilities
      * @return void
      */
@@ -820,7 +666,6 @@ Ext.define('Spread.grid.Panel', {
              * @inheritdoc Spread.grid.View#covercell
              */
             'covercell',
-
 
             /**
              * @event beforehighlightcells
@@ -1006,6 +851,18 @@ Ext.define('Spread.grid.Panel', {
     },
 
     /**
+     * Returns the Commander API
+     * @return {Spread.command.Commander}
+     */
+    getCommander: function() {
+
+        // Create and return an instance of the commander
+        return Ext.create('Spread.command.Commander', {
+            grid: this
+        });
+    },
+
+    /**
      * @protected
      * Initializes the columns by referencing the view onto them
      * @return void
@@ -1032,6 +889,7 @@ Ext.define('Spread.grid.Panel', {
         this.editablePluginInstance = Ext.create('Spread.grid.plugin.Editable', this.editablePluginConfig);
         this.copyablePluginInstance = Ext.create('Spread.grid.plugin.Copyable', this.copyablePluginConfig);
         this.pasteablePluginInstance = Ext.create('Spread.grid.plugin.Pasteable', this.pasteablePluginConfig);
+        this.clearRangePluginInstance = Ext.create('Spread.grid.plugin.ClearRange', this.clearRangePluginConfig);
     },
 
     /**
@@ -1054,7 +912,8 @@ Ext.define('Spread.grid.Panel', {
             config.viewConfig.spreadPlugins.push(
                 me.editablePluginInstance,
                 me.copyablePluginInstance,
-                me.pasteablePluginInstance
+                me.pasteablePluginInstance,
+                me.clearRangePluginInstance
             );
         };
 
@@ -1085,6 +944,7 @@ Ext.define('Spread.grid.Panel', {
                 pluginCheckMerge(Spread.grid.plugin.Editable, this.editablePluginInstance);
                 pluginCheckMerge(Spread.grid.plugin.Copyable, this.copyablePluginInstance);
                 pluginCheckMerge(Spread.grid.plugin.Pasteable, this.pasteablePluginInstance);
+                pluginCheckMerge(Spread.grid.plugin.ClearRange, this.clearRangePluginInstance);
 
             } else {
 
@@ -1654,7 +1514,7 @@ Ext.define('Spread.grid.View', {
             }
 
             // Update position
-            position.update();
+            position.validate();
 
             var tdEl = Ext.get(position.cellEl),
                 coverElSize, coverElPosition;
@@ -1705,6 +1565,11 @@ Ext.define('Spread.grid.View', {
     /**
      * Highlights a range of cells identified by Spread.selection.Position instances.
      * Before highlighting, previously highlighted cells get un-highlighted again.
+     *
+     * TODO: Refactor to use a Spread.selection.Range to remember all current highlighted cells.
+     * TODO: Maybe rewrite / reimplement a new method highlightCell() which does take care of the current positions view
+     * TODO: Or maybe just rewrite to use a Range!!
+     *
      * @param {Array} positions Array of position instances
      * @return void
      */
@@ -1715,7 +1580,7 @@ Ext.define('Spread.grid.View', {
             for (var i=0; i<me.currentHighlightPositions.length; i++) {
 
                 // (Un-)highlight visually by adding/removing CSS class
-                Ext.fly(me.currentHighlightPositions[i].update().cellEl)
+                Ext.fly(me.currentHighlightPositions[i].validate().cellEl)
                     .down('div')[methodName]('spreadsheet-cell-selection-cover');
             }
         };
@@ -1742,6 +1607,13 @@ Ext.define('Spread.grid.View', {
             // Fire event
             this.fireEvent('highlightcells', this, positions);
         }
+    },
+
+    /**
+     *
+     */
+    highlightCell: function() {
+
     },
 
     /**
@@ -1914,6 +1786,149 @@ Ext.define('Spread.overrides.Column', {
     }
 });
 
+/**
+ * @class Spread.grid.plugin.ClearRange
+ * Allows to clears a currently selected range.
+ */
+Ext.define('Spread.grid.plugin.ClearRange', {
+
+    extend: 'Ext.AbstractComponent',
+
+    alias: 'clearrange',
+
+    /**
+     * @property {Spread.grid.View}
+     * View instance reference
+     */
+    view: null,
+
+    /**
+     * @property {Spread.grid.Panel}
+     * Grid instance reference
+     */
+    grid: null,
+
+    /**
+     * @cfg {Boolean}
+     * Should a load mask being displayed when clearing cell data?
+     */
+    loadMask: true,
+
+    /**
+     * @cfg {*}
+     * Null value that should be used for clearing cell data
+     */
+    nullValue: '',
+
+    /**
+     * @protected
+     * Registers the clear key event handling (BACKSPACE, DEL keys).
+     * @param {Spread.grid.View} view View instance
+     * @return void
+     */
+    init: function(view) {
+
+        // Add events
+        this.addEvents(
+
+            /**
+             * @event beforeclearrange
+             * Fires before a copy action happens. Return false in listener to stop the event processing.
+             * @param {Spread.grid.plugin.ClearRange} clearRange ClearRange plugin instance
+             * @param {Spread.selection.RangeModel} selModel Selection model instance
+             * @param {Spread.selection.Range} range Range of selected position
+             */
+            'beforeclearrange',
+
+            /**
+             * @event clearrange
+             * Fires when a range clearing has happened.
+             * @param {Spread.grid.plugin.ClearRange} clearRange ClearRange plugin instance
+             * @param {Spread.selection.RangeModel} selModel Selection model instance
+             * @param {Spread.selection.Range} range Range of selected position
+             */
+            'clearrange'
+        );
+
+        var me = this;
+
+        // Set internal reference
+        me.view = view;
+
+        // Listen to the key events
+        me.listenToKeyEvents();
+    },
+
+    listenToKeyEvents: function() {
+
+        var me = this;
+
+        // Un-register on grid destroy
+        me.view.on('destroy', function() {
+            Ext.EventManager.un(document.body, 'keyup', me.onKeyUp);
+        });
+
+        // Listen for keyup globally (stable method to fetch keyup)
+        Ext.EventManager.on(document.body, 'keyup', me.onKeyUp, me);
+    },
+
+    /**
+     * @protected
+     * Listen to DEL and BACKSPACE
+     * @param {Ext.EventObject} evt Event
+     * @return void
+     */
+    onKeyUp: function(evt) {
+
+        var me = this,
+            targetEl = Ext.get(evt.getTarget());
+
+        // 46 is the DEL key
+        if (!targetEl.hasCls('spreadsheet-cell-cover-edit-field') &&
+            evt.normalizeKey(evt.keyCode) === 46) {
+
+            me.clearCurrentSelectedRange();
+
+            evt.stopEvent();
+        }
+    },
+
+    /**
+     * Fetches the current selected range and clears it's data
+     * @return void
+     */
+    clearCurrentSelectedRange: function() {
+
+        var me = this,
+            selectionRange = me.view.getSelectionModel().getCurrentSelectionRange();
+
+        if (me.loadMask) {
+
+            var loadMask = new Ext.LoadMask(me.view.getEl());
+            loadMask.show();
+            //me.view.setLoading(true);
+        }
+
+        // May use requestAnimationFrame here
+        setTimeout(function() {
+
+            // Clear data of each position
+            selectionRange.each(function(position) {
+
+                // Clear cell data
+                position.setValue(me.nullValue);
+
+            }, function onComplete() {
+
+                if (me.loadMask) {
+                    //me.view.setLoading(false);
+                    loadMask.hide();
+                }
+            });
+
+        }, 30);
+    }
+});
 /**
  * @private
  * Class which implements clipping for clipboard interaction
@@ -2230,7 +2245,7 @@ Ext.define('Spread.grid.plugin.Copyable', {
 
             // Prepare
             this.prepareForClipboardCopy(
-                Spread.data.TSVTransformer.transformToTSV(selectionPositions),
+                Spread.util.TSVTransformer.transformToTSV(selectionPositions),
                 this.view
             );
 
@@ -2242,6 +2257,8 @@ Ext.define('Spread.grid.plugin.Copyable', {
 /**
  * @class Spread.grid.plugin.Editable
  * Allows the spreadsheet to get edited by a text field as known from standard spreadsheet applications.
+ *
+ * TODO: Support string fields without allowedKeys config to enter special chars!
  */
 Ext.define('Spread.grid.plugin.Editable', {
 
@@ -2616,8 +2633,7 @@ Ext.define('Spread.grid.plugin.Editable', {
             this.setEditing(false);
 
             // Write changed value back to record/field
-            Spread.data.DataMatrix.setValueForPosition(
-                this.activePosition,
+            this.activePosition.setValue(
                 this.getEditingValue(),
                 this.autoCommit
             );
@@ -2781,7 +2797,7 @@ Ext.define('Spread.grid.plugin.Editable', {
 
                 // Set current value of field in record
                 this.setEditingValue(
-                    Spread.data.DataMatrix.getValueOfPosition(this.activePosition)
+                    this.activePosition.getValue()
                 );
             }
             this.fireEvent('coverdblclick', this);
@@ -3252,7 +3268,7 @@ Ext.define('Spread.grid.plugin.Pasteable', {
                 //console.log('Clipboard data:', clipboardData);
 
                 // Call the transformer to transform and insert data
-                var pastedDataArray = Spread.data.TSVTransformer.transformToArray(clipboardData);
+                var pastedDataArray = Spread.util.TSVTransformer.transformToArray(clipboardData);
 
                 //console.log('Pasted data array:', pastedDataArray);
 
@@ -3294,7 +3310,7 @@ Ext.define('Spread.grid.plugin.Pasteable', {
             selModel.originSelectionPosition = newOriginSelectionPosition;
 
             // Try selecting range
-            selModel.tryToSelectRange(true);
+            selModel.selectFocusRange(true);
         }
 
         // Do nothing, if nothing is selected or nothing was pasted
@@ -3306,7 +3322,7 @@ Ext.define('Spread.grid.plugin.Pasteable', {
         // Single cell paste, just set data on focus position
         if (pastedDataArray.length === 1 && pastedDataArray[0].length === 1) {
 
-            var newFocusPosition = selectionPositions[0].update();
+            var newFocusPosition = selectionPositions[0].validate();
 
             /*console.log(
                 'setting data value',
@@ -3320,8 +3336,7 @@ Ext.define('Spread.grid.plugin.Pasteable', {
             }
 
             // Set data on field of record
-            Spread.data.DataMatrix.setValueForPosition(
-                newFocusPosition,
+            newFocusPosition.setValue(
                 pastedDataArray[0][0],
                 me.autoCommit
             );
@@ -3335,7 +3350,7 @@ Ext.define('Spread.grid.plugin.Pasteable', {
         // Build real selectionPositions array
         if (selectionPositions.length === 1) {
 
-            var newOriginSelectionPosition = selectionPositions[0].update(),
+            var newOriginSelectionPosition = selectionPositions[0].validate(),
                 newFocusPosColumnIndex = newOriginSelectionPosition.column,
                 newFocusPosRowIndex = newOriginSelectionPosition.row,
                 newFocusPosition = null;
@@ -3368,7 +3383,7 @@ Ext.define('Spread.grid.plugin.Pasteable', {
         // Selection exists, change data for cells in selection
         //console.log('change data inside selection: ', selectionPositions, pastedDataArray);
 
-        var newOriginSelectionPosition = selectionPositions[0].update();
+        var newOriginSelectionPosition = selectionPositions[0].validate();
         var projectedColumnIndex = 0;
         var projectedRowIndex = 0;
         var lastProjectedRowIndex = 0;
@@ -3377,7 +3392,7 @@ Ext.define('Spread.grid.plugin.Pasteable', {
         for (var i=0; i<selectionPositions.length; i++) {
 
             // Update record references
-            selectionPositions[i].update();
+            selectionPositions[i].validate();
 
             // Never paste on non-editable columns!
             if (!selectionPositions[i].columnHeader.editable) {
@@ -3402,8 +3417,7 @@ Ext.define('Spread.grid.plugin.Pasteable', {
             */
 
             // Set new data value
-            Spread.data.DataMatrix.setValueForPosition(
-                selectionPositions[i],
+            selectionPositions[i].setValue(
                 pastedDataArray[projectedRowIndex][projectedColumnIndex],
                 me.autoCommit,
                 me.useInternalAPIs
@@ -3582,12 +3596,12 @@ Ext.define('Spread.selection.Position', {
     },
 
     /**
-     * Updates the position object and it's internal references.
+     * (Re)validates the position object and it's internal references.
      * This is useful when view has been refreshed and record or
      * cell or row of the position has been changed.
      * @return {Spread.selection.Position}
      */
-    update: function() {
+    validate: function() {
 
         this.record = this.view.getStore().getAt(this.row);
 
@@ -3608,6 +3622,188 @@ Ext.define('Spread.selection.Position', {
         //console.log('Position update()ed ', this);
 
         return this;
+    },
+
+    /**
+     * Get field name by fetching the dataIndex
+     * of a given column index from column header container of the view.
+     * @return {String}
+     */
+    getFieldName: function() {
+
+        var me = this,
+            header = me.view.getHeaderAtIndex(me.column);
+
+        if (header) {
+            return header.dataIndex;
+        } else {
+            throw "No column found for column index: " + me.column;
+        }
+    },
+
+    /**
+     * Returns the primitive type of the position.
+     * Returns either: auto, int, float, bool, string or date.
+     * @return {String}
+     */
+    getType: function() {
+
+        var me = this,
+            type = 'auto',
+            fieldName = me.getFieldName();
+
+        // Caching type name on record instance
+        if (!me.record['__' + fieldName + '_type']) {
+
+            me.record.fields.each(function(field) {
+
+                // Found the field and it's special type
+                if (field.name === fieldName &&
+                    field.type.type !== 'auto') {
+
+                    type = field.type.type;
+                }
+            });
+            return me.record['__' + fieldName + '_type'] = type;
+        }
+        return me.record['__' + fieldName + '_type'];
+    },
+
+    /**
+     * Casts a new value into the primitive type
+     * needed by the position's under-laying model.
+     * @param {String} newValue New value
+     * @return {*}
+     */
+    castNewValue: function(newValue) {
+
+        var me = this;
+
+        // null or undefined
+        if (!Ext.isDefined(newValue) || newValue === null) {
+            return newValue;
+        }
+
+        // Do casting
+        switch(me.getType()) {
+            case 'bool':
+                return (newValue == 'true');
+            case 'int':
+                return parseInt(newValue);
+            case 'float':
+                return parseFloat(newValue);
+            case 'auto':
+            case 'string':
+                return newValue.valueOf();
+            case 'date':
+                return new Date(newValue);
+        }
+    },
+
+    /**
+     * Returns, what Ext.data.Model's set() returns.
+     * (An array of modified field names or null if nothing was modified)
+     *
+     * @param {Mixed} newValue New cell value
+     * @param {Boolean} [autoCommit=false] Should the record be automatically committed after change
+     * @param {Boolean} [useInternalAPIs=false] Force to use the internal Model API's
+     * @return {String}
+     */
+    setValue: function(newValue, autoCommit, useInternalAPIs) {
+
+        var me = this,
+            fieldName,
+            ret;
+
+
+        // Update position
+        me.validate();
+
+        if (!autoCommit && !me.columnHeader.autoCommit) {
+            //useInternalAPIs = true;
+        }
+
+        // Fetch field name
+        fieldName = me.getFieldName();
+
+        if (!me.record) {
+            throw "No record found for row index: " + me.row;
+        }
+
+        // Check for pre-processor
+        if (me.columnHeader.cellwriter &&
+            Ext.isFunction(me.columnHeader.cellwriter)) {
+
+            // Call pre-processor for value writing / change before write
+            newValue = me.columnHeader.cellwriter(newValue, me);
+
+        } else {
+
+            // Auto-preprocessor (type conversion)
+
+            // Casting the new value from text received from
+            // the text input field into the origin data type
+            newValue = me.castNewValue(newValue);
+        }
+
+        // Do not change the record's value if it hasn't changed
+        if (me.record.get(fieldName) == newValue) {
+            return newValue;
+        }
+
+        if (useInternalAPIs) {
+
+            ret = me.record[
+                me.record.persistenceProperty
+            ][fieldName] = newValue;
+
+            // Set record dirty
+            me.record.setDirty();
+
+        } else {
+
+            // Set new value
+            ret = me.record.set(fieldName, newValue);
+        }
+        // Automatically commit if wanted
+        if (autoCommit &&
+            me.columnHeader.autoCommit) {
+
+            me.record.commit();
+        }
+        return ret;
+    },
+
+    /**
+     * Returns the value of the position
+     * @return {*}
+     */
+    getValue: function() {
+
+        var me = this,
+            fieldName, value;
+
+        // Update position
+        me.validate();
+
+        // Fetch field name
+        fieldName = me.getFieldName();
+
+        if (!me.record) {
+            throw "No record found for row index: " + me.row;
+        }
+
+        // Fetch raw value
+        value = me.record.get(fieldName);
+
+        // Check for pre-processor
+        if (me.columnHeader.cellreader &&
+            Ext.isFunction(me.columnHeader.cellreader)) {
+
+            // Call pre-processor for value reading
+            value = me.columnHeader.cellreader(value, me);
+        }
+        return value;
     }
 });
 /**
@@ -3629,10 +3825,13 @@ Ext.define('Spread.selection.Position', {
  * Using the interceptable eventing of this selection model, it's possible
  * to extend the selection and focussing logic.
  *
+ * TODO: Select cell on click / key nav -> allows clearing by DEL directly!
  */
 Ext.define('Spread.selection.RangeModel', {
 
     extend: 'Ext.selection.Model',
+
+    requires: ['Spread.selection.Range'],
 
     alias: 'selection.range',
 
@@ -3672,12 +3871,12 @@ Ext.define('Spread.selection.RangeModel', {
     enableKeyNav: true,
 
     /**
-     * @property {Array}
+     * @property {Spread.selection.Range}
      * Internal array which contains all
      * position objects, identifying the current
      * range of selected cells.
      */
-    currentSelectionRange: [],
+    currentSelectionRange: Ext.create('Spread.selection.Range'),
 
     /**
      * @property {Spread.selection.Position}
@@ -4002,7 +4201,7 @@ Ext.define('Spread.selection.RangeModel', {
         } else {
 
             // Update root position / record reference
-            this.rootPosition.update();
+            this.rootPosition.validate();
 
             try {
                 // Try re-focussing
@@ -4092,7 +4291,7 @@ Ext.define('Spread.selection.RangeModel', {
             // Try to select range, if special key was pressed too
             if (evt.shiftKey && !Spread.util.Key.isStartEditKey(evt)) {
 
-                this.tryToSelectRange();
+                this.selectFocusRange();
 
             } else {
 
@@ -4150,7 +4349,7 @@ Ext.define('Spread.selection.RangeModel', {
             ) {
 
                 // Try selecting a range
-                this.tryToSelectRange();
+                this.selectFocusRange();
             }
         }
     },
@@ -4330,7 +4529,7 @@ Ext.define('Spread.selection.RangeModel', {
             //console.log('FOCUS ', this.getCurrentFocusPosition().row + ',' + this.getCurrentFocusPosition().column);
 
             // Reset current selection range
-            this.currentSelectionRange = [];
+            this.currentSelectionRange = Ext.create('Spread.selection.Range');
 
             // Inform the view to focus the cell
             this.view.coverCell(position);
@@ -4404,7 +4603,7 @@ Ext.define('Spread.selection.RangeModel', {
                 // Shift + Tab is special navigation behaviour (left navigation without selection)
                 if (evt.shiftKey && evt.getKey() !== evt.TAB) {
 
-                    this.tryToSelectRange();
+                    this.selectFocusRange();
 
                 } else {
 
@@ -4457,14 +4656,14 @@ Ext.define('Spread.selection.RangeModel', {
         return new Spread.selection.Position(this.view, newPosition.column, newPosition.row);
     },
 
+
     /**
      * @protected
-     * Tries to select a range by information from _previously_ internally set
+     * Creates a range of positions from _previously_ internally set
      * this.originSelectionPosition and (to) this.currentFocusPosition.
-     * @param {Boolean} [virtual=false] Virtual calculation but no UI change
-     * @return void
+     * @return {Spread.selection.Range}
      */
-    tryToSelectRange: function(virtual) {
+    createFocusRange: function() {
 
         // private method to interpolate numbers and return them as index array
         var interpolate = function(startIdx, endIdx) {
@@ -4477,7 +4676,7 @@ Ext.define('Spread.selection.RangeModel', {
             return indexes;
         };
 
-        //console.log('tryToSelectRange: ', this.getOriginSelectionPosition(), ' to ', this.getCurrentFocusPosition());
+        //console.log('createFocusRange: ', this.getOriginSelectionPosition(), ' to ', this.getCurrentFocusPosition());
 
         /*
         console.log('SELECT RANGE FROM ', this.getOriginSelectionPosition().row + ',' + this.getOriginSelectionPosition().column,
@@ -4521,7 +4720,7 @@ Ext.define('Spread.selection.RangeModel', {
                     Ext.Array.indexOf(columnIndexes, colIndex) > -1) {
 
                     // Fetch already-updated position instance
-                    selPosition = new Spread.selection.Position(this.view, colIndex, rowIndex).update();
+                    selPosition = new Spread.selection.Position(this.view, colIndex, rowIndex).validate();
 
                     // Only add position to selection if column isn't hidden currently
                     if (!selPosition.columnHeader.hidden) {
@@ -4531,15 +4730,26 @@ Ext.define('Spread.selection.RangeModel', {
             }
         }
 
-        //console.log('SELECTED', selectedPositions);
+        return Ext.create('Spread.selection.Range', {
+            positions: selectedPositions
+        });
+    },
+
+
+    /**
+     * @protected
+     * Tries to select a range by information from _previously_ internally set
+     * this.originSelectionPosition and (to) this.currentFocusPosition.
+     * @param {Boolean} [virtual=false] Virtual calculation but no UI change
+     * @return void
+     */
+    selectFocusRange: function(virtual) {
 
         // Update local selection range cache
-        this.currentSelectionRange = selectedPositions;
+        this.currentSelectionRange = this.createFocusRange();
 
-        // Tell the view which cells to highlight
-        if (!virtual) {
-            this.view.highlightCells(selectedPositions);
-        }
+        // Select the range
+        this.currentSelectionRange.select(this, virtual);
     },
 
     /**
@@ -4551,14 +4761,22 @@ Ext.define('Spread.selection.RangeModel', {
 
         var selectionToTransform;
 
-        if (this.currentSelectionRange.length === 0) {
+        if (this.currentSelectionRange.count() === 0) {
             selectionToTransform = [this.currentFocusPosition];
         } else {
-            selectionToTransform = this.currentSelectionRange;
+            selectionToTransform = this.currentSelectionRange.toArray();
         }
         //console.log('transform to array', selectionToTransform);
 
         return selectionToTransform;
+    },
+
+    /**
+     * Returns the current selection range
+     * @return {Spread.selection.Range}
+     */
+    getCurrentSelectionRange: function() {
+        return this.currentSelectionRange;
     }
 });
 /**
@@ -4621,5 +4839,115 @@ Ext.define('Spread.util.Key', {
                (k >= 65 && k <= 90) || // a-z
                (k >= 96 && k <= 111) || // numpad keys
                (k >= 173 && k <= 222)
+    }
+});
+/**
+ * @class Spread.util.TSVTransformer
+ * @private
+ * Internal class for transforming data pasted from native spreadsheet applications to TSV and back.
+ */
+Ext.define('Spread.util.TSVTransformer', {
+
+    singleton: true,
+
+    /**
+     * @property {String} lineSeparator
+     * Line separator char sequence
+     */
+    lineSeparator: '\n',
+
+    /**
+     * @property {String} columnSeparator
+     * Column separator char sequence
+     */
+    columnSeparator: '\t',
+
+    /**
+     * Transforms plain array data into TSV plaintext
+     * @param {Array} selectionPositions Array of selected position instances
+     * @return {String}
+     */
+    transformToTSV: function(selectionPositions) {
+
+        var currentRow = -1,
+            tsvText = '';
+
+        //console.log('transformToTSV', selectionPositions);
+
+        // Loop to already well-ordered array
+        for (var i=0; i<selectionPositions.length; i++) {
+
+            // Update record first
+            selectionPositions[i].validate();
+
+            // Add line break
+            if (currentRow !== selectionPositions[i].row &&
+                currentRow !== -1) {
+
+                if (tsvText[tsvText.length-1] == this.columnSeparator) {
+                    tsvText = tsvText.substring(0, tsvText.length - 1); // Remove trailing tabulator
+                }
+                tsvText = this.addLineBreak(tsvText);
+            }
+            currentRow = selectionPositions[i].row;
+
+            // Add cell value
+            tsvText = this.addValue(tsvText, selectionPositions[i]);
+
+            // Add tabulator
+            if (selectionPositions[i+1] &&
+                selectionPositions[i+1].column !== selectionPositions[+1].view.getSelectionModel().rootPosition.column) {
+                tsvText = this.addTabulator(tsvText);
+            }
+        }
+        tsvText = this.addLineBreak(tsvText);
+
+        return tsvText;
+    },
+
+    /**
+     * Transforms pasted TSV data into plain array data
+     * @param {String} clipboardData Pasted TSV or Excel plain clipboard data
+     * @return {Array}
+     */
+    transformToArray: function(clipboardData) {
+
+        var dataArray = [],
+            rows = clipboardData.split(this.lineSeparator);
+
+        for (var i=0; i<(rows.length-1); i++) {
+            dataArray.push(
+                rows[i].split(this.columnSeparator)
+            );
+        }
+        return dataArray;
+    },
+
+    /**
+     * Adds line break chars to buffer
+     * @param {String} tsvText Current buffer
+     * @return {String}
+     */
+    addLineBreak: function(tsvText) {
+        return tsvText + this.lineSeparator;
+    },
+
+    /**
+     * Adds a tabulator char to buffer
+     * @param {String} tsvText Current buffer
+     * @return {String}
+     */
+    addTabulator: function(tsvText) {
+        return tsvText + this.columnSeparator;
+    },
+
+    /**
+     * Adds the value to the buffer
+     * @param {String} tsvText Current buffer
+     * @param {Spread.selection.Position} position Position reference
+     * @return {String}
+     */
+    addValue: function(tsvText, position) {
+        return tsvText += position.getValue();
     }
 });

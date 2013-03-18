@@ -1,11 +1,11 @@
 #!/bin/sh
 
-sencha compile --classpath=extjs-4.1.1a-gpl/src,examples/ux \
-       exclude -file extjs-4.1.1a-gpl/src and \
-       concat ux-all-debug.js and \
-       concat -compress ux-all.js
+echo "\nBuilding UX into ux-all.js and ux-all-debug.js\n\n"
+/usr/bin/env sh buildux.sh
 
-sencha compile --classpath=extjs-4.1.1a-gpl/src,src \
-       exclude -file extjs-4.1.1a-gpl/src and \
-       concat spread-all-debug.js and \
-       concat -compress spread-all.js
+echo "\nBuilding SpreadSheet into spread-all.js and spread-all-debug.js\n\n"
+/usr/bin/env sh buildspread.sh
+
+
+echo "\nBuilding documentation into docs/index.html\n\n"
+/usr/bin/env sh builddocs.sh

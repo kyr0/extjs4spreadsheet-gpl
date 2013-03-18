@@ -114,7 +114,7 @@ Ext.define('Spread.grid.plugin.Copyable', {
 
             // Prepare
             this.prepareForClipboardCopy(
-                Spread.data.TSVTransformer.transformToTSV(selectionPositions),
+                Spread.util.TSVTransformer.transformToTSV(selectionPositions),
                 this.view
             );
 
