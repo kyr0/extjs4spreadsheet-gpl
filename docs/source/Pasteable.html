@@ -209,7 +209,7 @@ Ext.define('Spread.grid.plugin.Pasteable', {
             selModel.originSelectionPosition = newOriginSelectionPosition;
 
             // Try selecting range
-            selModel.createFocusRange(true);
+            selModel.selectFocusRange(true);
         }
 
         // Do nothing, if nothing is selected or nothing was pasted

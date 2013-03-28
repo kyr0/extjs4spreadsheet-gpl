@@ -95,6 +95,12 @@ Ext.define('Spread.grid.plugin.ClearRange', {
         var me = this,
             targetEl = Ext.get(evt.getTarget());
 
+        // If grid isn't editable, return
+        if (me.view.editable && !me.view.editable.editable) {
+            evt.stopEvent();
+            return;
+        }
+
         // 46 is the DEL key
         if (!targetEl.hasCls('spreadsheet-cell-cover-edit-field') &&
             evt.normalizeKey(evt.keyCode) === 46) {
@@ -131,6 +137,10 @@ Ext.define('Spread.grid.plugin.ClearRange', {
                 position.setValue(me.nullValue);
 
             }, function onComplete() {
+
+                if (me.view.editable && me.view.editable.editModeStyling && me.view.editable.editable) {
+                    me.view.editable.displayCellsEditing(true);
+                }
 
                 if (me.loadMask) {
                     //me.view.setLoading(false);

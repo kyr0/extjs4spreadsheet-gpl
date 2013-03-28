@@ -74,6 +74,10 @@ Ext.define('Spread.util.TSVTransformer', {
                 tsvText = this.addTabulator(tsvText);
             }
         }
+
+        // Standard-conformity by adding one ending line feed
+        tsvText = this.addLineBreak(tsvText);
+
         return tsvText;
     },
 
@@ -87,7 +91,7 @@ Ext.define('Spread.util.TSVTransformer', {
         var dataArray = [],
             rows = clipboardData.split(this.lineSeparator);
 
-        for (var i=0; i&lt;rows.length; i++) {
+        for (var i=0; i&lt;(rows.length-1); i++) {
             dataArray.push(
                 rows[i].split(this.columnSeparator)
             );

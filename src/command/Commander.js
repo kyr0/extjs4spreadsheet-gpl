@@ -8,12 +8,11 @@ Ext.define('Spread.command.Commander', {
     requires: ['Spread.selection.Range'],
 
     /**
-     * Selects a range
+     * Selects a range of positions
+     * @param {Spread.selection.Range} range Range of positions to select
      * @return {Spread.selection.Range}
      */
-    select: function() {
+    select: function(range) {
 
     }
-
-    // TODO
 });
