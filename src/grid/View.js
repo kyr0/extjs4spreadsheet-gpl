@@ -539,13 +539,6 @@ Ext.define('Spread.grid.View', {
     },
 
     /**
-     *
-     */
-    highlightCell: function() {
-
-    },
-
-    /**
      * Returns the cover element as Ext.dom.Element instance or null
      * @return {Ext.dom.Element|null}
      */

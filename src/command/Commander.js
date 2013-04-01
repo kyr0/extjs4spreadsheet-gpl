@@ -10,9 +10,18 @@ Ext.define('Spread.command.Commander', {
     /**
      * Selects a range of positions
      * @param {Spread.selection.Range} range Range of positions to select
+     * @param {Boolean} [virtual=false] Virtual selections do not update the view visually
      * @return {Spread.selection.Range}
      */
-    select: function(range) {
+    select: function(range, virtual) {
 
+        var firstRecord = range.getFirst(),
+            selModel;
+
+        // Select if view is accessible
+        if (firstRecord.view) {
+            selModel = firstRecord.view.getSelectionModel();
+            range.select(selModel, virtual);
+        }
     }
 });
