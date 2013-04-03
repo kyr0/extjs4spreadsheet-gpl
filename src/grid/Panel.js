@@ -518,6 +518,9 @@ Ext.define('Spread.grid.Panel', {
      */
     clearRangePluginConfig: {},
 
+    // Internal plugin registry map
+    pluginRegistry: {},
+
     /**
      * Pre-process the column configuration to avoid incompatibilities
      * @return void
@@ -764,9 +767,25 @@ Ext.define('Spread.grid.Panel', {
     instantiatePlugins: function() {
 
         this.editablePluginInstance = Ext.create('Spread.grid.plugin.Editable', this.editablePluginConfig);
+        this.pluginRegistry['Spread.grid.plugin.Editable'] = this.editablePluginInstance;
+
         this.copyablePluginInstance = Ext.create('Spread.grid.plugin.Copyable', this.copyablePluginConfig);
+        this.pluginRegistry['Spread.grid.plugin.Copyable'] = this.copyablePluginInstance;
+
         this.pasteablePluginInstance = Ext.create('Spread.grid.plugin.Pasteable', this.pasteablePluginConfig);
+        this.pluginRegistry['Spread.grid.plugin.Pasteable'] = this.pasteablePluginInstance;
+
         this.clearRangePluginInstance = Ext.create('Spread.grid.plugin.ClearRange', this.clearRangePluginConfig);
+        this.pluginRegistry['Spread.grid.plugin.ClearRange'] = this.clearRangePluginInstance;
+    },
+
+    /**
+     * Returns an instance of the plugin named by class name or returns undefined
+     * @param {String} pluginClassName Class name of the plugin to fetch instance of
+     * @return {Ext.AbstractComponent}
+     */
+    getPlugin: function(pluginClassName) {
+        return this.pluginRegistry[pluginClassName];
     },
 
     /**
