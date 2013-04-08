@@ -416,7 +416,7 @@ Ext.define('Spread.grid.View', {
     /**
      * Initially shows/Updates the cell cover to cover a new position.
      * Sets the this.currentCoverPosition if a position is given (initial showing)
-     * OR uses the current/already focussed cover position (update mode).
+     * OR uses the current/already focused cover position (update mode).
      * @param {Spread.selection.Position} [position=this.currentCoverPosition] Position object reference
      * @return void
      */
@@ -491,6 +491,17 @@ Ext.define('Spread.grid.View', {
         }
     },
 
+    // private, helper method
+    _highlight: function(methodName, positions) {
+
+        for (var i=0; i<positions.length; i++) {
+
+            // (Un-)highlight visually by adding/removing CSS class
+            Ext.fly(positions[i].validate().cellEl)
+                .down('div')[methodName]('spreadsheet-cell-selection-cover');
+        }
+    },
+
     /**
      * Highlights a range of cells identified by Spread.selection.Position instances.
      * Before highlighting, previously highlighted cells get un-highlighted again.
@@ -504,15 +515,7 @@ Ext.define('Spread.grid.View', {
      */
     highlightCells: function(positions) {
 
-        var me = this, _highlight = function(methodName) {
-
-            for (var i=0; i<me.currentHighlightPositions.length; i++) {
-
-                // (Un-)highlight visually by adding/removing CSS class
-                Ext.fly(me.currentHighlightPositions[i].validate().cellEl)
-                    .down('div')[methodName]('spreadsheet-cell-selection-cover');
-            }
-        };
+        var me = this;
 
         // Interceptable before-eventing
         if (this.fireEvent('beforehighlightcells', this, positions) !== false) {
@@ -520,8 +523,7 @@ Ext.define('Spread.grid.View', {
             // Un-highlight first
             if (this.currentHighlightPositions.length > 0) {
 
-                // Remove CSS class from all cells
-                _highlight('removeCls');
+                this.unhighlightCells(this.currentHighlightPositions);
             }
 
             if (positions) {
@@ -530,11 +532,28 @@ Ext.define('Spread.grid.View', {
                 this.currentHighlightPositions = positions;
 
                 // Add CSS class to all cells
-                _highlight('addCls');
+                me._highlight('addCls', this.currentHighlightPositions);
             }
 
             // Fire event
             this.fireEvent('highlightcells', this, positions);
+        }
+    },
+
+    /**
+     * Removes the highlighting maybe previously added by this.highlightCells().
+     * @param {Array} positions Positions to remove highlighting from
+     * @return void
+     */
+    unhighlightCells: function(positions) {
+
+        // Remove CSS class from all cells
+        this._highlight('removeCls', positions);
+
+        if (this.currentHighlightPositions.length > 0) {
+
+            // Substract all positions given from current highlighted positions
+            this.currentHighlightPositions = Ext.Array.difference(this.currentHighlightPositions, positions);
         }
     },
 

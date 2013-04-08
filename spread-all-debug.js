@@ -71,6 +71,19 @@ Ext.define('Spread.selection.Range', {
     },
 
     /**
+     * De-selects all positions of this range
+     * @param {Spread.selection.RangeModel} selModel Selection model reference
+     * @param {Boolean} [virtual=false] Virtual selections do not update the view visually
+     * @return void
+     */
+    deselect: function(selModel, virtual) {
+
+        if (!virtual) {
+            selModel.view.unhighlightCells(this.positions);
+        }
+    },
+
+    /**
      * Returns the count of positions stored inside this range
      * @return {Number}
      */
@@ -100,33 +113,364 @@ Ext.define('Spread.selection.Range', {
      */
     getLast: function() {
         return this.positions[this.positions.length-1];
+    },
+
+    statics: {
+
+        /**
+         * Builds a range instance holding all positions
+         * of a spread's row.
+         *
+         * @param {Spread.grid.Panel} spreadPanel Spreadsheet panel instance
+         * @param {Number} rowIndex Row index to collects position instances of
+         * @return {Spread.selection.Range}
+         */
+        fromSpreadRow: function(spreadPanel, rowIndex) {
+
+            // TODO: Check for out-of-bounds error!
+            var positionCount = Spread.grid.Panel.getPositionCount(spreadPanel),
+                positions = [];
+
+            for (var i=0; i<positionCount.columnCount; i++) {
+
+                positions.push(
+
+                    new Spread.selection.Position(
+                        spreadPanel.getView(),
+                        i,
+                        rowIndex
+                    )
+                )
+            }
+
+            return Ext.create('Spread.selection.Range', {
+                positions: positions
+            });
+        },
+
+        /**
+         * Builds a range instance holding all positions
+         * of a spread's column.
+         *
+         * @param {Spread.grid.Panel} spreadPanel Spreadsheet panel instance
+         * @param {Number} columnIndex Column index to collects position instances of
+         * @return {Spread.selection.Range}
+         */
+        fromSpreadColumn: function(spreadPanel, columnIndex) {
+
+            // TODO: Check for out-of-bounds error!
+            var positionCount = Spread.grid.Panel.getPositionCount(spreadPanel),
+                positions = [];
+
+            for (var i=0; i<positionCount.rowCount; i++) {
+
+                positions.push(
+
+                    new Spread.selection.Position(
+                        spreadPanel.getView(),
+                        columnIndex,
+                        i
+                    )
+                )
+            }
+
+            return Ext.create('Spread.selection.Range', {
+                positions: positions
+            });
+        },
+
+        /**
+         * Builds a range instance holding all positions
+         * named as position indexes in the positionIndexes array.
+         *
+         * @param {Spread.grid.Panel} spreadPanel Spreadsheet panel instance
+         * @param {Number} positionIndexes Position indexes array like [{row: 0, column: 2}, ...]
+         * @return {Spread.selection.Range}
+         */
+        fromSpreadPositions: function(spreadPanel, positionIndexes) {
+
+            // TODO: Check for out-of-bounds error!
+            var positionCount = Spread.grid.Panel.getPositionCount(spreadPanel),
+                positions = [];
+
+            for (var i=0; i<positionIndexes.length; i++) {
+
+                positions.push(
+
+                    new Spread.selection.Position(
+                        spreadPanel.getView(),
+                        positionIndexes[i].column,
+                        positionIndexes[i].row
+                    )
+                )
+            }
+
+            return Ext.create('Spread.selection.Range', {
+                positions: positions
+            });
+        }
     }
 });
 /**
- * Ext.spread.command.Commander
+ * @class Ext.command.Commander
+ *
  * Class that implements a public command API for a more
- * simple usage of the spreads features.
+ * simple and interactive use of the spreads internal features.
  */
 Ext.define('Spread.command.Commander', {
 
     requires: ['Spread.selection.Range'],
 
     /**
-     * Selects a range of positions
-     * @param {Spread.selection.Range} range Range of positions to select
-     * @param {Boolean} [virtual=false] Virtual selections do not update the view visually
-     * @return {Spread.selection.Range}
+     * @property {Spread.grid.Panel} spreadPanel Spread panel reference
      */
-    select: function(range, virtual) {
+    spreadPanel: null,
+
+    // private
+    constructor: function(config) {
+        Ext.apply(this, config);
+    },
+
+    // private, helper method
+    _select: function(range, virtual) {
 
         var firstRecord = range.getFirst(),
             selModel;
 
         // Select if view is accessible
         if (firstRecord.view) {
+
             selModel = firstRecord.view.getSelectionModel();
             range.select(selModel, virtual);
         }
+    },
+
+     // private, helper method
+    _deselect: function(range, virtual) {
+
+        var firstRecord = range.getFirst(),
+            selModel;
+
+        // Select if view is accessible
+        if (firstRecord.view) {
+
+            selModel = firstRecord.view.getSelectionModel();
+            range.deselect(selModel, virtual);
+        }
+    },
+
+    /**
+     * Selects a range of positions named by indexes
+     * @param {Number} positionIndexes Position indexes array like [{row: 0, column: 2}, ...]
+     * @param {Boolean} [virtual=false] Virtual selections do not update the view visually
+     * @return {Spread.command.Commander}
+     */
+    select: function(positionIndexes, virtual) {
+
+        var range = Spread.selection.Range.fromSpreadPositions(this.spreadPanel, positionIndexes);
+
+        this._select(range, virtual);
+
+        return this;
+    },
+
+    /**
+     * Selects a row named by it's row index
+     * @param {Number} rowIndex Row to select
+     * @param {Boolean} [virtual=false] Virtual selections do not update the view visually
+     * @return {Spread.command.Commander}
+     */
+    selectRow: function(rowIndex, virtual) {
+
+        var range = Spread.selection.Range.fromSpreadRow(this.spreadPanel, rowIndex);
+
+        this._select(range, virtual);
+
+        return this;
+    },
+
+    /**
+     * Selects rows named by it's row indexes
+     * @param {Array} rowIndexes Row indexes to select, e.g. [0, 1, 2]
+     * @param {Boolean} [virtual=false] Virtual selections do not update the view visually
+     * @return {Spread.command.Commander}
+     */
+    selectRows: function(rowIndexes, virtual) {
+
+        var range, positions = [];
+
+        for (var i=0; i<rowIndexes.length; i++) {
+
+            positions = Ext.Array.merge(
+                positions,
+                Spread.selection.Range.fromSpreadRow(this.spreadPanel, rowIndexes[i]).positions
+            );
+        }
+
+        range = Ext.create('Spread.selection.Range', {
+            positions: positions
+        });
+
+        this._select(range, virtual);
+
+        return this;
+    },
+
+    /**
+     * Selects a column named by it's column index
+     * @param {Number} columnIndex Column to select
+     * @param {Boolean} [virtual=false] Virtual selections do not update the view visually
+     * @return {Spread.command.Commander}
+     */
+    selectColumn: function(columnIndex, virtual) {
+
+        var range = Spread.selection.Range.fromSpreadColumn(this.spreadPanel, columnIndex);
+
+        this._select(range, virtual);
+
+        return this;
+    },
+
+    /**
+     * Selects columns named by it's column indexes
+     * @param {Array} columnIndexes Columns to select, e.g. [2, 3, 4]
+     * @param {Boolean} [virtual=false] Virtual selections do not update the view visually
+     * @return {Spread.command.Commander}
+     */
+    selectColumns: function(columnIndexes, virtual) {
+
+        var positions = [], range;
+
+        for (var i=0; i<columnIndexes.length; i++) {
+
+            positions = Ext.Array.merge(
+                positions,
+                Spread.selection.Range.fromSpreadColumn(this.spreadPanel, columnIndexes[i]).positions
+            );
+        }
+
+        range = Ext.create('Spread.selection.Range', {
+            positions: positions
+        });
+
+        this._select(range, virtual);
+
+        return this;
+    },
+
+    /**
+     * De-Selects a range of positions named by indexes
+     * @param {Number} positionIndexes Position indexes array like [{row: 0, column: 2}, ...]
+     * @param {Boolean} [virtual=false] Virtual selections do not update the view visually
+     * @return {Spread.command.Commander}
+     */
+    deselect: function(positionIndexes, virtual) {
+
+        var range = Spread.selection.Range.fromSpreadPositions(this.spreadPanel, positionIndexes);
+
+        this._deselect(range, virtual);
+
+        return this;
+    },
+
+    /**
+     * De-Selects a row named by it's row index
+     * @param {Number} rowIndex Row to select
+     * @param {Boolean} [virtual=false] Virtual selections do not update the view visually
+     * @return {Spread.command.Commander}
+     */
+    deselectRow: function(rowIndex, virtual) {
+
+        var range = Spread.selection.Range.fromSpreadRow(this.spreadPanel, rowIndex);
+
+        this._deselect(range, virtual);
+
+        return this;
+    },
+
+    /**
+     * De-Selects rows named by it's row indexes
+     * @param {Array} rowIndexes Row indexes to select, e.g. [0, 1, 2]
+     * @param {Boolean} [virtual=false] Virtual selections do not update the view visually
+     * @return {Spread.command.Commander}
+     */
+    deselectRows: function(rowIndexes, virtual) {
+
+        var range, positions = [];
+
+        for (var i=0; i<rowIndexes.length; i++) {
+
+            positions = Ext.Array.merge(
+                positions,
+                Spread.selection.Range.fromSpreadRow(this.spreadPanel, rowIndexes[i]).positions
+            );
+        }
+
+        range = Ext.create('Spread.selection.Range', {
+            positions: positions
+        });
+
+        this._deselect(range, virtual);
+
+        return this;
+    },
+
+    /**
+     * De-Selects a column named by it's column index
+     * @param {Number} columnIndex Column to select
+     * @param {Boolean} [virtual=false] Virtual selections do not update the view visually
+     * @return {Spread.command.Commander}
+     */
+    deselectColumn: function(columnIndex, virtual) {
+
+        var range = Spread.selection.Range.fromSpreadColumn(this.spreadPanel, columnIndex);
+
+        this._deselect(range, virtual);
+
+        return this;
+    },
+
+    /**
+     * De-Selects columns named by it's column indexes
+     * @param {Array} columnIndexes Columns to select, e.g. [2, 3, 4]
+     * @param {Boolean} [virtual=false] Virtual selections do not update the view visually
+     * @return {Spread.command.Commander}
+     */
+    deselectColumns: function(columnIndexes, virtual) {
+
+        var positions = [], range;
+
+        for (var i=0; i<columnIndexes.length; i++) {
+
+            positions = Ext.Array.merge(
+                positions,
+                Spread.selection.Range.fromSpreadColumn(this.spreadPanel, columnIndexes[i]).positions
+            );
+        }
+
+        range = Ext.create('Spread.selection.Range', {
+            positions: positions
+        });
+
+        this._deselect(range, virtual);
+
+        return this;
+    },
+
+    /**
+     * Focuses the named cell
+     * @param {Number} columnIndex Cell index
+     * @param {Number} rowIndex Row index
+     * @return {Spread.command.Commander}
+     */
+    focusCell: function(columnIndex, rowIndex) {
+
+        // TODO: Check for out-of-bounds error
+        new Spread.selection.Position(
+            this.spreadPanel.getView(),
+            columnIndex,
+            rowIndex
+        ).validate().focus();
     }
 });
 /**
@@ -649,6 +993,9 @@ Ext.define('Spread.grid.Panel', {
      */
     clearRangePluginConfig: {},
 
+    // Internal plugin registry map
+    pluginRegistry: {},
+
     /**
      * Pre-process the column configuration to avoid incompatibilities
      * @return void
@@ -866,7 +1213,7 @@ Ext.define('Spread.grid.Panel', {
 
         // Create and return an instance of the commander
         return Ext.create('Spread.command.Commander', {
-            grid: this
+            spreadPanel: this
         });
     },
 
@@ -895,9 +1242,26 @@ Ext.define('Spread.grid.Panel', {
     instantiatePlugins: function() {
 
         this.editablePluginInstance = Ext.create('Spread.grid.plugin.Editable', this.editablePluginConfig);
+        this.pluginRegistry['Spread.grid.plugin.Editable'] = this.editablePluginInstance;
+
         this.copyablePluginInstance = Ext.create('Spread.grid.plugin.Copyable', this.copyablePluginConfig);
+        this.pluginRegistry['Spread.grid.plugin.Copyable'] = this.copyablePluginInstance;
+
         this.pasteablePluginInstance = Ext.create('Spread.grid.plugin.Pasteable', this.pasteablePluginConfig);
+        this.pluginRegistry['Spread.grid.plugin.Pasteable'] = this.pasteablePluginInstance;
+
         this.clearRangePluginInstance = Ext.create('Spread.grid.plugin.ClearRange', this.clearRangePluginConfig);
+        this.pluginRegistry['Spread.grid.plugin.ClearRange'] = this.clearRangePluginInstance;
+    },
+
+    /**
+     * Returns an instance of the plugin named by class name or returns undefined
+     * TODO Refactor all plugin classes to extend from one AbstractPlugin (would be nicer for return type too)
+     * @param {String} pluginClassName Class name of the plugin to fetch instance of
+     * @return {Ext.AbstractComponent}
+     */
+    getPlugin: function(pluginClassName) {
+        return this.pluginRegistry[pluginClassName];
     },
 
     /**
@@ -1075,6 +1439,32 @@ Ext.define('Spread.grid.Panel', {
      */
     isEditable: function() {
         return this.editable;
+    },
+
+
+    statics: {
+
+        /**
+         * Returns the count of the rows and column available like:
+         *
+         *    {
+         *        columnCount: 5,
+         *        rowCount: 25
+         *    }
+         *
+         * @param {Spread.grid.Panel} spreadPanel Spreadsheet panel instance
+         * @return {Object}
+         */
+        getPositionCount: function(spreadPanel) {
+
+            var columnCount = spreadPanel.headerCt.getColumnCount();
+            var rowCount = spreadPanel.getStore().getCount();
+
+            return {
+                columnCount: columnCount,
+                rowCount: rowCount
+            }
+        }
     }
 });
 /**
@@ -1495,7 +1885,7 @@ Ext.define('Spread.grid.View', {
     /**
      * Initially shows/Updates the cell cover to cover a new position.
      * Sets the this.currentCoverPosition if a position is given (initial showing)
-     * OR uses the current/already focussed cover position (update mode).
+     * OR uses the current/already focused cover position (update mode).
      * @param {Spread.selection.Position} [position=this.currentCoverPosition] Position object reference
      * @return void
      */
@@ -1570,6 +1960,17 @@ Ext.define('Spread.grid.View', {
         }
     },
 
+    // private, helper method
+    _highlight: function(methodName, positions) {
+
+        for (var i=0; i<positions.length; i++) {
+
+            // (Un-)highlight visually by adding/removing CSS class
+            Ext.fly(positions[i].validate().cellEl)
+                .down('div')[methodName]('spreadsheet-cell-selection-cover');
+        }
+    },
+
     /**
      * Highlights a range of cells identified by Spread.selection.Position instances.
      * Before highlighting, previously highlighted cells get un-highlighted again.
@@ -1583,15 +1984,7 @@ Ext.define('Spread.grid.View', {
      */
     highlightCells: function(positions) {
 
-        var me = this, _highlight = function(methodName) {
-
-            for (var i=0; i<me.currentHighlightPositions.length; i++) {
-
-                // (Un-)highlight visually by adding/removing CSS class
-                Ext.fly(me.currentHighlightPositions[i].validate().cellEl)
-                    .down('div')[methodName]('spreadsheet-cell-selection-cover');
-            }
-        };
+        var me = this;
 
         // Interceptable before-eventing
         if (this.fireEvent('beforehighlightcells', this, positions) !== false) {
@@ -1599,8 +1992,7 @@ Ext.define('Spread.grid.View', {
             // Un-highlight first
             if (this.currentHighlightPositions.length > 0) {
 
-                // Remove CSS class from all cells
-                _highlight('removeCls');
+                this.unhighlightCells(this.currentHighlightPositions);
             }
 
             if (positions) {
@@ -1609,11 +2001,28 @@ Ext.define('Spread.grid.View', {
                 this.currentHighlightPositions = positions;
 
                 // Add CSS class to all cells
-                _highlight('addCls');
+                me._highlight('addCls', this.currentHighlightPositions);
             }
 
             // Fire event
             this.fireEvent('highlightcells', this, positions);
+        }
+    },
+
+    /**
+     * Removes the highlighting maybe previously added by this.highlightCells().
+     * @param {Array} positions Positions to remove highlighting from
+     * @return void
+     */
+    unhighlightCells: function(positions) {
+
+        // Remove CSS class from all cells
+        this._highlight('removeCls', positions);
+
+        if (this.currentHighlightPositions.length > 0) {
+
+            // Substract all positions given from current highlighted positions
+            this.currentHighlightPositions = Ext.Array.difference(this.currentHighlightPositions, positions);
         }
     },
 
@@ -2832,6 +3241,8 @@ Ext.define('Spread.grid.plugin.Editable', {
 
         if (this.fireEvent('beforecoverkeypressed', this) !== false) {
 
+            // TODO: DEL key should clear the cell
+
             if (Spread.util.Key.isStartEditKey(evt) && !this.isEditing) {
 
                 if (this.isPositionEditable()) {
@@ -3815,6 +4226,14 @@ Ext.define('Spread.selection.Position', {
             value = me.columnHeader.cellreader(value, me);
         }
         return value;
+    },
+
+    /**
+     * Focuses the position
+     * @return {Spread.selection.Position}
+     */
+    focus: function() {
+        this.view.getSelectionModel().setCurrentFocusPosition(this);
     }
 });
 /**

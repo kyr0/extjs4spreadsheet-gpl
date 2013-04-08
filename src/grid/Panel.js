@@ -738,7 +738,7 @@ Ext.define('Spread.grid.Panel', {
 
         // Create and return an instance of the commander
         return Ext.create('Spread.command.Commander', {
-            grid: this
+            spreadPanel: this
         });
     },
 
@@ -781,6 +781,7 @@ Ext.define('Spread.grid.Panel', {
 
     /**
      * Returns an instance of the plugin named by class name or returns undefined
+     * TODO Refactor all plugin classes to extend from one AbstractPlugin (would be nicer for return type too)
      * @param {String} pluginClassName Class name of the plugin to fetch instance of
      * @return {Ext.AbstractComponent}
      */
@@ -963,5 +964,31 @@ Ext.define('Spread.grid.Panel', {
      */
     isEditable: function() {
         return this.editable;
+    },
+
+
+    statics: {
+
+        /**
+         * Returns the count of the rows and column available like:
+         *
+         *    {
+         *        columnCount: 5,
+         *        rowCount: 25
+         *    }
+         *
+         * @param {Spread.grid.Panel} spreadPanel Spreadsheet panel instance
+         * @return {Object}
+         */
+        getPositionCount: function(spreadPanel) {
+
+            var columnCount = spreadPanel.headerCt.getColumnCount();
+            var rowCount = spreadPanel.getStore().getCount();
+
+            return {
+                columnCount: columnCount,
+                rowCount: rowCount
+            }
+        }
     }
 });

@@ -71,6 +71,19 @@ Ext.define('Spread.selection.Range', {
     },
 
     /**
+     * De-selects all positions of this range
+     * @param {Spread.selection.RangeModel} selModel Selection model reference
+     * @param {Boolean} [virtual=false] Virtual selections do not update the view visually
+     * @return void
+     */
+    deselect: function(selModel, virtual) {
+
+        if (!virtual) {
+            selModel.view.unhighlightCells(this.positions);
+        }
+    },
+
+    /**
      * Returns the count of positions stored inside this range
      * @return {Number}
      */
@@ -100,5 +113,101 @@ Ext.define('Spread.selection.Range', {
      */
     getLast: function() {
         return this.positions[this.positions.length-1];
+    },
+
+    statics: {
+
+        /**
+         * Builds a range instance holding all positions
+         * of a spread's row.
+         *
+         * @param {Spread.grid.Panel} spreadPanel Spreadsheet panel instance
+         * @param {Number} rowIndex Row index to collects position instances of
+         * @return {Spread.selection.Range}
+         */
+        fromSpreadRow: function(spreadPanel, rowIndex) {
+
+            // TODO: Check for out-of-bounds error!
+            var positionCount = Spread.grid.Panel.getPositionCount(spreadPanel),
+                positions = [];
+
+            for (var i=0; i<positionCount.columnCount; i++) {
+
+                positions.push(
+
+                    new Spread.selection.Position(
+                        spreadPanel.getView(),
+                        i,
+                        rowIndex
+                    )
+                )
+            }
+
+            return Ext.create('Spread.selection.Range', {
+                positions: positions
+            });
+        },
+
+        /**
+         * Builds a range instance holding all positions
+         * of a spread's column.
+         *
+         * @param {Spread.grid.Panel} spreadPanel Spreadsheet panel instance
+         * @param {Number} columnIndex Column index to collects position instances of
+         * @return {Spread.selection.Range}
+         */
+        fromSpreadColumn: function(spreadPanel, columnIndex) {
+
+            // TODO: Check for out-of-bounds error!
+            var positionCount = Spread.grid.Panel.getPositionCount(spreadPanel),
+                positions = [];
+
+            for (var i=0; i<positionCount.rowCount; i++) {
+
+                positions.push(
+
+                    new Spread.selection.Position(
+                        spreadPanel.getView(),
+                        columnIndex,
+                        i
+                    )
+                )
+            }
+
+            return Ext.create('Spread.selection.Range', {
+                positions: positions
+            });
+        },
+
+        /**
+         * Builds a range instance holding all positions
+         * named as position indexes in the positionIndexes array.
+         *
+         * @param {Spread.grid.Panel} spreadPanel Spreadsheet panel instance
+         * @param {Number} positionIndexes Position indexes array like [{row: 0, column: 2}, ...]
+         * @return {Spread.selection.Range}
+         */
+        fromSpreadPositions: function(spreadPanel, positionIndexes) {
+
+            // TODO: Check for out-of-bounds error!
+            var positionCount = Spread.grid.Panel.getPositionCount(spreadPanel),
+                positions = [];
+
+            for (var i=0; i<positionIndexes.length; i++) {
+
+                positions.push(
+
+                    new Spread.selection.Position(
+                        spreadPanel.getView(),
+                        positionIndexes[i].column,
+                        positionIndexes[i].row
+                    )
+                )
+            }
+
+            return Ext.create('Spread.selection.Range', {
+                positions: positions
+            });
+        }
     }
 });

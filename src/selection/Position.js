@@ -346,5 +346,13 @@ Ext.define('Spread.selection.Position', {
             value = me.columnHeader.cellreader(value, me);
         }
         return value;
+    },
+
+    /**
+     * Focuses the position
+     * @return {Spread.selection.Position}
+     */
+    focus: function() {
+        this.view.getSelectionModel().setCurrentFocusPosition(this);
     }
 });
