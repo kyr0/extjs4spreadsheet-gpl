@@ -582,6 +582,8 @@ Ext.define('Spread.grid.plugin.Editable', {
 
         if (this.fireEvent('beforecoverkeypressed', this) !== false) {
 
+            // TODO: DEL key should clear the cell
+
             if (Spread.util.Key.isStartEditKey(evt) &amp;&amp; !this.isEditing) {
 
                 if (this.isPositionEditable()) {
