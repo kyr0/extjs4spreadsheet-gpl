@@ -28,20 +28,10 @@ Ext.define('Spread.selection.RangeModel', {
     alias: 'selection.range',
 
     isRangeModel: true,
-
-    // Internal indicator flag
     initialViewRefresh: true,
-
-    // Internal indicator flag
     dataChangedRecently: false,
-
-    // Internal keyNav reference
     keyNav: null,
-
-    // Internal indicator flag
     keyNavigation: false,
-
-    // Internal indicator flag
     mayRangeSelecting: false,
 
     /**
@@ -68,7 +58,7 @@ Ext.define('Spread.selection.RangeModel', {
      * position objects, identifying the current
      * range of selected cells.
      */
-    currentSelectionRange: Ext.create('Spread.selection.Range'),
+    currentSelectionRange: null,
 
     /**
      * @property {Spread.selection.Position}
@@ -93,7 +83,6 @@ Ext.define('Spread.selection.RangeModel', {
      * @property {Spread.grid.View} Internal view instance reference
      */
     view: null,
-
 
     /**
      * @property {Spread.grid.Panel} Internal grid reference
@@ -173,6 +162,9 @@ Ext.define('Spread.selection.RangeModel', {
             'keynavigate'
         );
         this.callParent(arguments);
+
+        // Set current selection range
+        this.currentSelectionRange = new Spread.selection.Range(this.getSpreadPanel());
     },
 
     // --- Initialization
@@ -695,6 +687,8 @@ Ext.define('Spread.selection.RangeModel', {
      */
     setCurrentFocusPosition: function(position) {
 
+        //console.log('setCurrentFocusPosition');
+
         // Remove last focus reference
         if (!position) {
             this.currentFocusPosition = null;
@@ -702,7 +696,7 @@ Ext.define('Spread.selection.RangeModel', {
         }
 
         // Never allow to focus a cell/position which resists inside a header column
-        if (!position.columnHeader.selectable) {
+        if (!position.isSelectable()) {
             return false;
         }
 
@@ -721,7 +715,7 @@ Ext.define('Spread.selection.RangeModel', {
             //console.log('FOCUS ', this.getCurrentFocusPosition().row + ',' + this.getCurrentFocusPosition().column);
 
             // Reset current selection range
-            this.currentSelectionRange = Ext.create('Spread.selection.Range');
+            this.currentSelectionRange = new Spread.selection.Range(this.getSpreadPanel());
 
             // Inform the view to focus the cell
             this.view.coverCell(position);
@@ -921,12 +915,8 @@ Ext.define('Spread.selection.RangeModel', {
                 }
             }
         }
-
-        return Ext.create('Spread.selection.Range', {
-            positions: selectedPositions
-        });
+        return new Spread.selection.Range(this.getSpreadPanel(), selectedPositions);
     },
-
 
     /**
      * @protected
@@ -941,7 +931,7 @@ Ext.define('Spread.selection.RangeModel', {
         this.currentSelectionRange = this.createFocusRange();
 
         // Select the range
-        this.currentSelectionRange.select(this, virtual);
+        this.currentSelectionRange.select(virtual);
     },
 
     /**
@@ -969,5 +959,13 @@ Ext.define('Spread.selection.RangeModel', {
      */
     getCurrentSelectionRange: function() {
         return this.currentSelectionRange;
+    },
+
+    /**
+     * Returns the spread grid panel reference
+     * @return {Spread.grid.Panel}
+     */
+    getSpreadPanel: function() {
+        return this.grid;
     }
 });

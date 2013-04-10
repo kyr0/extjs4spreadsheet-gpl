@@ -3,7 +3,6 @@
  */
 Ext.onReady(function() {
 
-
     Ext.create('Ext.button.Button', {
         renderTo: Ext.getBody(),
         text: 'Show Spreadsheet',
@@ -161,6 +160,9 @@ Ext.onReady(function() {
                     //editable: false
                 }]
             });
+
+            // Evil global reference for fast & easy console access
+            window.spreadPanel = spreadPanel;
 
             // Show spread inside a window
             var spreadWnd = new Ext.window.Window({

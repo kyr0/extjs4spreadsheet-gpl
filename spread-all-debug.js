@@ -1,227 +1,14 @@
 /**
- * @class Spread.selection.Range
- * Represents a set of Spread.selection.Position instances
- * and it's helper methods and attributes.
- */
-Ext.define('Spread.selection.Range', {
-
-    /**
-     * @property {Array} positions
-     * Selection positions
-     */
-    positions: [],
-
-    // private constructor
-    constructor: function(config) {
-
-        // Apply the positions onto the instance
-        Ext.apply(this, config);
-    },
-
-    /**
-     * Calls the callback method for each position in the store
-     * @param {Function} cb Callback called for each position. Arguments: position, index, length
-     * @param {Function} [onComplete] Function that gets called when all interation processing is done
-     * @return void
-     */
-    each: function(cb, onComplete) {
-        var me = this;
-        for (var i=0; i<me.positions.length; i++) {
-
-            if (Ext.isFunction(cb)) {
-                cb(me.positions[i], i, me.positions.length);
-            }
-        }
-
-        if (Ext.isFunction(onComplete)) {
-            onComplete();
-        }
-    },
-
-    /**
-     * Removes all positions from the range
-     * @return void
-     */
-    removeAll: function() {
-        this.positions = [];
-    },
-
-    /**
-     * Adds a position to the range
-     * @param {Spread.selection.Position} position Position instance
-     * @return void
-     */
-    add: function(position) {
-        this.positions.push(position);
-    },
-
-    /**
-     * Selects all positions of this range
-     * @param {Spread.selection.RangeModel} selModel Selection model reference
-     * @param {Boolean} [virtual=false] Virtual selections do not update the view visually
-     * @return void
-     */
-    select: function(selModel, virtual) {
-
-        selModel.currentSelectionRange = this;
-
-        if (!virtual) {
-            selModel.view.highlightCells(this.positions);
-        }
-    },
-
-    /**
-     * De-selects all positions of this range
-     * @param {Spread.selection.RangeModel} selModel Selection model reference
-     * @param {Boolean} [virtual=false] Virtual selections do not update the view visually
-     * @return void
-     */
-    deselect: function(selModel, virtual) {
-
-        if (!virtual) {
-            selModel.view.unhighlightCells(this.positions);
-        }
-    },
-
-    /**
-     * Returns the count of positions stored inside this range
-     * @return {Number}
-     */
-    count: function() {
-        return this.positions.length;
-    },
-
-    /**
-     * Returns all positions stored in this range as array
-     * @return {Array}
-     */
-    toArray: function() {
-        return this.positions;
-    },
-
-    /**
-     * Returns the first position in the range
-     * @return {Spread.selection.Position}
-     */
-    getFirst: function() {
-        return this.positions[0];
-    },
-
-    /**
-     * Returns the last position in the range
-     * @return {Spread.selection.Position}
-     */
-    getLast: function() {
-        return this.positions[this.positions.length-1];
-    },
-
-    statics: {
-
-        /**
-         * Builds a range instance holding all positions
-         * of a spread's row.
-         *
-         * @param {Spread.grid.Panel} spreadPanel Spreadsheet panel instance
-         * @param {Number} rowIndex Row index to collects position instances of
-         * @return {Spread.selection.Range}
-         */
-        fromSpreadRow: function(spreadPanel, rowIndex) {
-
-            // TODO: Check for out-of-bounds error!
-            var positionCount = Spread.grid.Panel.getPositionCount(spreadPanel),
-                positions = [];
-
-            for (var i=0; i<positionCount.columnCount; i++) {
-
-                positions.push(
-
-                    new Spread.selection.Position(
-                        spreadPanel.getView(),
-                        i,
-                        rowIndex
-                    )
-                )
-            }
-
-            return Ext.create('Spread.selection.Range', {
-                positions: positions
-            });
-        },
-
-        /**
-         * Builds a range instance holding all positions
-         * of a spread's column.
-         *
-         * @param {Spread.grid.Panel} spreadPanel Spreadsheet panel instance
-         * @param {Number} columnIndex Column index to collects position instances of
-         * @return {Spread.selection.Range}
-         */
-        fromSpreadColumn: function(spreadPanel, columnIndex) {
-
-            // TODO: Check for out-of-bounds error!
-            var positionCount = Spread.grid.Panel.getPositionCount(spreadPanel),
-                positions = [];
-
-            for (var i=0; i<positionCount.rowCount; i++) {
-
-                positions.push(
-
-                    new Spread.selection.Position(
-                        spreadPanel.getView(),
-                        columnIndex,
-                        i
-                    )
-                )
-            }
-
-            return Ext.create('Spread.selection.Range', {
-                positions: positions
-            });
-        },
-
-        /**
-         * Builds a range instance holding all positions
-         * named as position indexes in the positionIndexes array.
-         *
-         * @param {Spread.grid.Panel} spreadPanel Spreadsheet panel instance
-         * @param {Number} positionIndexes Position indexes array like [{row: 0, column: 2}, ...]
-         * @return {Spread.selection.Range}
-         */
-        fromSpreadPositions: function(spreadPanel, positionIndexes) {
-
-            // TODO: Check for out-of-bounds error!
-            var positionCount = Spread.grid.Panel.getPositionCount(spreadPanel),
-                positions = [];
-
-            for (var i=0; i<positionIndexes.length; i++) {
-
-                positions.push(
-
-                    new Spread.selection.Position(
-                        spreadPanel.getView(),
-                        positionIndexes[i].column,
-                        positionIndexes[i].row
-                    )
-                )
-            }
-
-            return Ext.create('Spread.selection.Range', {
-                positions: positions
-            });
-        }
-    }
-});
-/**
- * @class Ext.command.Commander
+ * @class Spread.command.Commander
  *
  * Class that implements a public command API for a more
  * simple and interactive use of the spreads internal features.
+ * TODO: Check for out-of-bounds errors!
  */
 Ext.define('Spread.command.Commander', {
 
-    requires: ['Spread.selection.Range'],
-
     /**
+     * @protected
      * @property {Spread.grid.Panel} spreadPanel Spread panel reference
      */
     spreadPanel: null,
@@ -231,32 +18,54 @@ Ext.define('Spread.command.Commander', {
         Ext.apply(this, config);
     },
 
-    // private, helper method
-    _select: function(range, virtual) {
-
-        var firstRecord = range.getFirst(),
-            selModel;
-
-        // Select if view is accessible
-        if (firstRecord.view) {
-
-            selModel = firstRecord.view.getSelectionModel();
-            range.select(selModel, virtual);
-        }
+    /**
+     * Returns a position to work on
+     * @param {Number} columnIndex Column index
+     * @param {Number} rowIndex Row index
+     * @return {Spread.selection.Position}
+     */
+    getPosition: function(columnIndex, rowIndex) {
+        return new Spread.selection.Position(
+            this.spreadPanel.getView(),
+            columnIndex,
+            rowIndex
+        ).validate();
     },
 
-     // private, helper method
-    _deselect: function(range, virtual) {
+    /**
+     * Returns a range of positions of a row
+     * @param {Number} rowIndex Row's index
+     * @return {Spread.selection.Range}
+     */
+    getRowRange: function(rowIndex) {
+        return Spread.selection.Range.fromSpreadRows(this.spreadPanel, [rowIndex]);
+    },
 
-        var firstRecord = range.getFirst(),
-            selModel;
+    /**
+     * Returns a range of positions of many rows
+     * @param {Array} rowIndexes Row indexes e.g. [1, 2]
+     * @return {Spread.selection.Range}
+     */
+    getRowsRange: function(rowIndexes) {
+        return Spread.selection.Range.fromSpreadRows(this.spreadPanel, rowIndexes);
+    },
 
-        // Select if view is accessible
-        if (firstRecord.view) {
+    /**
+     * Returns a range of positions of a column
+     * @param {Number} columnIndex Column's index
+     * @return {Spread.selection.Range}
+     */
+    getColumnRange: function(columnIndex) {
+        return Spread.selection.Range.fromSpreadColumns(this.spreadPanel, [columnIndex]);
+    },
 
-            selModel = firstRecord.view.getSelectionModel();
-            range.deselect(selModel, virtual);
-        }
+    /**
+     * Returns a range of positions of many column
+     * @param {Array} columnIndexes Column indexes e.g. [1, 2]
+     * @return {Spread.selection.Range}
+     */
+    getColumnsRange: function(columnIndexes) {
+        return Spread.selection.Range.fromSpreadColumns(this.spreadPanel, columnIndexes);
     },
 
     /**
@@ -266,11 +75,7 @@ Ext.define('Spread.command.Commander', {
      * @return {Spread.command.Commander}
      */
     select: function(positionIndexes, virtual) {
-
-        var range = Spread.selection.Range.fromSpreadPositions(this.spreadPanel, positionIndexes);
-
-        this._select(range, virtual);
-
+        Spread.selection.Range.fromSpreadPositions(this.spreadPanel, positionIndexes).select(virtual);
         return this;
     },
 
@@ -281,12 +86,7 @@ Ext.define('Spread.command.Commander', {
      * @return {Spread.command.Commander}
      */
     selectRow: function(rowIndex, virtual) {
-
-        var range = Spread.selection.Range.fromSpreadRow(this.spreadPanel, rowIndex);
-
-        this._select(range, virtual);
-
-        return this;
+        return this.selectRows([rowIndex], virtual);
     },
 
     /**
@@ -296,23 +96,7 @@ Ext.define('Spread.command.Commander', {
      * @return {Spread.command.Commander}
      */
     selectRows: function(rowIndexes, virtual) {
-
-        var range, positions = [];
-
-        for (var i=0; i<rowIndexes.length; i++) {
-
-            positions = Ext.Array.merge(
-                positions,
-                Spread.selection.Range.fromSpreadRow(this.spreadPanel, rowIndexes[i]).positions
-            );
-        }
-
-        range = Ext.create('Spread.selection.Range', {
-            positions: positions
-        });
-
-        this._select(range, virtual);
-
+        Spread.selection.Range.fromSpreadRows(this.spreadPanel, rowIndexes).select(virtual);
         return this;
     },
 
@@ -323,12 +107,7 @@ Ext.define('Spread.command.Commander', {
      * @return {Spread.command.Commander}
      */
     selectColumn: function(columnIndex, virtual) {
-
-        var range = Spread.selection.Range.fromSpreadColumn(this.spreadPanel, columnIndex);
-
-        this._select(range, virtual);
-
-        return this;
+        return this.selectColumns([columnIndex], virtual);
     },
 
     /**
@@ -338,23 +117,7 @@ Ext.define('Spread.command.Commander', {
      * @return {Spread.command.Commander}
      */
     selectColumns: function(columnIndexes, virtual) {
-
-        var positions = [], range;
-
-        for (var i=0; i<columnIndexes.length; i++) {
-
-            positions = Ext.Array.merge(
-                positions,
-                Spread.selection.Range.fromSpreadColumn(this.spreadPanel, columnIndexes[i]).positions
-            );
-        }
-
-        range = Ext.create('Spread.selection.Range', {
-            positions: positions
-        });
-
-        this._select(range, virtual);
-
+        Spread.selection.Range.fromSpreadColumns(this.spreadPanel, columnIndexes).select(virtual);
         return this;
     },
 
@@ -365,11 +128,7 @@ Ext.define('Spread.command.Commander', {
      * @return {Spread.command.Commander}
      */
     deselect: function(positionIndexes, virtual) {
-
-        var range = Spread.selection.Range.fromSpreadPositions(this.spreadPanel, positionIndexes);
-
-        this._deselect(range, virtual);
-
+        Spread.selection.Range.fromSpreadPositions(this.spreadPanel, positionIndexes).deselect(virtual);
         return this;
     },
 
@@ -380,12 +139,7 @@ Ext.define('Spread.command.Commander', {
      * @return {Spread.command.Commander}
      */
     deselectRow: function(rowIndex, virtual) {
-
-        var range = Spread.selection.Range.fromSpreadRow(this.spreadPanel, rowIndex);
-
-        this._deselect(range, virtual);
-
-        return this;
+        return this.deselectRows([rowIndex], virtual);
     },
 
     /**
@@ -395,23 +149,7 @@ Ext.define('Spread.command.Commander', {
      * @return {Spread.command.Commander}
      */
     deselectRows: function(rowIndexes, virtual) {
-
-        var range, positions = [];
-
-        for (var i=0; i<rowIndexes.length; i++) {
-
-            positions = Ext.Array.merge(
-                positions,
-                Spread.selection.Range.fromSpreadRow(this.spreadPanel, rowIndexes[i]).positions
-            );
-        }
-
-        range = Ext.create('Spread.selection.Range', {
-            positions: positions
-        });
-
-        this._deselect(range, virtual);
-
+        Spread.selection.Range.fromSpreadRows(this.spreadPanel, rowIndexes).deselect(virtual);
         return this;
     },
 
@@ -422,12 +160,7 @@ Ext.define('Spread.command.Commander', {
      * @return {Spread.command.Commander}
      */
     deselectColumn: function(columnIndex, virtual) {
-
-        var range = Spread.selection.Range.fromSpreadColumn(this.spreadPanel, columnIndex);
-
-        this._deselect(range, virtual);
-
-        return this;
+        return this.deselectColumns([columnIndex], virtual);
     },
 
     /**
@@ -437,23 +170,7 @@ Ext.define('Spread.command.Commander', {
      * @return {Spread.command.Commander}
      */
     deselectColumns: function(columnIndexes, virtual) {
-
-        var positions = [], range;
-
-        for (var i=0; i<columnIndexes.length; i++) {
-
-            positions = Ext.Array.merge(
-                positions,
-                Spread.selection.Range.fromSpreadColumn(this.spreadPanel, columnIndexes[i]).positions
-            );
-        }
-
-        range = Ext.create('Spread.selection.Range', {
-            positions: positions
-        });
-
-        this._deselect(range, virtual);
-
+        Spread.selection.Range.fromSpreadColumns(this.spreadPanel, columnIndexes).deselect(virtual);
         return this;
     },
 
@@ -463,14 +180,241 @@ Ext.define('Spread.command.Commander', {
      * @param {Number} rowIndex Row index
      * @return {Spread.command.Commander}
      */
-    focusCell: function(columnIndex, rowIndex) {
-
-        // TODO: Check for out-of-bounds error
+    focusPosition: function(columnIndex, rowIndex) {
         new Spread.selection.Position(
             this.spreadPanel.getView(),
             columnIndex,
             rowIndex
         ).validate().focus();
+    },
+
+    /**
+     * Focuses & Starts editing a position
+     * @param {Number} columnIndex Cell index
+     * @param {Number} rowIndex Row index
+     * @param {Boolean} [noAutoFocus] Do not automatically focus the cell before starting edit mode
+     * @return {Spread.command.Commander}
+     */
+    startEditPosition: function(columnIndex, rowIndex, noAutoFocus) {
+
+        if (!Ext.isDefined(noAutoFocus)) {
+
+            // Focus position
+            this.focusPosition(columnIndex, rowIndex);
+        }
+
+        new Spread.selection.Position(
+            this.spreadPanel.getView(),
+            columnIndex,
+            rowIndex
+        ).validate().setEditing(true);
+        return this;
+    },
+
+    /**
+     * Stops editing a position
+     * @param {Number} columnIndex Cell index
+     * @param {Number} rowIndex Row index
+     * @return {Spread.command.Commander}
+     */
+    stopEditPosition: function(columnIndex, rowIndex) {
+        new Spread.selection.Position(
+            this.spreadPanel.getView(),
+            columnIndex,
+            rowIndex
+        ).validate().setEditing(false);
+        return this;
+    },
+
+    /**
+     * En/disable edit mode styling for positions
+     * @param {Number} positionIndexes Position indexes array like [{row: 0, column: 2}, ...]
+     * @param {Boolean} editModeStyling Activates/Deactivates edit mode styling
+     * @return {Spread.command.Commander}
+     */
+    setEditModeStyling: function(positionIndexes, editModeStyling) {
+        Spread.selection.Range.fromSpreadPositions(this.spreadPanel, positionIndexes).setEditModeStyling(editModeStyling);
+        return this;
+    },
+
+    /**
+     * Sets the edit mode styling for a row
+     * @param {Number} rowIndex Row index to set edit mode styling for
+     * @param {Boolean} editModeStyling Activates/Deactivates edit mode styling
+     * @return {Spread.command.Commander}
+     */
+    setRowEditModeStyling: function(rowIndex, editModeStyling) {
+        return this.setRowsEditModeStyling([rowIndex], editModeStyling);
+    },
+
+    /**
+     * Sets the edit mode styling for many rows
+     * @param {Array} rowIndexes Row indexes to set edit mode styling for
+     * @param {Boolean} editModeStyling Activates/Deactivates edit mode styling
+     * @return {Spread.command.Commander}
+     */
+    setRowsEditModeStyling: function(rowIndexes, editModeStyling) {
+        Spread.selection.Range.fromSpreadRows(this.spreadPanel, rowIndexes).setEditModeStyling(editModeStyling);
+        return this;
+    },
+
+    /**
+     * Sets the edit mode styling for a column
+     * @param {Number} columnIndex Column index to set edit mode styling for
+     * @param {Boolean} editModeStyling Activates/Deactivates edit mode styling
+     * @return {Spread.command.Commander}
+     */
+    setColumnEditModeStyling: function(columnIndex, editModeStyling) {
+        return this.setColumnsEditModeStyling([columnIndex], editModeStyling);
+    },
+
+    /**
+     * Sets the edit mode styling for many columns
+     * @param {Array} columnIndexes Column indexes to set edit mode styling for
+     * @param {Boolean} editModeStyling Activates/Deactivates edit mode styling
+     * @return {Spread.command.Commander}
+     */
+    setColumnsEditModeStyling: function(columnIndexes, editModeStyling) {
+        Spread.selection.Range.fromSpreadColumns(this.spreadPanel, columnIndexes).setEditModeStyling(editModeStyling);
+        return this;
+    },
+
+    /**
+     * Sets the position editable
+     * @param {Number} columnIndex Cell index
+     * @param {Number} rowIndex Row index
+     * @param {Boolean} editable Shall the position be editable or not?
+     * @return {Spread.command.Commander}
+     */
+    setPositionEditable: function(columnIndex, rowIndex, editable) {
+        return this.setPositionsEditable([{
+            row: rowIndex,
+            column: columnIndex
+        }], editable);
+    },
+
+    /**
+     * Sets positions editable
+     * @param {Number} positionIndexes Position indexes array like [{row: 0, column: 2}, ...]
+     * @param {Boolean} editable Shall the position be editable or not?
+     * @return {Spread.command.Commander}
+     */
+    setEditable: function(positionIndexes, editable) {
+        Spread.selection.Range.fromSpreadPositions(this.spreadPanel, positionIndexes).setEditable(editable);
+        return this;
+    },
+
+    /**
+     * Sets the row editable or not
+     * @param {Number} rowIndex Row index to allow editing for
+     * @param {Boolean} editable Activates/Deactivates edit mode
+     * @return {Spread.command.Commander}
+     */
+    setRowEditable: function(rowIndex, editable) {
+        this.setRowsEditable([rowIndex], editable);
+        return this;
+    },
+
+    /**
+     * Sets many rows editable or not
+     * @param {Array} rowIndexes Row indexes to allow editing for
+     * @param {Boolean} editable Shall these rows editable or not?
+     * @return {Spread.command.Commander}
+     */
+    setRowsEditable: function(rowIndexes, editable) {
+        Spread.selection.Range.fromSpreadRows(this.spreadPanel, rowIndexes).setEditable(editable);
+        return this;
+    },
+
+    /**
+     * Sets the column editable or not
+     * @param {Number} columnIndex Column index to set edit mode styling for
+     * @param {Boolean} editable Activates/Deactivates edit mode
+     * @return {Spread.command.Commander}
+     */
+    setColumnEditable: function(columnIndex, editable) {
+        this.setColumnsEditable([columnIndex], editable);
+        return this;
+    },
+
+    /**
+     * Sets many columns editable or not
+     * @param {Array} columnIndexes Row indexes to allow editing for
+     * @param {Boolean} editable Shall these columns be editable or not?
+     * @return {Spread.command.Commander}
+     */
+    setColumnsEditable: function(columnIndexes, editable) {
+        Spread.selection.Range.fromSpreadColumns(this.spreadPanel, columnIndexes).setEditable(editable);
+        return this;
+    },
+
+    /**
+     * Sets the position selectable
+     * @param {Number} columnIndex Cell index
+     * @param {Number} rowIndex Row index
+     * @param {Boolean} selectable Shall the position be selectable or not?
+     * @return {Spread.command.Commander}
+     */
+    setPositionSelectable: function(columnIndex, rowIndex, selectable) {
+        return this.setPositionsSelectable([{
+            row: rowIndex,
+            column: columnIndex
+        }], selectable);
+    },
+
+    /**
+     * Sets positions selectable
+     * @param {Number} positionIndexes Position indexes array like [{row: 0, column: 2}, ...]
+     * @param {Boolean} selectable Shall the position be selectable or not?
+     * @return {Spread.command.Commander}
+     */
+    setSelectable: function(positionIndexes, selectable) {
+        Spread.selection.Range.fromSpreadPositions(this.spreadPanel, positionIndexes).setSelectable(selectable);
+        return this;
+    },
+
+    /**
+     * Sets the row selectable or not
+     * @param {Number} rowIndex Row index to set edit mode styling for
+     * @param {Boolean} selectable Shall the row be selectable or not?
+     * @return {Spread.command.Commander}
+     */
+    setRowSelectable: function(rowIndex, selectable) {
+        this.setRowsSelectable([rowIndex], selectable);
+        return this;
+    },
+
+    /**
+     * Sets many rows selectable or not
+     * @param {Array} rowIndexes Row indexes to allow selecting for
+     * @param {Boolean} selectable Shall these rows selectable or not?
+     * @return {Spread.command.Commander}
+     */
+    setRowsSelectable: function(rowIndexes, selectable) {
+        Spread.selection.Range.fromSpreadRows(this.spreadPanel, rowIndexes).setSelectable(selectable);
+        return this;
+    },
+
+    /**
+     * Sets the column selectable or not
+     * @param {Number} columnIndex Row index to set edit mode styling for
+     * @param {Boolean} selectable Shall this column be selectable or not?
+     * @return {Spread.command.Commander}
+     */
+    setColumnSelectable: function(columnIndex, selectable) {
+        this.setColumnsSelectable([columnIndex], selectable);
+        return this;
+    },
+
+    /**
+     * Sets many column selectable or not
+     * @param {Array} columnIndexes Row indexes to allow selecting for
+     * @param {Boolean} selectable Shall these rows selectable or not?
+     * @return {Spread.command.Commander}
+     */
+    setColumnsSelectable: function(columnIndexes, selectable) {
+        Spread.selection.Range.fromSpreadColumns(this.spreadPanel, columnIndexes).setSelectable(selectable);
+        return this;
     }
 });
 /**
@@ -923,10 +867,10 @@ Ext.define('Spread.grid.Panel', {
 
     alias: 'widget.spread',
 
-    // use spread view
     viewType: 'spreadview',
-
     closeAction: 'destroy',
+    pluginRegistry: {},
+    columnLines: true,
 
     /**
      * @cfg {Boolean} autoFocusRootPosition
@@ -959,12 +903,6 @@ Ext.define('Spread.grid.Panel', {
      */
     editModeStyling: true,
 
-    // Show column lines by default
-    columnLines: true,
-
-    // Internal flag
-    //stripeRows: false,
-
     /**
      * @cfg {Object}
      * Config object to configure a Spread.grid.plugin.Editable plugin.
@@ -993,9 +931,6 @@ Ext.define('Spread.grid.Panel', {
      */
     clearRangePluginConfig: {},
 
-    // Internal plugin registry map
-    pluginRegistry: {},
-
     /**
      * Pre-process the column configuration to avoid incompatibilities
      * @return void
@@ -1005,10 +940,10 @@ Ext.define('Spread.grid.Panel', {
         var me = this;
 
         // Create instances of plugins
-        this.instantiatePlugins();
+        me.instantiatePlugins();
 
         // Add events
-        this.addEvents(
+        me.addEvents(
 
             /**
              * @event beforecovercell
@@ -1170,11 +1105,6 @@ Ext.define('Spread.grid.Panel', {
             'covercelleditable'
         ]);
 
-        // Just relay autoCommit flag to pastable plugin
-        if (me.pasteablePluginInstance) {
-            me.pasteablePluginInstance.autoCommit = me.autoCommit;
-        }
-
         //console.log('my view', me.view);
 
         // View refresh
@@ -1186,7 +1116,7 @@ Ext.define('Spread.grid.Panel', {
             // Set edit mode styling
             me.setEditModeStyling(me.editModeStyling);
 
-        }, this, {
+        }, me, {
             single: true
         });
     },
@@ -1241,22 +1171,24 @@ Ext.define('Spread.grid.Panel', {
      */
     instantiatePlugins: function() {
 
+        this.editablePluginConfig.autoCommit = this.autoCommit;
         this.editablePluginInstance = Ext.create('Spread.grid.plugin.Editable', this.editablePluginConfig);
         this.pluginRegistry['Spread.grid.plugin.Editable'] = this.editablePluginInstance;
 
         this.copyablePluginInstance = Ext.create('Spread.grid.plugin.Copyable', this.copyablePluginConfig);
         this.pluginRegistry['Spread.grid.plugin.Copyable'] = this.copyablePluginInstance;
 
+        this.pasteablePluginConfig.autoCommit = this.autoCommit;
         this.pasteablePluginInstance = Ext.create('Spread.grid.plugin.Pasteable', this.pasteablePluginConfig);
         this.pluginRegistry['Spread.grid.plugin.Pasteable'] = this.pasteablePluginInstance;
 
+        this.clearRangePluginConfig.autoCommit = this.autoCommit;
         this.clearRangePluginInstance = Ext.create('Spread.grid.plugin.ClearRange', this.clearRangePluginConfig);
         this.pluginRegistry['Spread.grid.plugin.ClearRange'] = this.clearRangePluginInstance;
     },
 
     /**
      * Returns an instance of the plugin named by class name or returns undefined
-     * TODO Refactor all plugin classes to extend from one AbstractPlugin (would be nicer for return type too)
      * @param {String} pluginClassName Class name of the plugin to fetch instance of
      * @return {Ext.AbstractComponent}
      */
@@ -1292,7 +1224,7 @@ Ext.define('Spread.grid.Panel', {
         // User specified it's on viewConfig
         if (config.viewConfig) {
 
-            // Maintain merging of spreaiewonfig section
+            // Maintain merging of spread view config section
             if (config.viewConfig.spreadPlugins && Ext.isArray(config.viewConfig.spreadPlugins)) {
 
                 // Merges a plugin into spreadPlugins array if forgotten to be defined
@@ -1352,7 +1284,8 @@ Ext.define('Spread.grid.Panel', {
     manageSelectionModelConfig: function(config) {
 
         var selModelConfig = {
-            selType: 'range'
+            selType: 'range',
+            grid: this
         };
 
         // Apply autoFocusRootPosition
@@ -1441,7 +1374,6 @@ Ext.define('Spread.grid.Panel', {
         return this.editable;
     },
 
-
     statics: {
 
         /**
@@ -1482,6 +1414,19 @@ Ext.define('Spread.grid.View', {
 
     alias: 'widget.spreadview',
 
+    stripeRows: false,
+    trackOver: false,
+    spreadViewBaseCls: 'spreadsheet-view',
+    cellCoverEl: null,
+    currentCoverPosition: null,
+    currentHighlightPositions: [],
+    dataChangedRecently: true,
+
+    /**
+     * @property {Spread.grid.Panel} spreadPanel Reference to the spread grid panel
+     */
+    spreadPanel: null,
+
     /**
      * @cfg {Boolean} autoFocus
      * Automatically focus spread view for direct key eventing/navigation after render
@@ -1499,24 +1444,6 @@ Ext.define('Spread.grid.View', {
      * Cell (re-)focus delay in ms
      */
     cellFocusDelay: 30,
-
-    // Deactivate trackOver and row striping by default
-    stripeRows: false,
-    trackOver: false,
-
-    spreadViewBaseCls: 'spreadsheet-view',
-
-    // Internal cell cover element reference
-    cellCoverEl: null,
-
-    // Internal reference to the current cover position
-    currentCoverPosition: null,
-
-    // Array of positions currently highlighted
-    currentHighlightPositions: [],
-
-    // Internal flag
-    dataChangedRecently: true,
 
     /**
      * @cfg {Number} cellCoverZIndex
@@ -1559,14 +1486,16 @@ Ext.define('Spread.grid.View', {
      */
     initComponent: function() {
 
+        var me = this;
+
         // Disable row-striping
-        this.stripeRows = false;
+        me.stripeRows = false;
 
         // Add spread view CSS cls
-        this.baseCls = this.baseCls + ' ' + this.spreadViewBaseCls;
+        me.baseCls = me.baseCls + ' ' + me.spreadViewBaseCls;
 
         // Add events
-        this.addEvents(
+        me.addEvents(
 
             /**
              * @event beforecovercell
@@ -1689,20 +1618,20 @@ Ext.define('Spread.grid.View', {
 
 
         // Call parent
-        var ret = this.callParent(arguments);
+        var ret = me.callParent(arguments);
 
         //console.log('SpreadPlugins', this.spreadPlugins);
 
         // Create cover element if not already existing
-        if (!this.cellCoverEl) {
-            this.createCellCoverElement();
+        if (!me.cellCoverEl) {
+            me.createCellCoverElement();
         }
 
         // Initialize view plugins
-        this.initPlugins(this.spreadPlugins);
+        me.initPlugins(me.spreadPlugins);
 
         // Initializes relay eventing
-        this.initRelayEvents();
+        me.initRelayEvents();
 
         return ret;
     },
@@ -1819,7 +1748,7 @@ Ext.define('Spread.grid.View', {
     bubbleCellMouseDownToSelectionModel: function(evt, coverEl) {
 
         var cellEl = coverEl.id.split('_'),
-            rowEl, tableBodyEl, rowIndex, cellIndex, record;
+            rowEl, tableBodyEl, rowIndex, cellIndex, record, i;
 
         // Fetch <td> cell for given cover element and proove that
         if (cellEl[1] && Ext.fly(cellEl[1]) && Ext.fly(cellEl[1]).hasCls('x-grid-cell')) {
@@ -1837,7 +1766,7 @@ Ext.define('Spread.grid.View', {
             tableBodyEl = Ext.fly(rowEl).up('tbody').dom;
 
             // Analyze cell index
-            for (var i=0; i<rowEl.childNodes.length; i++) {
+            for (i=0; i<rowEl.childNodes.length; i++) {
                 if (rowEl.childNodes[i] === cellEl) {
                     cellIndex = i;
                     break;
@@ -1845,7 +1774,7 @@ Ext.define('Spread.grid.View', {
             }
 
             // Analyze row index
-            for (var i=0; i<tableBodyEl.childNodes.length; i++) {
+            for (i=0; i<tableBodyEl.childNodes.length; i++) {
                 if (tableBodyEl.childNodes[i] === rowEl) {
                     rowIndex = (i-1);
                     break;
@@ -1863,19 +1792,23 @@ Ext.define('Spread.grid.View', {
      */
     refresh: function() {
 
-        var ret = this.callParent(arguments);
+        var me = this,
+            ret = me.callParent(arguments);
+
+        // Set panel reference
+        me.spreadPanel = me.ownerCt;
 
         //console.log('refresh?!')
 
-        if (this.dataChangedRecently) {
-            this.dataChangedRecently = false;
+        if (me.dataChangedRecently) {
+            me.dataChangedRecently = false;
             return ret;
         } else {
 
-            if (this.editable) {
+            if (me.editable) {
 
-                this.editable.displayCellsEditing(
-                    this.editable.editModeStyling && this.editable.editable
+                me.editable.displayCellsEditing(
+                    me.editable.editModeStyling && me.editable.editable
                 );
             }
         }
@@ -2032,6 +1965,14 @@ Ext.define('Spread.grid.View', {
      */
     getCellCoverEl: function() {
         return Ext.get(this.cellCoverEl);
+    },
+
+    /**
+     * Returns the spread grid panel reference
+     * @return {Spread.grid.Panel}
+     */
+    getSpreadPanel: function() {
+        return this.spreadPanel;
     }
 });
 /**
@@ -2045,6 +1986,8 @@ Ext.define('Spread.grid.column.Header', {
     extend: 'Ext.grid.RowNumberer',
 
     alias: 'widget.spreadheadercolumn',
+
+    resizable: true,
 
     /**
      * @cfg {Boolean} editable
@@ -2070,9 +2013,6 @@ Ext.define('Spread.grid.column.Header', {
      * Index of the column id by default
      */
     dataIndex: 'id',
-
-    // Resizing is allowed by default
-    resizable: true,
 
     /**
      * @private
@@ -2108,6 +2048,8 @@ Ext.define('Spread.grid.column.Header', {
 Ext.define('Spread.overrides.Column', {
 
     override: 'Ext.grid.column.Column',
+
+    initialPanelEditModeStyling: false,
 
     /**
      * @cfg {Boolean} selectable
@@ -2157,9 +2099,6 @@ Ext.define('Spread.overrides.Column', {
      */
     allowedEditKeys: [],
 
-    // internal flag
-    initialPanelEditModeStyling: false,
-
     // private
     initComponent: function() {
 
@@ -2197,26 +2136,72 @@ Ext.define('Spread.overrides.Column', {
 });
 
 /**
- * @class Spread.grid.plugin.ClearRange
- * Allows to clears a currently selected range.
+ * @class Spread.grid.plugin.AbstractPlugin
+ * @private
+ * Abstract plugin implementation
  */
-Ext.define('Spread.grid.plugin.ClearRange', {
+Ext.define('Spread.grid.plugin.AbstractPlugin', {
 
     extend: 'Ext.AbstractComponent',
 
-    alias: 'clearrange',
+    alias: 'abstract',
 
     /**
-     * @property {Spread.grid.View}
+     * @property {Spread.grid.View} view
      * View instance reference
      */
     view: null,
 
     /**
-     * @property {Spread.grid.Panel}
-     * Grid instance reference
+     * @protected
+     * Registers the clear key event handling (BACKSPACE, DEL keys).
+     * @param {Spread.grid.View} view View instance
+     * @return void
      */
-    grid: null,
+    init: function(view) {
+
+        var me = this;
+
+        // Set view reference
+        me.view = view;
+    },
+
+    /**
+     * Returns the spread panel's view reference
+     * @return {Spread.grid.View}
+     */
+    getView: function() {
+        return this.view;
+    },
+
+    /**
+     * Returns the selection model references
+     * @return {Spread.selection.RangeModel}
+     */
+    getSelectionModel: function() {
+        return this.getView().getSelectionModel();
+    },
+
+    /**
+     * Returns the spread panel's reference
+     * @return {Spread.grid.Panel}
+     */
+    getSpreadPanel: function() {
+        return this.getView().getSpreadPanel();
+    }
+});
+/**
+ * @class Spread.grid.plugin.ClearRange
+ * @extends Spread.grid.plugin.AbstractPlugin
+ * Allows to clears a currently selected range.
+ */
+Ext.define('Spread.grid.plugin.ClearRange', {
+
+    extend: 'Spread.grid.plugin.AbstractPlugin',
+
+    requires: ['Spread.grid.plugin.AbstractPlugin'],
+
+    alias: 'clearrange',
 
     /**
      * @cfg {Boolean}
@@ -2231,6 +2216,13 @@ Ext.define('Spread.grid.plugin.ClearRange', {
     nullValue: '',
 
     /**
+     * @cfg {Boolean} autoCommit
+     * Automatically commit changed records or wait for manually store.sync() / record.commit()?
+     * (Generally, can be specially configured per column config too)
+     */
+    autoCommit: true,
+
+    /**
      * @protected
      * Registers the clear key event handling (BACKSPACE, DEL keys).
      * @param {Spread.grid.View} view View instance
@@ -2238,8 +2230,12 @@ Ext.define('Spread.grid.plugin.ClearRange', {
      */
     init: function(view) {
 
+        var me = this;
+
+        me.callParent(arguments);
+
         // Add events
-        this.addEvents(
+        me.addEvents(
 
             /**
              * @event beforeclearrange
@@ -2260,11 +2256,6 @@ Ext.define('Spread.grid.plugin.ClearRange', {
             'clearrange'
         );
 
-        var me = this;
-
-        // Set internal reference
-        me.view = view;
-
         // Listen to the key events
         me.listenToKeyEvents();
     },
@@ -2274,7 +2265,7 @@ Ext.define('Spread.grid.plugin.ClearRange', {
         var me = this;
 
         // Un-register on grid destroy
-        me.view.on('destroy', function() {
+        me.getView().on('destroy', function() {
             Ext.EventManager.un(document.body, 'keyup', me.onKeyUp);
         });
 
@@ -2291,17 +2282,18 @@ Ext.define('Spread.grid.plugin.ClearRange', {
     onKeyUp: function(evt) {
 
         var me = this,
+            view = me.getView(),
             targetEl = Ext.get(evt.getTarget());
 
         // If grid isn't editable, return
-        if (me.view.editable && !me.view.editable.editable) {
+        if ((view.editable && !view.editable.editable) ||
+            me.getSelectionModel().currentSelectionRange.count() === 0) {
             evt.stopEvent();
             return;
         }
 
-        // 46 is the DEL key
         if (!targetEl.hasCls('spreadsheet-cell-cover-edit-field') &&
-            evt.normalizeKey(evt.keyCode) === 46) {
+            Spread.util.Key.isDelKey(evt)) {
 
             me.clearCurrentSelectedRange();
 
@@ -2316,11 +2308,12 @@ Ext.define('Spread.grid.plugin.ClearRange', {
     clearCurrentSelectedRange: function() {
 
         var me = this,
-            selectionRange = me.view.getSelectionModel().getCurrentSelectionRange();
+            view = me.getView(),
+            selectionRange = me.getSelectionModel().getCurrentSelectionRange();
 
         if (me.loadMask) {
 
-            var loadMask = new Ext.LoadMask(me.view.getEl());
+            var loadMask = new Ext.LoadMask(view.getEl());
             loadMask.show();
             //me.view.setLoading(true);
         }
@@ -2332,12 +2325,12 @@ Ext.define('Spread.grid.plugin.ClearRange', {
             selectionRange.each(function(position) {
 
                 // Clear cell data
-                position.setValue(me.nullValue);
+                me.clearPosition(position);
 
             }, function onComplete() {
 
-                if (me.view.editable && me.view.editable.editModeStyling && me.view.editable.editable) {
-                    me.view.editable.displayCellsEditing(true);
+                if (view.editable && view.editable.editModeStyling && view.editable.editable) {
+                    view.editable.displayCellsEditing(true);
                 }
 
                 if (me.loadMask) {
@@ -2347,6 +2340,35 @@ Ext.define('Spread.grid.plugin.ClearRange', {
             });
 
         }, 30);
+    },
+
+    /**
+     * Clears the currently focused/covered position
+     * @return void
+     */
+    clearCurrentFocusPosition: function() {
+        this.clearPosition(
+            this.getSelectionModel().getCurrentFocusPosition()
+        );
+    },
+
+    /**
+     * Clears a position
+     * @param {Spread.selection.Position} position Position to clear
+     * @return void
+     */
+    clearPosition: function(position) {
+
+        var me = this, view = me.getView();
+
+        position.setValue(
+            me.nullValue,
+            me.autoCommit
+        );
+
+        if (view.editable && view.editable.editModeStyling && view.editable.editable) {
+            view.editable.displayCellsEditing(true);
+        }
     }
 });
 /**
@@ -2551,24 +2573,21 @@ Ext.define('Spread.util.Clipping', {
 });
 /**
  * @class Spread.grid.plugin.Copyable
+ * @extends Spread.grid.plugin.AbstractPlugin
  * Allows copying data from a focused cell or a selected cell range by Ctrl/Cmd + C keystroke and
  * to be pasted in a native spreadsheet application like e.g. OpenOffice.org Calc.
  */
 Ext.define('Spread.grid.plugin.Copyable', {
 
-    extend: 'Ext.AbstractComponent',
+    extend: 'Spread.grid.plugin.AbstractPlugin',
+
+    requires: ['Spread.grid.plugin.AbstractPlugin'],
 
     alias: 'copyable',
 
     mixins: {
         clipping: 'Spread.util.Clipping'
     },
-
-    /**
-     * @property {Spread.grid.View}
-     * View instance reference
-     */
-    view: null,
 
     /**
      * @protected
@@ -2578,8 +2597,12 @@ Ext.define('Spread.grid.plugin.Copyable', {
      */
     init: function(view) {
 
+        var me = this;
+
+        me.callParent(arguments);
+
         // Add events
-        this.addEvents(
+        me.addEvents(
 
             /**
              * @event beforecopy
@@ -2601,26 +2624,20 @@ Ext.define('Spread.grid.plugin.Copyable', {
         );
 
         // Initialize clipping mixin
-        this.initClipping();
-
-        var me = this;
-
-        // Set internal reference
-        me.view = view;
+        me.initClipping();
 
         // Init key navigation
-        this.initKeyNav(view);
+        me.initKeyNav();
     },
 
     /**
      * @protected
      * Initializes the key navigation
-     * @param {Spread.grid.View} view View instance
      * @return void
      */
     initKeyNav: function(view) {
 
-        var me = this;
+        var me = this, view = me.getView();
 
         if (!view.rendered) {
             view.on('render', Ext.Function.bind(me.initKeyNav, me, [view], 0), me, {single: true});
@@ -2657,40 +2674,43 @@ Ext.define('Spread.grid.plugin.Copyable', {
 
         //console.log('copying to clipboard');
 
-        var selModel = this.view.getSelectionModel(),
+        var me = this, view = me.getView(), selModel = me.getSelectionModel(),
             selectionPositions = selModel.getSelectedPositionData();
 
         // Fire interceptable event
-        if (this.fireEvent('beforecopy', this, selModel, selectionPositions) !== false) {
+        if (me.fireEvent('beforecopy', me, selModel, selectionPositions) !== false) {
 
             // Prepare
-            this.prepareForClipboardCopy(
+            me.prepareForClipboardCopy(
                 Spread.util.TSVTransformer.transformToTSV(selectionPositions),
-                this.view
+                me.getView()
             );
 
             // Fire event
-            this.fireEvent('copy', this, selModel, selectionPositions);
+            me.fireEvent('copy', me, selModel, selectionPositions);
         }
     }
 });
 /**
  * @class Spread.grid.plugin.Editable
+ * @extends Spread.grid.plugin.AbstractPlugin
  * Allows the spreadsheet to get edited by a text field as known from standard spreadsheet applications.
  *
  * TODO: Support string fields without allowedKeys config to enter special chars!
  */
 Ext.define('Spread.grid.plugin.Editable', {
 
-    extend: 'Ext.AbstractComponent',
+    extend: 'Spread.grid.plugin.AbstractPlugin',
+
+    requires: ['Spread.grid.plugin.AbstractPlugin'],
 
     alias: 'editable',
 
-    /**
-     * @property {Spread.grid.View}
-     * View instance reference
-     */
-    view: null,
+    editableColumns: [],
+    editableColumnIndexes: [],
+    editable: false,
+    isEditing: false,
+    cellClear: false,
 
     /**
      * @cfg {Boolean} autoCommit
@@ -2761,9 +2781,6 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     cellCoverEditFieldEl: null,
 
-    // Private
-    isEditing: false,
-
     /**
      * @cfg {Boolean} editModeStyling
      * Allows to style the cells when in edit mode
@@ -2788,15 +2805,6 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     lastEditFieldValue: null,
 
-    // Internal storage (shadow-copy) of editable columns references
-    editableColumns: [],
-
-    // Internal list of indexes of the columns which are editable
-    editableColumnIndexes: [],
-
-    // Internal editable flag
-    editable: false,
-
     /**
      * @protected
      * Registers the hook for cover-double-click editing
@@ -2807,11 +2815,10 @@ Ext.define('Spread.grid.plugin.Editable', {
 
         var me = this;
 
-        // Set internal reference
-        me.view = view;
+        me.callParent(arguments);
 
         // Add events
-        this.addEvents(
+        me.addEvents(
 
             /**
              * @event beforeeditfieldblur
@@ -2904,7 +2911,7 @@ Ext.define('Spread.grid.plugin.Editable', {
         );
 
         // Register eventing hook
-        this.initCoverEventing();
+        me.initCoverEventing();
     },
 
     /**
@@ -2917,13 +2924,13 @@ Ext.define('Spread.grid.plugin.Editable', {
         var me = this;
 
         // Call the following methods after rendering...
-        this.view.on('afterrender', function(view) {
+        me.getView().on('afterrender', function() {
 
             // Collect editable flags from the columns
-            me.initEditingColumns(view);
+            me.initEditingColumns();
 
             // Initialize editable eventing
-            me.initEventing(view);
+            me.initEventing();
         });
     },
 
@@ -2931,14 +2938,13 @@ Ext.define('Spread.grid.plugin.Editable', {
      * @protected
      * Implements listeners and hooks for eventing which belongs
      * to the edit field, cover element, view and selection model.
-     * @param {Spread.grid.View} view View reference
      * @return void
      */
-    initEventing: function(view) {
-
+    initEventing: function() {
 
         // Handle eventing of cover element
         var me = this,
+            view = me.getView(),
             coverEl = view.getCellCoverEl();
 
         //console.log('initEventing!', coverEl);
@@ -2953,7 +2959,7 @@ Ext.define('Spread.grid.plugin.Editable', {
             //coverEl.on('dblclick', me.onCoverDblClick, me);
 
             // Double-click based edit mode handler
-            me.view.getEl().on('dblclick', me.onCoverDblClick, me);
+            view.getEl().on('dblclick', me.onCoverDblClick, me);
 
             // Listen to cover key pressed (up)
             view.getEl().on('keydown', me.onCoverKeyPressed, me);
@@ -2962,11 +2968,11 @@ Ext.define('Spread.grid.plugin.Editable', {
             view.on('covercell', me.onCellCovered, me);
 
             // Handle TAB and ENTER select while editing (save and focus next cell)
-            //view.getSelectionModel().on('tabselect', me.blurEditFieldIfEditing, me);
-            //view.getSelectionModel().on('enterselect', me.blurEditFieldIfEditing, me);
-            view.getSelectionModel().on('beforecellfocus', me.blurEditFieldIfEditing, me);
-            view.getSelectionModel().on('keynavigate', me.blurEditFieldIfEditing, me);
-            //view.getSelectionModel().on('cellblur', me.blurEditFieldIfEditing, me);
+            //me.getSelectionModel().on('tabselect', me.blurEditFieldIfEditing, me);
+            //me.getSelectionModel().on('enterselect', me.blurEditFieldIfEditing, me);
+            me.getSelectionModel().on('beforecellfocus', me.blurEditFieldIfEditing, me);
+            me.getSelectionModel().on('keynavigate', me.blurEditFieldIfEditing, me);
+            //me.getSelectionModel().on('cellblur', me.blurEditFieldIfEditing, me);
 
         } else {
             throw "Cover element not found, initializing editing failed! Please check proper view rendering.";
@@ -2977,29 +2983,29 @@ Ext.define('Spread.grid.plugin.Editable', {
      * @protected
      * Collects the 'editable' flags from the columns and stores them in
      * this.editableColumns array initially.
-     * @param {Spread.grid.View} view Grid view
      * @return void
      */
-    initEditingColumns: function(view) {
+    initEditingColumns: function() {
 
-        var columns = view.getHeaderCt().getGridColumns();
+        var me = this, view = me.getView(),
+            columns = view.getHeaderCt().getGridColumns();
 
         // Initialize arrays
-        this.editableColumns = [];
-        this.editableColumnIndexes = [];
+        me.editableColumns = [];
+        me.editableColumnIndexes = [];
 
         for (var i=0; i<columns.length; i++) {
 
             if (columns[i].editable) {
 
                 // Push to list of editable columns
-                this.editableColumns.push(columns[i]);
+                me.editableColumns.push(columns[i]);
 
                 // Set reference on column
                 columns[i].columnIndex = i;
 
                 // Push to list of editable columns indexes
-                this.editableColumnIndexes.push(i);
+                me.editableColumnIndexes.push(i);
             }
         }
     },
@@ -3012,13 +3018,15 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     initTextField: function(coverEl) {
 
+        var me = this;
+
         // Check for field existence (already created?)
-        if (!this.cellCoverEditFieldEl) {
+        if (!me.cellCoverEditFieldEl) {
 
             //console.log('initTextField', arguments);
 
             // Build editor field
-            this.cellCoverEditFieldEl = Ext.get(
+            me.cellCoverEditFieldEl = Ext.get(
 
                 Ext.DomHelper.append(coverEl, {
                     id: Ext.id() + '-cover-input',
@@ -3030,7 +3038,7 @@ Ext.define('Spread.grid.plugin.Editable', {
             );
 
             // Register key up handler
-            this.cellCoverEditFieldEl.on('keypress', this.onEditFieldKeyPressed, this);
+            me.cellCoverEditFieldEl.on('keypress', me.onEditFieldKeyPressed, me);
         }
     },
 
@@ -3042,27 +3050,28 @@ Ext.define('Spread.grid.plugin.Editable', {
     onEditFieldBlur: function() {
 
         //console.log('onEditFieldBlur');
+        var me = this;
 
         // Fire interceptable event
-        if (this.fireEvent('beforeeditfieldblur', this) !== false) {
+        if (me.fireEvent('beforeeditfieldblur', me) !== false) {
 
             // Internal flag to prevent two-time rendering
-            this.view.dataChangedRecently = true;
+            me.view.dataChangedRecently = true;
 
             // Stop editing (mode)
-            this.setEditing(false);
+            me.setEditing(false);
 
             // Write changed value back to record/field
-            this.activePosition.setValue(
-                this.getEditingValue(),
-                this.autoCommit
+            me.activePosition.setValue(
+                me.getEditingValue(),
+                me.autoCommit
             );
 
             // Recolorize for dirty flag!
-            this.handleDirtyMarkOnEditModeStyling();
+            me.handleDirtyMarkOnEditModeStyling();
 
             // Fire event
-            this.fireEvent('editfieldblur', this);
+            me.fireEvent('editfieldblur', me);
         }
     },
 
@@ -3073,11 +3082,13 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     handleDirtyMarkOnEditModeStyling: function() {
 
+        var me = this;
+
         // Full redraw
-        if (this.view.ownerCt.editModeStyling) {
-            this.displayCellsEditing(true);
+        if (me.getView().ownerCt.editModeStyling) {
+            me.displayCellsEditing(true);
         } else {
-            this.displayCellsEditing(false);
+            me.displayCellsEditing(false);
         }
     },
 
@@ -3090,10 +3101,11 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     blurEditFieldIfEditing: function() {
 
+        var me = this;
         //console.log('blurEditFieldIfEditing', this.isEditing)
 
-        if (this.isEditing) {
-            this.onEditFieldBlur();
+        if (me.isEditing) {
+            me.onEditFieldBlur();
         }
     },
 
@@ -3106,25 +3118,32 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     onEditFieldKeyPressed: function(evt) {
 
-        var me = this;
+        var me = this,
+            view = me.getView();
 
-        if (this.isEditing) {
+        if (me.isEditing) {
+
+            if (Spread.util.Key.isNavigationKey(evt) || Spread.util.Key.isDelKey(evt)) {
+                return true;
+            }
 
             if (Spread.util.Key.isCancelEditKey(evt)) {
 
                 //console.log('is cancel edit key')
-                this.blurEditFieldIfEditing();
+                me.blurEditFieldIfEditing();
                 return true;
             }
-            //console.log('columns keys allowed? ', me.activePosition.columnHeader.allowedEditKeys);
 
             // If there is a list of allowed keys, check for them
-            if (me.activePosition.columnHeader.allowedEditKeys.length > 0) {
+            if (me.activePosition.columnHeader.allowedEditKeys.length) {
 
                 // Stop key input if not in allowed keys list
-                if (Ext.Array.indexOf(me.activePosition.columnHeader.allowedEditKeys,
+                if (
+                    Ext.Array.indexOf(me.activePosition.columnHeader.allowedEditKeys,
                         String.fromCharCode(evt.getCharCode())
-                    ) === -1 && evt.getKey() !== evt.BACKSPACE)
+                    ) === -1
+                    && evt.getKey() !== evt.BACKSPACE
+                )
                 {
                     evt.stopEvent();
                 }
@@ -3134,29 +3153,29 @@ Ext.define('Spread.grid.plugin.Editable', {
 
             // Save and jump next cell
             if (evt.getKey() === evt.ENTER) {
-                me.view.getSelectionModel().onKeyEnter(evt);
+                me.getSelectionModel().onKeyEnter(evt);
             }
 
             // Save and jump next cell
             if (evt.getKey() === evt.TAB) {
-                me.view.getSelectionModel().onKeyTab(evt);
+                me.getSelectionModel().onKeyTab(evt);
             }
 
             // Key navigation support (jumping out of field)
             if (evt.getKey() === evt.LEFT) {
-                me.view.getSelectionModel().onKeyLeft(evt);
+                me.getSelectionModel().onKeyLeft(evt);
             }
 
             if (evt.getKey() === evt.RIGHT) {
-                me.view.getSelectionModel().onKeyRight(evt);
+                me.getSelectionModel().onKeyRight(evt);
             }
 
             if (evt.getKey() === evt.UP) {
-                me.view.getSelectionModel().onKeyUp(evt);
+                me.getSelectionModel().onKeyUp(evt);
             }
 
             if (evt.getKey() === evt.DOWN) {
-                me.view.getSelectionModel().onKeyDown(evt);
+                me.getSelectionModel().onKeyDown(evt);
             }
         }
     },
@@ -3165,11 +3184,11 @@ Ext.define('Spread.grid.plugin.Editable', {
     // which is covering the currently focused cell.
     isOriginCellClick: function(evt) {
 
-        var clickedOnCell = false,
+        var me = this, clickedOnCell = false,
             clickTargetElIdTextParent = evt.getTarget().parentNode.parentNode.id,
             clickTargetElIdText = evt.getTarget().parentNode.id,
             clickTargetElId = evt.getTarget().id,
-            currentPosCellElId = this.view.getSelectionModel().getCurrentFocusPosition().cellEl.id;
+            currentPosCellElId = me.getSelectionModel().getCurrentFocusPosition().cellEl.id;
 
         if (Ext.isIE) {
 
@@ -3199,28 +3218,30 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     onCoverDblClick: function(evt) {
 
-        if (this.fireEvent('beforecoverdblclick', this) !== false) {
+        var me = this;
+
+        if (me.fireEvent('beforecoverdblclick', me) !== false) {
 
             // Clicked on grid view
             // ...and not already editing
             // ...and clicked on cell cover of the current selected cell position
             // ...and if position is generally editable
             if (!Ext.get(evt.getTarget()).hasCls('x-grid-view') &&
-                !this.isEditing &&
-                this.isOriginCellClick(evt) &&
-                this.isPositionEditable()) {
+                !me.isEditing &&
+                me.isOriginCellClick(evt) &&
+                me.isPositionEditable()) {
 
                 //console.log('onCoverDblClick, setEditable!');
 
                 // Activates the editor
-                this.setEditing(true);
+                me.setEditing(true);
 
                 // Set current value of field in record
-                this.setEditingValue(
-                    this.activePosition.getValue()
+                me.setEditingValue(
+                    me.activePosition.getValue()
                 );
             }
-            this.fireEvent('coverdblclick', this);
+            me.fireEvent('coverdblclick', me);
         }
     },
 
@@ -3233,28 +3254,37 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     onCoverKeyPressed: function(evt, viewEl) {
 
+        var me = this;
+
         // no key is pressed on a cover,
         // if we're editing...
-        if (this.isEditing) {
+        if (me.isEditing) {
             return;
         }
 
-        if (this.fireEvent('beforecoverkeypressed', this) !== false) {
+        if (me.fireEvent('beforecoverkeypressed', me) !== false) {
 
-            // TODO: DEL key should clear the cell
+            if (Spread.util.Key.isDelKey(evt) && !me.isEditing) {
 
-            if (Spread.util.Key.isStartEditKey(evt) && !this.isEditing) {
+                var clearRangePlugin = me.getSpreadPanel().getPlugin('Spread.grid.plugin.ClearRange');
 
-                if (this.isPositionEditable()) {
-
-                    // Activates the editor
-                    this.setEditing(true);
-
-                    // Reset the editor value
-                    this.setEditingValue('');
+                if (clearRangePlugin) {
+                    clearRangePlugin.clearCurrentFocusPosition();
                 }
             }
-            this.fireEvent('coverkeypressed', this);
+
+            if (Spread.util.Key.isStartEditKey(evt) && !me.isEditing) {
+
+                if (me.isPositionEditable()) {
+
+                    // Activates the editor
+                    me.setEditing(true);
+
+                    // Reset the editor value
+                    me.setEditingValue('');
+                }
+            }
+            me.fireEvent('coverkeypressed', me);
         }
     },
 
@@ -3270,18 +3300,19 @@ Ext.define('Spread.grid.plugin.Editable', {
     onCellCovered: function(view, position, coverEl, tdEl, coverElSize, coverElPosition) {
 
         //console.log('onCellCovered', position);
+        var me = this;
 
         // Set internal references
-        this.activePosition = position;
-        this.activeCellTdEl = tdEl;
-        this.activeCoverEl = coverEl;
-        this.activeCoverElSize = coverElSize;
-        this.activeCoverElPosition = coverElPosition;
+        me.activePosition = position;
+        me.activeCellTdEl = tdEl;
+        me.activeCoverEl = coverEl;
+        me.activeCoverElSize = coverElSize;
+        me.activeCoverElPosition = coverElPosition;
 
         // But hide, until this.setEditing() is called through UI event
-        this.cellCoverEditFieldEl.dom.style.display = 'none';
+        me.cellCoverEditFieldEl.dom.style.display = 'none';
 
-        this.fireEvent('covercelleditable', this, view, position, coverEl);
+        me.fireEvent('covercelleditable', me, view, position, coverEl);
     },
 
     /**
@@ -3290,12 +3321,13 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     isPositionEditable: function() {
 
+        var me = this;
         // Check for row to be editable or not
         // TODO!
 
         // Check for column to be editable or not
-        if ((this.activePosition && !this.activePosition.columnHeader.editable) ||
-            !this.editable) {
+        if ((me.activePosition && !me.activePosition.columnHeader.editable) ||
+            !me.editable) {
 
             //console.log('!this.activePosition.columnHeader.editable || !this.editable', !this.activePosition.columnHeader.editable, !this.editable)
             return false;
@@ -3318,7 +3350,7 @@ Ext.define('Spread.grid.plugin.Editable', {
         }
 
         // Check global and column edit-ability
-        if (!this.isPositionEditable()) {
+        if (!me.isPositionEditable()) {
             return false;
         }
 
@@ -3327,7 +3359,7 @@ Ext.define('Spread.grid.plugin.Editable', {
         // Set editing
         if (doEdit) {
 
-            if (this.fireEvent('beforeeditingenabled', this) !== false) {
+            if (me.fireEvent('beforeeditingenabled', me) !== false) {
 
                 // Enable edit mode
                 me.isEditing = true;
@@ -3350,12 +3382,12 @@ Ext.define('Spread.grid.plugin.Editable', {
 
                 }, me.retryFieldElFocusDelay);
 
-                this.fireEvent('editingenabled', this);
+                me.fireEvent('editingenabled', me);
             }
 
         } else {
 
-            if (this.fireEvent('beforeeditingdisabled', this) !== false) {
+            if (me.fireEvent('beforeeditingdisabled', me) !== false) {
 
                 // Hide the editor
                 me.cellCoverEditFieldEl.dom.style.display = 'none';
@@ -3364,7 +3396,7 @@ Ext.define('Spread.grid.plugin.Editable', {
                 setTimeout(function() {
 
                     try {
-                        me.view.focus();
+                        me.getView().focus();
                     } catch(e) {}
 
                 }, me.stopEditingFocusDelay);
@@ -3372,7 +3404,7 @@ Ext.define('Spread.grid.plugin.Editable', {
                 // Disable edit mode
                 me.isEditing = false;
 
-                this.fireEvent('editingdisabled', this);
+                me.fireEvent('editingdisabled', me);
             }
         }
     },
@@ -3472,9 +3504,9 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     displayCellsEditing: function(displayEditing, onRenderReady) {
 
-        var me = this, viewCells = me.view.getEl().query(
-            me.view.cellSelector
-        ), viewColumns = me.view.getHeaderCt().getGridColumns();
+        var me = this, view = me.getView(), viewCells = view.getEl().query(
+            view.cellSelector
+        ), viewColumns = view.getHeaderCt().getGridColumns();
 
         if (Ext.isIE6 || Ext.isIE7 || Ext.isIE8) {
             me.chunkRenderDelay = 0.3;
@@ -3540,25 +3572,22 @@ Ext.define('Spread.grid.plugin.Editable', {
 });
 /**
  * @class Spread.grid.plugin.Pasteable
+ * @extends Spread.grid.plugin.AbstractPlugin
  * Allows the spreadsheet to receive data from a native spreadsheet application like
  * e.g. OpenOffice.org Calc by pasting into a selected cell range or right-down direction from a focused cell
  * using the keystroke Ctrl/Cmd + V.
  */
 Ext.define('Spread.grid.plugin.Pasteable', {
 
-    alias: 'pasteable',
+    extend: 'Spread.grid.plugin.AbstractPlugin',
 
-    extend: 'Ext.AbstractComponent',
+    requires: ['Spread.grid.plugin.AbstractPlugin'],
+
+    alias: 'pasteable',
 
     mixins: {
         clipping: 'Spread.util.Clipping'
     },
-
-    /**
-     * @property {Spread.grid.View}
-     * View instance reference
-     */
-    view: null,
 
     /**
      * @cfg {Boolean}
@@ -3590,8 +3619,12 @@ Ext.define('Spread.grid.plugin.Pasteable', {
      */
     init: function(view) {
 
+        var me = this;
+
+        me.callParent(arguments);
+
         // Add events
-        this.addEvents(
+        me.addEvents(
 
             /**
              * @event beforepaste
@@ -3614,26 +3647,20 @@ Ext.define('Spread.grid.plugin.Pasteable', {
         );
 
         // Initialize clipping mixin
-        this.initClipping();
-
-        var me = this;
-
-        // Set internal reference
-        me.view = view;
+        me.initClipping();
 
         // Init key navigation
-        this.initKeyNav(view);
+        me.initKeyNav();
     },
 
     /**
      * @protected
      * Initializes the key navigation
-     * @param {Spread.grid.View} view View instance
      * @return void
      */
-    initKeyNav: function(view) {
+    initKeyNav: function() {
 
-        var me = this;
+        var me = this, view = me.getView();
 
         if (!view.rendered) {
             view.on('render', Ext.Function.bind(me.initKeyNav, me, [view], 0), me, {single: true});
@@ -3672,20 +3699,21 @@ Ext.define('Spread.grid.plugin.Pasteable', {
         //console.log('pasting from clipboard');
 
         var me = this,
-            selModel = this.view.getSelectionModel(),
+            view = me.getView(),
+            selModel = me.getSelectionModel(),
             selectionPositions = selModel.getSelectedPositionData();
 
         if (me.loadMask) {
 
-            var loadMask = new Ext.LoadMask(me.view.getEl());
+            var loadMask = new Ext.LoadMask(view.getEl());
             loadMask.show();
             //me.view.setLoading(true);
         }
 
         // Fire interceptable event
-        if (this.fireEvent('beforepaste', this, selModel, selectionPositions) !== false) {
+        if (me.fireEvent('beforepaste', me, selModel, selectionPositions) !== false) {
 
-            this.prepareForClipboardPaste(function(clipboardData) {
+            me.prepareForClipboardPaste(function(clipboardData) {
 
                 //console.log('Clipboard data:', clipboardData);
 
@@ -3704,7 +3732,7 @@ Ext.define('Spread.grid.plugin.Pasteable', {
                     loadMask.hide();
                 }
 
-            }, this.view);
+            }, view);
         }
     },
 
@@ -3718,7 +3746,7 @@ Ext.define('Spread.grid.plugin.Pasteable', {
      */
     updateRecordFieldsInStore: function(pastedDataArray, selectionPositions, selModel) {
 
-        var me = this;
+        var me = this, view = me.getView();
 
         //console.log('updateRecordFieldsInStore', selModel, pastedDataArray, selectionPositions);
 
@@ -3787,7 +3815,7 @@ Ext.define('Spread.grid.plugin.Pasteable', {
 
             // Lets try this position
             newFocusPosition = new Spread.selection.Position(
-                me.view,
+                view,
                 newFocusPosColumnIndex,
                 newFocusPosRowIndex
             );
@@ -3850,13 +3878,13 @@ Ext.define('Spread.grid.plugin.Pasteable', {
         // Using internal API's we've changed the internal
         // values now, but we need to refresh the view for
         // data values to be updates
-        me.view.refresh();
+        view.refresh();
 
         // Redraw edit mode styling
         me.handleDirtyMarkOnEditModeStyling();
 
         // Highlight pasted data selection cells
-        me.view.highlightCells(selectionPositions);
+        view.highlightCells(selectionPositions);
     },
 
     /**
@@ -3866,18 +3894,19 @@ Ext.define('Spread.grid.plugin.Pasteable', {
      */
     handleDirtyMarkOnEditModeStyling: function() {
 
-        if (this.view.editable) {
+        var me = this, view = me.getView();
+
+        if (view.editable) {
 
             // Full redraw
-            this.view.editable.displayCellsEditing(false);
+            view.editable.displayCellsEditing(false);
 
-            if (this.view.ownerCt.editModeStyling) {
-                this.view.editable.displayCellsEditing(true);
+            if (view.ownerCt.editModeStyling) {
+                view.editable.displayCellsEditing(true);
             }
         }
     }
 });
-// TODO: For context menu, translate menu item titles
 /**
  * @class Spread.selection.Position
  *
@@ -3902,6 +3931,17 @@ Ext.define('Spread.grid.plugin.Pasteable', {
  * references to be valid.
  */
 Ext.define('Spread.selection.Position', {
+
+    /**
+     * @property {Spread.selection.Range} range
+     * Stores the reference of the range this position belongs to (Only if it does belong to any range!)
+     */
+    range: null,
+
+    /**
+     * @property {Spread.grid.Panel} spreadPanel Reference to the spread grid panel
+     */
+    spreadPanel: null,
 
     /**
      * @property {Spread.grid.View} view
@@ -3957,6 +3997,42 @@ Ext.define('Spread.selection.Position', {
     cellEl: null,
 
     /**
+     * @property {Boolean} editable
+     * Indicator flag describing if the position is editable
+     */
+    editable: false,
+
+    /**
+     * @property {Boolean} selectable
+     * Indicator flag describing if the position is selectable
+     */
+    selectable: true,
+
+    /**
+     * @property {Boolean} editModeStyling
+     * Indicator flag describing if the position should be specially colored when editable
+     */
+    editModeStyling: true,
+
+    /**
+     * @property {Boolean} focused
+     * Status flag if the position is currently being focused
+     */
+    focused: false,
+
+    /**
+     * @property {Boolean} editing
+     * Status flag if the position is currently in edit mode
+     */
+    editing: false,
+
+    /**
+     * @property {Boolean} selected
+     * Status flag if the position resists currently in a selected range
+     */
+    selected: false,
+
+    /**
      * Creates a position object which points to a cell position, record, column-header
      * and view reference. For performance reasons, try to call this function with all
      * arguments. More arguments given, means less auto detection effort.
@@ -3974,7 +4050,7 @@ Ext.define('Spread.selection.Position', {
 
         // Correct row and column index if outside of possible grid boundings
         var maxRowCount = view.getStore().getCount(),
-            maxColumnCount = view.headerCt.getGridColumns(true).length
+            maxColumnCount = view.headerCt.getGridColumns(true).length;
 
         // Column boundary protection
         if (columnIndex >= maxColumnCount) {
@@ -4007,6 +4083,7 @@ Ext.define('Spread.selection.Position', {
 
         Ext.apply(this, {
             view: view,
+            spreadPanel: view.getSpreadPanel(),
             column: columnIndex,
             row: rowIndex,
             record: model,
@@ -4025,6 +4102,8 @@ Ext.define('Spread.selection.Position', {
      */
     validate: function() {
 
+        this.spreadPanel = this.view.getSpreadPanel();
+
         this.record = this.view.getStore().getAt(this.row);
 
         // If record was given or detected, map it's model reference
@@ -4041,6 +4120,7 @@ Ext.define('Spread.selection.Position', {
         if (this.rowEl) {
             this.cellEl = this.rowEl.childNodes[this.column];
         }
+
         //console.log('Position update()ed ', this);
 
         return this;
@@ -4137,7 +4217,6 @@ Ext.define('Spread.selection.Position', {
             fieldName,
             ret;
 
-
         // Update position
         me.validate();
 
@@ -4233,7 +4312,638 @@ Ext.define('Spread.selection.Position', {
      * @return {Spread.selection.Position}
      */
     focus: function() {
+
+        if (!this.isFocusable()) return this;
+
+        // Set state flag
+        this.focused = true;
+
+        // Render selected
         this.view.getSelectionModel().setCurrentFocusPosition(this);
+
+        return this;
+    },
+
+    /**
+     * Returns true if the position is currently focused
+     * @return {Boolean}
+     */
+    isFocused: function() {
+        return this.focused;
+    },
+
+    /**
+     * Returns true if the position is focusable
+     * @return {Boolean}
+     */
+    isFocusable: function() {
+        return this.isSelectable();
+    },
+
+    /**
+     * En/disable the position to be editable
+     * @param {Boolean} editable Should the position be editable?
+     * @param {Boolean} [suppressNotify=false] Used for transactions when method gets called many times, only the last call should notify the view to trigger a re-rendering.
+     * @return {Spread.selection.Position}
+     */
+    setEditable: function(editable, suppressNotify) {
+
+        this.editable = editable;
+
+        if (!Ext.isDefined(suppressNotify)) {
+            // TODO: Inform plugin
+            //console.log('unimplemented');
+        }
+        return this;
+    },
+
+    /**
+     * Returns if the position is editable.
+     * Also checks if the column the position resides in is editable.
+     * @return {Boolean}
+     */
+    isEditable: function() {
+
+        if (this.getColumn().editable && this.editable) {
+            return true;
+        }
+        return false;
+    },
+
+    /**
+     * Sets the position editing
+     * @param {Boolean} editing Should the position be editable?
+     * @return {Spread.selection.Position}
+     */
+    setEditing: function(editing) {
+
+        if (!this.isEditable()) return this;
+
+        this.editing = editing;
+
+        if (editing) {
+            // TODO: Activate editor
+            //console.log('unimplemented');
+        } else {
+            // TODO: Deactivate editor (inform plugin)
+            //console.log('unimplemented');
+        }
+        return this;
+    },
+
+    /**
+     * Returns if the position is currently being edited
+     * @return {Boolean}
+     */
+    isEditing: function() {
+        return this.editing;
+    },
+
+    /**
+     * En/disable the position to be selectable
+     * @param {Boolean} selectable Should the position be editable?
+     * @param {Boolean} [suppressNotify=false] Used for transactions when method gets called many times, only the last call should notify the view to trigger a re-rendering.
+     * @return {Spread.selection.Position}
+     */
+    setSelectable: function(selectable, suppressNotify) {
+
+        this.selectable = selectable;
+
+        //console.log('setSelectable', this.row, this.column, selectable);
+
+        if (!Ext.isDefined(suppressNotify)) {
+            // TODO: Inform plugin
+            //console.log('unimplemented');
+        }
+        return this;
+    },
+
+    /**
+     * Returns if the position is selectable.
+     * Also checks if the column the position resides in is selectable or not.
+     * @return {Boolean}
+     */
+    isSelectable: function() {
+
+        if (this.getColumn().selectable && this.selectable) {
+            return true;
+        }
+        return false;
+    },
+
+    /**
+     * En/disable the position to be styled specially when editable
+     * @param {Boolean} editModeStyling Should the position be styled specially when editable?
+     * @param {Boolean} [suppressNotify=false] Used for transactions when method gets called many times, only the last call should notify the view to trigger a re-rendering.
+     * @return {Spread.selection.Position}
+     */
+    setEditModeStyling: function(editModeStyling, suppressNotify) {
+
+        this.editModeStyling = editModeStyling;
+
+        if (!Ext.isDefined(suppressNotify)) {
+            // TODO: Inform plugin
+            //console.log('unimplemented');
+        }
+        return this;
+    },
+
+    /**
+     * Returns if the position is has edit mode styling enabled
+     * @return {Boolean}
+     */
+    hasEditModeStyling: function() {
+        return this.editModeStyling;
+    },
+
+    /**
+     * @protected
+     * Sets the internal selected status flag.
+     * This method does not visually select a position.
+     * Use the range.select() and range.deselect() methods or the
+     * Commander API if you want to select positions (ranges!).
+     * @param {Boolean} selected Indicates if the position should be set selected
+     * @return {Spread.selection.Position}
+     */
+    setSelected: function(selected) {
+
+        if (!this.isSelectable()) return this;
+
+        this.selected = selected;
+
+        return this;
+    },
+
+    /**
+     * Returns if the position currently resists in a range currently being selected
+     * @return {Boolean}
+     */
+    isSelected: function() {
+        return this.selected;
+    },
+
+    /**
+     * Sets the range instance reference
+     * @param {Spread.selection.Range} range Selection range reference
+     * @return {Spread.selection.Position}
+     */
+    setRange: function(range) {
+        this.range = range;
+        return this;
+    },
+
+    /**
+     * Returns a range reference if given
+     * @return {Spread.selection.Range/null}
+     */
+    getRange: function() {
+        return this.range;
+    },
+
+    /**
+     * Returns the selection model reference
+     * @return {Ext.selection.Model}
+     */
+    getSelectionModel: function() {
+        return this.getSpreadPanel().getSelectionModel();
+    },
+
+    /**
+     * Returns the view reference
+     * @return {Spread.grid.View}
+     */
+    getView: function() {
+        return this.view;
+    },
+
+    /**
+     * Returns the spread panel reference
+     * @return {Spread.grid.Panel}
+     */
+    getSpreadPanel: function() {
+        return this.spreadPanel;
+    },
+
+    /**
+     * Returns the row index
+     * @return {Number}
+     */
+    getRowIndex: function() {
+        return this.row;
+    },
+
+    /**
+     * Returns the column index
+     * @return {Number}
+     */
+    getColumnIndex: function() {
+        return this.column;
+    },
+
+    /**
+     * Returns the column header instance
+     * @return {Ext.grid.column.Column}
+     */
+    getColumn: function() {
+        return this.columnHeader;
+    },
+
+    /**
+     * Returns the grid data record
+     * @return {Ext.data.Record}
+     */
+    getRowRecord: function() {
+        return this.record;
+    },
+
+    /**
+     * Returns the model class constructor function the record is an instance of
+     * @return {Function}
+     */
+    getModelClass: function() {
+        return this.model;
+    }
+});
+/**
+ * @class Spread.selection.Range
+ * Represents a set of Spread.selection.Position instances
+ * and it's helper methods and attributes.
+ */
+Ext.define('Spread.selection.Range', {
+
+    /**
+     * @property {Array} positions
+     * Selection positions
+     */
+    positions: [],
+
+    /**
+     * @property {Spread.grid.Panel} spreadPanel
+     * Spreadsheet grid panel reference
+     */
+    spreadPanel: null,
+
+    /**
+     * Creates a range object referencing to a spread panel and managing/proxy-ing position instances
+     * @param {Spread.grid.Panel} spreadPanel Spread panel instance reference
+     * @param {Array} [positions] Optional array of initial positions to hold
+     * @return {Object}
+     */
+    constructor: function(spreadPanel, positions) {
+
+        if (!spreadPanel) {
+
+            throw new Error("Please provide a spreadPanel reference when creating a selection range! " +
+                            "Try: new Spread.selection.Range(spreadPanelReference)");
+        }
+
+        // Apply the positions onto the instance
+        this.spreadPanel = spreadPanel;
+
+        // Set initial positions
+        this.setPositions(positions);
+    },
+
+    /**
+     * Calls the callback method for each position in the store
+     * @param {Function} cb Callback called for each position. Arguments: position, index, length
+     * @param {Function} [onComplete] Function that gets called when all interation processing is done
+     * @return {Spread.selection.Range}
+     */
+    each: function(cb, onComplete) {
+
+        var me = this;
+        for (var i=0; i<me.positions.length; i++) {
+
+            if (Ext.isFunction(cb)) {
+                cb(me.positions[i], i, me.positions.length);
+            }
+        }
+
+        if (Ext.isFunction(onComplete)) {
+            onComplete();
+        }
+        return this;
+    },
+
+    /**
+     * Removes all positions from the range
+     * @return {Spread.selection.Range}
+     */
+    removeAll: function() {
+        this.positions = [];
+        return this;
+    },
+
+    /**
+     * Adds a position to the range
+     * @param {Spread.selection.Position} position Position instance
+     * @return {Spread.selection.Range}
+     */
+    add: function(position) {
+        this.positions.push(position);
+        return this;
+    },
+
+    /**
+     * Returns true if the given position is already a member of this range
+     * @param {Spread.selection.Position} position Position instance
+     * @return {Boolean}
+     */
+    hasPosition: function(position) {
+
+        var me = this, hasPosition = false;
+        for (var i=0; i<me.positions.length; i++) {
+
+            if (position === me.positions[i]) {
+                hasPosition = true;
+            }
+        }
+        return hasPosition;
+    },
+
+    /**
+     * Selects all positions of this range
+     * @param {Boolean} [virtual=false] Virtual selections do not update the view visually
+     * @return {Spread.selection.Range}
+     */
+    select: function(virtual) {
+
+        var me = this, selModel = this.getSelectionModel();
+
+        // Set selected status on positions
+        for (var i=0; i<me.positions.length; i++) {
+            me.positions[i].setSelected(true);
+        }
+
+        selModel.currentSelectionRange = me;
+
+        if (!virtual) {
+            selModel.view.highlightCells(me.positions);
+        }
+        return me;
+    },
+
+    /**
+     * De-selects all positions of this range
+     * @param {Boolean} [virtual=false] Virtual selections do not update the view visually
+     * @return {Spread.selection.Range}
+     */
+    deselect: function(virtual) {
+
+        var me = this, selModel = this.getSelectionModel();
+
+        // Set selected status on positions
+        for (var i=0; i<me.positions.length; i++) {
+            me.positions[i].setSelected(false);
+        }
+
+        if (!virtual) {
+            selModel.view.unhighlightCells(me.positions);
+        }
+        return me;
+    },
+
+    /**
+     * Returns the count of positions stored inside this range
+     * @return {Number}
+     */
+    count: function() {
+        return this.positions.length;
+    },
+
+    /**
+     * Returns all positions stored in this range as array
+     * @return {Array}
+     */
+    toArray: function() {
+        return this.positions;
+    },
+
+    /**
+     * Returns the first position in the range
+     * @return {Spread.selection.Position}
+     */
+    getFirst: function() {
+        return this.positions[0];
+    },
+
+    /**
+     * Returns the last position in the range
+     * @return {Spread.selection.Position}
+     */
+    getLast: function() {
+        return this.positions[this.positions.length-1];
+    },
+
+    /**
+     * En/disable the whole range to be editable
+     * @param {Boolean} editable Should the whole range be editable?
+     * @return {Spread.selection.Range}
+     */
+    setEditable: function(editable) {
+
+        var me = this, lastPosition = false;
+
+        for (var i=0; i<me.positions.length; i++) {
+
+            if (i === (me.positions.length-1)) {
+                lastPosition = true;
+            }
+            me.positions[i].setEditable(editable, lastPosition);
+        }
+        return me;
+    },
+
+    /**
+     * En/disable the whole range to be selectable
+     * @param {Boolean} selectable Should the whole range be editable?
+     * @return {Spread.selection.Range}
+     */
+    setSelectable: function(selectable) {
+
+        var me = this, lastPosition = false;
+
+        //console.log('setSelectable', selectable, me.positions);
+
+        for (var i=0; i<me.positions.length; i++) {
+
+            if (i === (me.positions.length-1)) {
+                lastPosition = true;
+            }
+            me.positions[i].setSelectable(selectable, lastPosition);
+        }
+        return me;
+    },
+
+    /**
+     * En/disable the whole range to be styled specially when editable
+     * @param {Boolean} editModeStyling Should the whole range be styled specially when editable?
+     * @return {Spread.selection.Range}
+     */
+    setEditModeStyling: function(editModeStyling) {
+
+        var me = this, lastPosition = false;
+
+        for (var i=0; i<me.positions.length; i++) {
+
+            if (i === (me.positions.length-1)) {
+                lastPosition = true;
+            }
+            me.positions[i].setEditModeStyling(editModeStyling, lastPosition);
+        }
+        return me;
+    },
+
+    /**
+     * Stores the given positions inside the range.
+     * @param {Array} positions Array of positions
+     * @return {Spread.selection.Range}
+     */
+    setPositions: function(positions) {
+
+        var me = this;
+
+        if (positions && Ext.isArray(positions)) {
+
+            me.positions = positions;
+
+            if (me.positions && Ext.isArray(me.positions)) {
+
+                for (var i=0; i<me.positions.length; i++) {
+                    me.positions[i].setRange(me);
+                }
+            }
+        }
+        return me;
+    },
+
+    /**
+     * Returns the selection model instance the range belongs to
+     * @return {Spread.selection.RangeModel}
+     */
+    getSelectionModel: function() {
+        return this.spreadPanel.getSelectionModel();
+    },
+
+    /**
+     * Returns the spread grid panel reference
+     * @return {Spread.grid.Panel}
+     */
+    getSpreadPanel: function() {
+        return this.spreadPanel;
+    },
+
+    statics: {
+
+        /**
+         * Builds a range instance holding all positions of a spread's row.
+         *
+         * @param {Spread.grid.Panel} spreadPanel Spreadsheet panel instance
+         * @param {Number} rowIndex Row index to collects position instances of
+         * @return {Spread.selection.Range}
+         */
+        fromSpreadRow: function(spreadPanel, rowIndex) {
+            return Spread.selection.Range.fromSpreadRows(spreadPanel, [rowIndex]);
+        },
+
+        /**
+         * Builds a range instance holding all positions of many spread rows.
+         *
+         * @param {Spread.grid.Panel} spreadPanel Spreadsheet panel instance
+         * @param {Array} rowIndexes Row indexes to collect position instances of
+         * @return {Spread.selection.Range}
+         */
+        fromSpreadRows: function(spreadPanel, rowIndexes) {
+
+            // TODO: Check for out-of-bounds error!
+            var positionCount = Spread.grid.Panel.getPositionCount(spreadPanel),
+                positions = [];
+
+            for (var i=0; i<positionCount.columnCount; i++) {
+
+                for (var j=0; j<rowIndexes.length; j++) {
+
+                    positions.push(
+
+                        new Spread.selection.Position(
+                            spreadPanel.getView(),
+                            i,
+                            rowIndexes[j]
+                        )
+                    )
+                }
+            }
+            return new Spread.selection.Range(spreadPanel, positions);
+        },
+
+        /**
+         * Builds a range instance holding all positions of a spread's column.
+         *
+         * @param {Spread.grid.Panel} spreadPanel Spreadsheet panel instance
+         * @param {Number} columnIndex Column index to collect position instances of
+         * @return {Spread.selection.Range}
+         */
+        fromSpreadColumn: function(spreadPanel, columnIndex) {
+            return Spread.selection.Range.fromSpreadColumns(spreadPanel, [columnIndex]);
+        },
+
+        /**
+         * Builds a range instance holding all positions of many spread columns.
+         *
+         * @param {Spread.grid.Panel} spreadPanel Spreadsheet panel instance
+         * @param {Array} columnIndexes Column indexes to collects position instances of
+         * @return {Spread.selection.Range}
+         */
+        fromSpreadColumns: function(spreadPanel, columnIndexes) {
+
+            // TODO: Check for out-of-bounds error!
+            var positionCount = Spread.grid.Panel.getPositionCount(spreadPanel),
+                positions = [];
+
+            for (var i=0; i<positionCount.rowCount; i++) {
+
+                for (var j=0; j<columnIndexes.length; j++) {
+
+                    positions.push(
+
+                        new Spread.selection.Position(
+                            spreadPanel.getView(),
+                            columnIndexes[j],
+                            i
+                        )
+                    )
+                }
+            }
+            return new Spread.selection.Range(spreadPanel, positions);
+        },
+
+        /**
+         * Builds a range instance holding all positions named as position indexes in the positionIndexes array.
+         * @param {Spread.grid.Panel} spreadPanel Spreadsheet panel instance
+         * @param {Number} positionIndexes Position indexes array like [{row: 0, column: 2}, ...]
+         * @return {Spread.selection.Range}
+         */
+        fromSpreadPositions: function(spreadPanel, positionIndexes) {
+
+            // TODO: Check for out-of-bounds error!
+            var positionCount = Spread.grid.Panel.getPositionCount(spreadPanel),
+                positions = [];
+
+            for (var i=0; i<positionIndexes.length; i++) {
+
+                positions.push(
+
+                    new Spread.selection.Position(
+                        spreadPanel.getView(),
+                        positionIndexes[i].column,
+                        positionIndexes[i].row
+                    )
+                )
+            }
+            //console.log('fromSpreadPositions', positionIndexes, positions);
+            return new Spread.selection.Range(spreadPanel, positions);
+        }
     }
 });
 /**
@@ -4266,20 +4976,10 @@ Ext.define('Spread.selection.RangeModel', {
     alias: 'selection.range',
 
     isRangeModel: true,
-
-    // Internal indicator flag
     initialViewRefresh: true,
-
-    // Internal indicator flag
     dataChangedRecently: false,
-
-    // Internal keyNav reference
     keyNav: null,
-
-    // Internal indicator flag
     keyNavigation: false,
-
-    // Internal indicator flag
     mayRangeSelecting: false,
 
     /**
@@ -4306,7 +5006,7 @@ Ext.define('Spread.selection.RangeModel', {
      * position objects, identifying the current
      * range of selected cells.
      */
-    currentSelectionRange: Ext.create('Spread.selection.Range'),
+    currentSelectionRange: null,
 
     /**
      * @property {Spread.selection.Position}
@@ -4331,7 +5031,6 @@ Ext.define('Spread.selection.RangeModel', {
      * @property {Spread.grid.View} Internal view instance reference
      */
     view: null,
-
 
     /**
      * @property {Spread.grid.Panel} Internal grid reference
@@ -4411,6 +5110,9 @@ Ext.define('Spread.selection.RangeModel', {
             'keynavigate'
         );
         this.callParent(arguments);
+
+        // Set current selection range
+        this.currentSelectionRange = new Spread.selection.Range(this.getSpreadPanel());
     },
 
     // --- Initialization
@@ -4933,6 +5635,8 @@ Ext.define('Spread.selection.RangeModel', {
      */
     setCurrentFocusPosition: function(position) {
 
+        //console.log('setCurrentFocusPosition');
+
         // Remove last focus reference
         if (!position) {
             this.currentFocusPosition = null;
@@ -4940,7 +5644,7 @@ Ext.define('Spread.selection.RangeModel', {
         }
 
         // Never allow to focus a cell/position which resists inside a header column
-        if (!position.columnHeader.selectable) {
+        if (!position.isSelectable()) {
             return false;
         }
 
@@ -4959,7 +5663,7 @@ Ext.define('Spread.selection.RangeModel', {
             //console.log('FOCUS ', this.getCurrentFocusPosition().row + ',' + this.getCurrentFocusPosition().column);
 
             // Reset current selection range
-            this.currentSelectionRange = Ext.create('Spread.selection.Range');
+            this.currentSelectionRange = new Spread.selection.Range(this.getSpreadPanel());
 
             // Inform the view to focus the cell
             this.view.coverCell(position);
@@ -5159,12 +5863,8 @@ Ext.define('Spread.selection.RangeModel', {
                 }
             }
         }
-
-        return Ext.create('Spread.selection.Range', {
-            positions: selectedPositions
-        });
+        return new Spread.selection.Range(this.getSpreadPanel(), selectedPositions);
     },
-
 
     /**
      * @protected
@@ -5179,7 +5879,7 @@ Ext.define('Spread.selection.RangeModel', {
         this.currentSelectionRange = this.createFocusRange();
 
         // Select the range
-        this.currentSelectionRange.select(this, virtual);
+        this.currentSelectionRange.select(virtual);
     },
 
     /**
@@ -5207,6 +5907,14 @@ Ext.define('Spread.selection.RangeModel', {
      */
     getCurrentSelectionRange: function() {
         return this.currentSelectionRange;
+    },
+
+    /**
+     * Returns the spread grid panel reference
+     * @return {Spread.grid.Panel}
+     */
+    getSpreadPanel: function() {
+        return this.grid;
     }
 });
 /**
@@ -5217,7 +5925,6 @@ Ext.define('Spread.util.Key', {
 
     singleton: true,
 
-    // Internal flag
     specialKeyPressedBefore: null,
 
     /**
@@ -5229,7 +5936,7 @@ Ext.define('Spread.util.Key', {
 
         var k = evt.normalizeKey(evt.keyCode);
 
-        return ((k >= 33 && k <= 40) && k != 37 && k != 39) ||  // Page Up/Down, End, Home, Up, Down
+        return (k >= 33 && k <= 40) ||  // Page Up/Down, End, Home, Up, Down
             k == evt.RETURN ||
             k == evt.TAB ||
             k == evt.ESC ||
@@ -5269,6 +5976,34 @@ Ext.define('Spread.util.Key', {
                (k >= 65 && k <= 90) || // a-z
                (k >= 96 && k <= 111) || // numpad keys
                (k >= 173 && k <= 222)
+    },
+
+    /**
+     * Checks if the key given is a key navigation key (LEFT, UP, DOWN, RIGHT)
+     * @param {Ext.EventObject} evt Event object instance
+     * @return {Boolean}
+     */
+    isNavigationKey: function(evt) {
+
+        var k = evt.normalizeKey(evt.keyCode);
+
+        if (k >= 37 && k <= 40) {
+            return true;
+        }
+        return false;
+    },
+
+    /**
+     * Checks if DEL key is given
+     * @param {Ext.EventObject} evt Event object instance
+     * @return {Boolean}
+     */
+    isDelKey: function(evt) {
+        var k = evt.normalizeKey(evt.keyCode);
+        if (k === 46) {
+            return true;
+        }
+        return false;
     }
 });
 /**

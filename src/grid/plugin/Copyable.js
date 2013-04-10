@@ -1,23 +1,20 @@
 /**
  * @class Spread.grid.plugin.Copyable
+ * @extends Spread.grid.plugin.AbstractPlugin
  * Allows copying data from a focused cell or a selected cell range by Ctrl/Cmd + C keystroke and
  * to be pasted in a native spreadsheet application like e.g. OpenOffice.org Calc.
  */
 Ext.define('Spread.grid.plugin.Copyable', {
 
-    extend: 'Ext.AbstractComponent',
+    extend: 'Spread.grid.plugin.AbstractPlugin',
+
+    requires: ['Spread.grid.plugin.AbstractPlugin'],
 
     alias: 'copyable',
 
     mixins: {
         clipping: 'Spread.util.Clipping'
     },
-
-    /**
-     * @property {Spread.grid.View}
-     * View instance reference
-     */
-    view: null,
 
     /**
      * @protected
@@ -27,8 +24,12 @@ Ext.define('Spread.grid.plugin.Copyable', {
      */
     init: function(view) {
 
+        var me = this;
+
+        me.callParent(arguments);
+
         // Add events
-        this.addEvents(
+        me.addEvents(
 
             /**
              * @event beforecopy
@@ -50,26 +51,20 @@ Ext.define('Spread.grid.plugin.Copyable', {
         );
 
         // Initialize clipping mixin
-        this.initClipping();
-
-        var me = this;
-
-        // Set internal reference
-        me.view = view;
+        me.initClipping();
 
         // Init key navigation
-        this.initKeyNav(view);
+        me.initKeyNav();
     },
 
     /**
      * @protected
      * Initializes the key navigation
-     * @param {Spread.grid.View} view View instance
      * @return void
      */
     initKeyNav: function(view) {
 
-        var me = this;
+        var me = this, view = me.getView();
 
         if (!view.rendered) {
             view.on('render', Ext.Function.bind(me.initKeyNav, me, [view], 0), me, {single: true});
@@ -106,20 +101,20 @@ Ext.define('Spread.grid.plugin.Copyable', {
 
         //console.log('copying to clipboard');
 
-        var selModel = this.view.getSelectionModel(),
+        var me = this, view = me.getView(), selModel = me.getSelectionModel(),
             selectionPositions = selModel.getSelectedPositionData();
 
         // Fire interceptable event
-        if (this.fireEvent('beforecopy', this, selModel, selectionPositions) !== false) {
+        if (me.fireEvent('beforecopy', me, selModel, selectionPositions) !== false) {
 
             // Prepare
-            this.prepareForClipboardCopy(
+            me.prepareForClipboardCopy(
                 Spread.util.TSVTransformer.transformToTSV(selectionPositions),
-                this.view
+                me.getView()
             );
 
             // Fire event
-            this.fireEvent('copy', this, selModel, selectionPositions);
+            me.fireEvent('copy', me, selModel, selectionPositions);
         }
     }
 });

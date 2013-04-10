@@ -24,6 +24,17 @@
 Ext.define('Spread.selection.Position', {
 
     /**
+     * @property {Spread.selection.Range} range
+     * Stores the reference of the range this position belongs to (Only if it does belong to any range!)
+     */
+    range: null,
+
+    /**
+     * @property {Spread.grid.Panel} spreadPanel Reference to the spread grid panel
+     */
+    spreadPanel: null,
+
+    /**
      * @property {Spread.grid.View} view
      * View instance the position belongs to
      */
@@ -77,6 +88,42 @@ Ext.define('Spread.selection.Position', {
     cellEl: null,
 
     /**
+     * @property {Boolean} editable
+     * Indicator flag describing if the position is editable
+     */
+    editable: false,
+
+    /**
+     * @property {Boolean} selectable
+     * Indicator flag describing if the position is selectable
+     */
+    selectable: true,
+
+    /**
+     * @property {Boolean} editModeStyling
+     * Indicator flag describing if the position should be specially colored when editable
+     */
+    editModeStyling: true,
+
+    /**
+     * @property {Boolean} focused
+     * Status flag if the position is currently being focused
+     */
+    focused: false,
+
+    /**
+     * @property {Boolean} editing
+     * Status flag if the position is currently in edit mode
+     */
+    editing: false,
+
+    /**
+     * @property {Boolean} selected
+     * Status flag if the position resists currently in a selected range
+     */
+    selected: false,
+
+    /**
      * Creates a position object which points to a cell position, record, column-header
      * and view reference. For performance reasons, try to call this function with all
      * arguments. More arguments given, means less auto detection effort.
@@ -94,7 +141,7 @@ Ext.define('Spread.selection.Position', {
 
         // Correct row and column index if outside of possible grid boundings
         var maxRowCount = view.getStore().getCount(),
-            maxColumnCount = view.headerCt.getGridColumns(true).length
+            maxColumnCount = view.headerCt.getGridColumns(true).length;
 
         // Column boundary protection
         if (columnIndex >= maxColumnCount) {
@@ -127,6 +174,7 @@ Ext.define('Spread.selection.Position', {
 
         Ext.apply(this, {
             view: view,
+            spreadPanel: view.getSpreadPanel(),
             column: columnIndex,
             row: rowIndex,
             record: model,
@@ -145,6 +193,8 @@ Ext.define('Spread.selection.Position', {
      */
     validate: function() {
 
+        this.spreadPanel = this.view.getSpreadPanel();
+
         this.record = this.view.getStore().getAt(this.row);
 
         // If record was given or detected, map it's model reference
@@ -161,6 +211,7 @@ Ext.define('Spread.selection.Position', {
         if (this.rowEl) {
             this.cellEl = this.rowEl.childNodes[this.column];
         }
+
         //console.log('Position update()ed ', this);
 
         return this;
@@ -257,7 +308,6 @@ Ext.define('Spread.selection.Position', {
             fieldName,
             ret;
 
-
         // Update position
         me.validate();
 
@@ -353,6 +403,255 @@ Ext.define('Spread.selection.Position', {
      * @return {Spread.selection.Position}
      */
     focus: function() {
+
+        if (!this.isFocusable()) return this;
+
+        // Set state flag
+        this.focused = true;
+
+        // Render selected
         this.view.getSelectionModel().setCurrentFocusPosition(this);
+
+        return this;
+    },
+
+    /**
+     * Returns true if the position is currently focused
+     * @return {Boolean}
+     */
+    isFocused: function() {
+        return this.focused;
+    },
+
+    /**
+     * Returns true if the position is focusable
+     * @return {Boolean}
+     */
+    isFocusable: function() {
+        return this.isSelectable();
+    },
+
+    /**
+     * En/disable the position to be editable
+     * @param {Boolean} editable Should the position be editable?
+     * @param {Boolean} [suppressNotify=false] Used for transactions when method gets called many times, only the last call should notify the view to trigger a re-rendering.
+     * @return {Spread.selection.Position}
+     */
+    setEditable: function(editable, suppressNotify) {
+
+        this.editable = editable;
+
+        if (!Ext.isDefined(suppressNotify)) {
+            // TODO: Inform plugin
+            //console.log('unimplemented');
+        }
+        return this;
+    },
+
+    /**
+     * Returns if the position is editable.
+     * Also checks if the column the position resides in is editable.
+     * @return {Boolean}
+     */
+    isEditable: function() {
+
+        if (this.getColumn().editable && this.editable) {
+            return true;
+        }
+        return false;
+    },
+
+    /**
+     * Sets the position editing
+     * @param {Boolean} editing Should the position be editable?
+     * @return {Spread.selection.Position}
+     */
+    setEditing: function(editing) {
+
+        if (!this.isEditable()) return this;
+
+        this.editing = editing;
+
+        if (editing) {
+            // TODO: Activate editor
+            //console.log('unimplemented');
+        } else {
+            // TODO: Deactivate editor (inform plugin)
+            //console.log('unimplemented');
+        }
+        return this;
+    },
+
+    /**
+     * Returns if the position is currently being edited
+     * @return {Boolean}
+     */
+    isEditing: function() {
+        return this.editing;
+    },
+
+    /**
+     * En/disable the position to be selectable
+     * @param {Boolean} selectable Should the position be editable?
+     * @param {Boolean} [suppressNotify=false] Used for transactions when method gets called many times, only the last call should notify the view to trigger a re-rendering.
+     * @return {Spread.selection.Position}
+     */
+    setSelectable: function(selectable, suppressNotify) {
+
+        this.selectable = selectable;
+
+        //console.log('setSelectable', this.row, this.column, selectable);
+
+        if (!Ext.isDefined(suppressNotify)) {
+            // TODO: Inform plugin
+            //console.log('unimplemented');
+        }
+        return this;
+    },
+
+    /**
+     * Returns if the position is selectable.
+     * Also checks if the column the position resides in is selectable or not.
+     * @return {Boolean}
+     */
+    isSelectable: function() {
+
+        if (this.getColumn().selectable && this.selectable) {
+            return true;
+        }
+        return false;
+    },
+
+    /**
+     * En/disable the position to be styled specially when editable
+     * @param {Boolean} editModeStyling Should the position be styled specially when editable?
+     * @param {Boolean} [suppressNotify=false] Used for transactions when method gets called many times, only the last call should notify the view to trigger a re-rendering.
+     * @return {Spread.selection.Position}
+     */
+    setEditModeStyling: function(editModeStyling, suppressNotify) {
+
+        this.editModeStyling = editModeStyling;
+
+        if (!Ext.isDefined(suppressNotify)) {
+            // TODO: Inform plugin
+            //console.log('unimplemented');
+        }
+        return this;
+    },
+
+    /**
+     * Returns if the position is has edit mode styling enabled
+     * @return {Boolean}
+     */
+    hasEditModeStyling: function() {
+        return this.editModeStyling;
+    },
+
+    /**
+     * @protected
+     * Sets the internal selected status flag.
+     * This method does not visually select a position.
+     * Use the range.select() and range.deselect() methods or the
+     * Commander API if you want to select positions (ranges!).
+     * @param {Boolean} selected Indicates if the position should be set selected
+     * @return {Spread.selection.Position}
+     */
+    setSelected: function(selected) {
+
+        if (!this.isSelectable()) return this;
+
+        this.selected = selected;
+
+        return this;
+    },
+
+    /**
+     * Returns if the position currently resists in a range currently being selected
+     * @return {Boolean}
+     */
+    isSelected: function() {
+        return this.selected;
+    },
+
+    /**
+     * Sets the range instance reference
+     * @param {Spread.selection.Range} range Selection range reference
+     * @return {Spread.selection.Position}
+     */
+    setRange: function(range) {
+        this.range = range;
+        return this;
+    },
+
+    /**
+     * Returns a range reference if given
+     * @return {Spread.selection.Range/null}
+     */
+    getRange: function() {
+        return this.range;
+    },
+
+    /**
+     * Returns the selection model reference
+     * @return {Ext.selection.Model}
+     */
+    getSelectionModel: function() {
+        return this.getSpreadPanel().getSelectionModel();
+    },
+
+    /**
+     * Returns the view reference
+     * @return {Spread.grid.View}
+     */
+    getView: function() {
+        return this.view;
+    },
+
+    /**
+     * Returns the spread panel reference
+     * @return {Spread.grid.Panel}
+     */
+    getSpreadPanel: function() {
+        return this.spreadPanel;
+    },
+
+    /**
+     * Returns the row index
+     * @return {Number}
+     */
+    getRowIndex: function() {
+        return this.row;
+    },
+
+    /**
+     * Returns the column index
+     * @return {Number}
+     */
+    getColumnIndex: function() {
+        return this.column;
+    },
+
+    /**
+     * Returns the column header instance
+     * @return {Ext.grid.column.Column}
+     */
+    getColumn: function() {
+        return this.columnHeader;
+    },
+
+    /**
+     * Returns the grid data record
+     * @return {Ext.data.Record}
+     */
+    getRowRecord: function() {
+        return this.record;
+    },
+
+    /**
+     * Returns the model class constructor function the record is an instance of
+     * @return {Function}
+     */
+    getModelClass: function() {
+        return this.model;
     }
 });

@@ -7,6 +7,8 @@ Ext.define('Spread.overrides.Column', {
 
     override: 'Ext.grid.column.Column',
 
+    initialPanelEditModeStyling: false,
+
     /**
      * @cfg {Boolean} selectable
      * If a column is configured as header column, the values aren't selectable nor focusable
@@ -54,9 +56,6 @@ Ext.define('Spread.overrides.Column', {
      * Specifies the allowed keys so that only these keys can be typed into the edit field
      */
     allowedEditKeys: [],
-
-    // internal flag
-    initialPanelEditModeStyling: false,
 
     // private
     initComponent: function() {

@@ -1,24 +1,21 @@
 /**
  * @class Spread.grid.plugin.Pasteable
+ * @extends Spread.grid.plugin.AbstractPlugin
  * Allows the spreadsheet to receive data from a native spreadsheet application like
  * e.g. OpenOffice.org Calc by pasting into a selected cell range or right-down direction from a focused cell
  * using the keystroke Ctrl/Cmd + V.
  */
 Ext.define('Spread.grid.plugin.Pasteable', {
 
-    alias: 'pasteable',
+    extend: 'Spread.grid.plugin.AbstractPlugin',
 
-    extend: 'Ext.AbstractComponent',
+    requires: ['Spread.grid.plugin.AbstractPlugin'],
+
+    alias: 'pasteable',
 
     mixins: {
         clipping: 'Spread.util.Clipping'
     },
-
-    /**
-     * @property {Spread.grid.View}
-     * View instance reference
-     */
-    view: null,
 
     /**
      * @cfg {Boolean}
@@ -50,8 +47,12 @@ Ext.define('Spread.grid.plugin.Pasteable', {
      */
     init: function(view) {
 
+        var me = this;
+
+        me.callParent(arguments);
+
         // Add events
-        this.addEvents(
+        me.addEvents(
 
             /**
              * @event beforepaste
@@ -74,26 +75,20 @@ Ext.define('Spread.grid.plugin.Pasteable', {
         );
 
         // Initialize clipping mixin
-        this.initClipping();
-
-        var me = this;
-
-        // Set internal reference
-        me.view = view;
+        me.initClipping();
 
         // Init key navigation
-        this.initKeyNav(view);
+        me.initKeyNav();
     },
 
     /**
      * @protected
      * Initializes the key navigation
-     * @param {Spread.grid.View} view View instance
      * @return void
      */
-    initKeyNav: function(view) {
+    initKeyNav: function() {
 
-        var me = this;
+        var me = this, view = me.getView();
 
         if (!view.rendered) {
             view.on('render', Ext.Function.bind(me.initKeyNav, me, [view], 0), me, {single: true});
@@ -132,20 +127,21 @@ Ext.define('Spread.grid.plugin.Pasteable', {
         //console.log('pasting from clipboard');
 
         var me = this,
-            selModel = this.view.getSelectionModel(),
+            view = me.getView(),
+            selModel = me.getSelectionModel(),
             selectionPositions = selModel.getSelectedPositionData();
 
         if (me.loadMask) {
 
-            var loadMask = new Ext.LoadMask(me.view.getEl());
+            var loadMask = new Ext.LoadMask(view.getEl());
             loadMask.show();
             //me.view.setLoading(true);
         }
 
         // Fire interceptable event
-        if (this.fireEvent('beforepaste', this, selModel, selectionPositions) !== false) {
+        if (me.fireEvent('beforepaste', me, selModel, selectionPositions) !== false) {
 
-            this.prepareForClipboardPaste(function(clipboardData) {
+            me.prepareForClipboardPaste(function(clipboardData) {
 
                 //console.log('Clipboard data:', clipboardData);
 
@@ -164,7 +160,7 @@ Ext.define('Spread.grid.plugin.Pasteable', {
                     loadMask.hide();
                 }
 
-            }, this.view);
+            }, view);
         }
     },
 
@@ -178,7 +174,7 @@ Ext.define('Spread.grid.plugin.Pasteable', {
      */
     updateRecordFieldsInStore: function(pastedDataArray, selectionPositions, selModel) {
 
-        var me = this;
+        var me = this, view = me.getView();
 
         //console.log('updateRecordFieldsInStore', selModel, pastedDataArray, selectionPositions);
 
@@ -247,7 +243,7 @@ Ext.define('Spread.grid.plugin.Pasteable', {
 
             // Lets try this position
             newFocusPosition = new Spread.selection.Position(
-                me.view,
+                view,
                 newFocusPosColumnIndex,
                 newFocusPosRowIndex
             );
@@ -310,13 +306,13 @@ Ext.define('Spread.grid.plugin.Pasteable', {
         // Using internal API's we've changed the internal
         // values now, but we need to refresh the view for
         // data values to be updates
-        me.view.refresh();
+        view.refresh();
 
         // Redraw edit mode styling
         me.handleDirtyMarkOnEditModeStyling();
 
         // Highlight pasted data selection cells
-        me.view.highlightCells(selectionPositions);
+        view.highlightCells(selectionPositions);
     },
 
     /**
@@ -326,13 +322,15 @@ Ext.define('Spread.grid.plugin.Pasteable', {
      */
     handleDirtyMarkOnEditModeStyling: function() {
 
-        if (this.view.editable) {
+        var me = this, view = me.getView();
+
+        if (view.editable) {
 
             // Full redraw
-            this.view.editable.displayCellsEditing(false);
+            view.editable.displayCellsEditing(false);
 
-            if (this.view.ownerCt.editModeStyling) {
-                this.view.editable.displayCellsEditing(true);
+            if (view.ownerCt.editModeStyling) {
+                view.editable.displayCellsEditing(true);
             }
         }
     }

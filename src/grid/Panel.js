@@ -448,10 +448,10 @@ Ext.define('Spread.grid.Panel', {
 
     alias: 'widget.spread',
 
-    // use spread view
     viewType: 'spreadview',
-
     closeAction: 'destroy',
+    pluginRegistry: {},
+    columnLines: true,
 
     /**
      * @cfg {Boolean} autoFocusRootPosition
@@ -484,12 +484,6 @@ Ext.define('Spread.grid.Panel', {
      */
     editModeStyling: true,
 
-    // Show column lines by default
-    columnLines: true,
-
-    // Internal flag
-    //stripeRows: false,
-
     /**
      * @cfg {Object}
      * Config object to configure a Spread.grid.plugin.Editable plugin.
@@ -518,9 +512,6 @@ Ext.define('Spread.grid.Panel', {
      */
     clearRangePluginConfig: {},
 
-    // Internal plugin registry map
-    pluginRegistry: {},
-
     /**
      * Pre-process the column configuration to avoid incompatibilities
      * @return void
@@ -530,10 +521,10 @@ Ext.define('Spread.grid.Panel', {
         var me = this;
 
         // Create instances of plugins
-        this.instantiatePlugins();
+        me.instantiatePlugins();
 
         // Add events
-        this.addEvents(
+        me.addEvents(
 
             /**
              * @event beforecovercell
@@ -695,11 +686,6 @@ Ext.define('Spread.grid.Panel', {
             'covercelleditable'
         ]);
 
-        // Just relay autoCommit flag to pastable plugin
-        if (me.pasteablePluginInstance) {
-            me.pasteablePluginInstance.autoCommit = me.autoCommit;
-        }
-
         //console.log('my view', me.view);
 
         // View refresh
@@ -711,7 +697,7 @@ Ext.define('Spread.grid.Panel', {
             // Set edit mode styling
             me.setEditModeStyling(me.editModeStyling);
 
-        }, this, {
+        }, me, {
             single: true
         });
     },
@@ -766,22 +752,24 @@ Ext.define('Spread.grid.Panel', {
      */
     instantiatePlugins: function() {
 
+        this.editablePluginConfig.autoCommit = this.autoCommit;
         this.editablePluginInstance = Ext.create('Spread.grid.plugin.Editable', this.editablePluginConfig);
         this.pluginRegistry['Spread.grid.plugin.Editable'] = this.editablePluginInstance;
 
         this.copyablePluginInstance = Ext.create('Spread.grid.plugin.Copyable', this.copyablePluginConfig);
         this.pluginRegistry['Spread.grid.plugin.Copyable'] = this.copyablePluginInstance;
 
+        this.pasteablePluginConfig.autoCommit = this.autoCommit;
         this.pasteablePluginInstance = Ext.create('Spread.grid.plugin.Pasteable', this.pasteablePluginConfig);
         this.pluginRegistry['Spread.grid.plugin.Pasteable'] = this.pasteablePluginInstance;
 
+        this.clearRangePluginConfig.autoCommit = this.autoCommit;
         this.clearRangePluginInstance = Ext.create('Spread.grid.plugin.ClearRange', this.clearRangePluginConfig);
         this.pluginRegistry['Spread.grid.plugin.ClearRange'] = this.clearRangePluginInstance;
     },
 
     /**
      * Returns an instance of the plugin named by class name or returns undefined
-     * TODO Refactor all plugin classes to extend from one AbstractPlugin (would be nicer for return type too)
      * @param {String} pluginClassName Class name of the plugin to fetch instance of
      * @return {Ext.AbstractComponent}
      */
@@ -817,7 +805,7 @@ Ext.define('Spread.grid.Panel', {
         // User specified it's on viewConfig
         if (config.viewConfig) {
 
-            // Maintain merging of spreaiewonfig section
+            // Maintain merging of spread view config section
             if (config.viewConfig.spreadPlugins && Ext.isArray(config.viewConfig.spreadPlugins)) {
 
                 // Merges a plugin into spreadPlugins array if forgotten to be defined
@@ -877,7 +865,8 @@ Ext.define('Spread.grid.Panel', {
     manageSelectionModelConfig: function(config) {
 
         var selModelConfig = {
-            selType: 'range'
+            selType: 'range',
+            grid: this
         };
 
         // Apply autoFocusRootPosition
@@ -965,7 +954,6 @@ Ext.define('Spread.grid.Panel', {
     isEditable: function() {
         return this.editable;
     },
-
 
     statics: {
 

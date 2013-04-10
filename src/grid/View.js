@@ -13,6 +13,19 @@ Ext.define('Spread.grid.View', {
 
     alias: 'widget.spreadview',
 
+    stripeRows: false,
+    trackOver: false,
+    spreadViewBaseCls: 'spreadsheet-view',
+    cellCoverEl: null,
+    currentCoverPosition: null,
+    currentHighlightPositions: [],
+    dataChangedRecently: true,
+
+    /**
+     * @property {Spread.grid.Panel} spreadPanel Reference to the spread grid panel
+     */
+    spreadPanel: null,
+
     /**
      * @cfg {Boolean} autoFocus
      * Automatically focus spread view for direct key eventing/navigation after render
@@ -30,24 +43,6 @@ Ext.define('Spread.grid.View', {
      * Cell (re-)focus delay in ms
      */
     cellFocusDelay: 30,
-
-    // Deactivate trackOver and row striping by default
-    stripeRows: false,
-    trackOver: false,
-
-    spreadViewBaseCls: 'spreadsheet-view',
-
-    // Internal cell cover element reference
-    cellCoverEl: null,
-
-    // Internal reference to the current cover position
-    currentCoverPosition: null,
-
-    // Array of positions currently highlighted
-    currentHighlightPositions: [],
-
-    // Internal flag
-    dataChangedRecently: true,
 
     /**
      * @cfg {Number} cellCoverZIndex
@@ -90,14 +85,16 @@ Ext.define('Spread.grid.View', {
      */
     initComponent: function() {
 
+        var me = this;
+
         // Disable row-striping
-        this.stripeRows = false;
+        me.stripeRows = false;
 
         // Add spread view CSS cls
-        this.baseCls = this.baseCls + ' ' + this.spreadViewBaseCls;
+        me.baseCls = me.baseCls + ' ' + me.spreadViewBaseCls;
 
         // Add events
-        this.addEvents(
+        me.addEvents(
 
             /**
              * @event beforecovercell
@@ -220,20 +217,20 @@ Ext.define('Spread.grid.View', {
 
 
         // Call parent
-        var ret = this.callParent(arguments);
+        var ret = me.callParent(arguments);
 
         //console.log('SpreadPlugins', this.spreadPlugins);
 
         // Create cover element if not already existing
-        if (!this.cellCoverEl) {
-            this.createCellCoverElement();
+        if (!me.cellCoverEl) {
+            me.createCellCoverElement();
         }
 
         // Initialize view plugins
-        this.initPlugins(this.spreadPlugins);
+        me.initPlugins(me.spreadPlugins);
 
         // Initializes relay eventing
-        this.initRelayEvents();
+        me.initRelayEvents();
 
         return ret;
     },
@@ -350,7 +347,7 @@ Ext.define('Spread.grid.View', {
     bubbleCellMouseDownToSelectionModel: function(evt, coverEl) {
 
         var cellEl = coverEl.id.split('_'),
-            rowEl, tableBodyEl, rowIndex, cellIndex, record;
+            rowEl, tableBodyEl, rowIndex, cellIndex, record, i;
 
         // Fetch <td> cell for given cover element and proove that
         if (cellEl[1] && Ext.fly(cellEl[1]) && Ext.fly(cellEl[1]).hasCls('x-grid-cell')) {
@@ -368,7 +365,7 @@ Ext.define('Spread.grid.View', {
             tableBodyEl = Ext.fly(rowEl).up('tbody').dom;
 
             // Analyze cell index
-            for (var i=0; i<rowEl.childNodes.length; i++) {
+            for (i=0; i<rowEl.childNodes.length; i++) {
                 if (rowEl.childNodes[i] === cellEl) {
                     cellIndex = i;
                     break;
@@ -376,7 +373,7 @@ Ext.define('Spread.grid.View', {
             }
 
             // Analyze row index
-            for (var i=0; i<tableBodyEl.childNodes.length; i++) {
+            for (i=0; i<tableBodyEl.childNodes.length; i++) {
                 if (tableBodyEl.childNodes[i] === rowEl) {
                     rowIndex = (i-1);
                     break;
@@ -394,19 +391,23 @@ Ext.define('Spread.grid.View', {
      */
     refresh: function() {
 
-        var ret = this.callParent(arguments);
+        var me = this,
+            ret = me.callParent(arguments);
+
+        // Set panel reference
+        me.spreadPanel = me.ownerCt;
 
         //console.log('refresh?!')
 
-        if (this.dataChangedRecently) {
-            this.dataChangedRecently = false;
+        if (me.dataChangedRecently) {
+            me.dataChangedRecently = false;
             return ret;
         } else {
 
-            if (this.editable) {
+            if (me.editable) {
 
-                this.editable.displayCellsEditing(
-                    this.editable.editModeStyling && this.editable.editable
+                me.editable.displayCellsEditing(
+                    me.editable.editModeStyling && me.editable.editable
                 );
             }
         }
@@ -563,5 +564,13 @@ Ext.define('Spread.grid.View', {
      */
     getCellCoverEl: function() {
         return Ext.get(this.cellCoverEl);
+    },
+
+    /**
+     * Returns the spread grid panel reference
+     * @return {Spread.grid.Panel}
+     */
+    getSpreadPanel: function() {
+        return this.spreadPanel;
     }
 });

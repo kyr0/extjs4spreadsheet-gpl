@@ -10,6 +10,8 @@ Ext.define('Spread.grid.column.Header', {
 
     alias: 'widget.spreadheadercolumn',
 
+    resizable: true,
+
     /**
      * @cfg {Boolean} editable
      * If a column is configured as header column, the values aren't editable by default.
@@ -34,9 +36,6 @@ Ext.define('Spread.grid.column.Header', {
      * Index of the column id by default
      */
     dataIndex: 'id',
-
-    // Resizing is allowed by default
-    resizable: true,
 
     /**
      * @private

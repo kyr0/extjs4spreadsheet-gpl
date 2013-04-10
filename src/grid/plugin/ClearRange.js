@@ -1,24 +1,15 @@
 /**
  * @class Spread.grid.plugin.ClearRange
+ * @extends Spread.grid.plugin.AbstractPlugin
  * Allows to clears a currently selected range.
  */
 Ext.define('Spread.grid.plugin.ClearRange', {
 
-    extend: 'Ext.AbstractComponent',
+    extend: 'Spread.grid.plugin.AbstractPlugin',
+
+    requires: ['Spread.grid.plugin.AbstractPlugin'],
 
     alias: 'clearrange',
-
-    /**
-     * @property {Spread.grid.View}
-     * View instance reference
-     */
-    view: null,
-
-    /**
-     * @property {Spread.grid.Panel}
-     * Grid instance reference
-     */
-    grid: null,
 
     /**
      * @cfg {Boolean}
@@ -33,6 +24,13 @@ Ext.define('Spread.grid.plugin.ClearRange', {
     nullValue: '',
 
     /**
+     * @cfg {Boolean} autoCommit
+     * Automatically commit changed records or wait for manually store.sync() / record.commit()?
+     * (Generally, can be specially configured per column config too)
+     */
+    autoCommit: true,
+
+    /**
      * @protected
      * Registers the clear key event handling (BACKSPACE, DEL keys).
      * @param {Spread.grid.View} view View instance
@@ -40,8 +38,12 @@ Ext.define('Spread.grid.plugin.ClearRange', {
      */
     init: function(view) {
 
+        var me = this;
+
+        me.callParent(arguments);
+
         // Add events
-        this.addEvents(
+        me.addEvents(
 
             /**
              * @event beforeclearrange
@@ -62,11 +64,6 @@ Ext.define('Spread.grid.plugin.ClearRange', {
             'clearrange'
         );
 
-        var me = this;
-
-        // Set internal reference
-        me.view = view;
-
         // Listen to the key events
         me.listenToKeyEvents();
     },
@@ -76,7 +73,7 @@ Ext.define('Spread.grid.plugin.ClearRange', {
         var me = this;
 
         // Un-register on grid destroy
-        me.view.on('destroy', function() {
+        me.getView().on('destroy', function() {
             Ext.EventManager.un(document.body, 'keyup', me.onKeyUp);
         });
 
@@ -93,17 +90,18 @@ Ext.define('Spread.grid.plugin.ClearRange', {
     onKeyUp: function(evt) {
 
         var me = this,
+            view = me.getView(),
             targetEl = Ext.get(evt.getTarget());
 
         // If grid isn't editable, return
-        if (me.view.editable && !me.view.editable.editable) {
+        if ((view.editable && !view.editable.editable) ||
+            me.getSelectionModel().currentSelectionRange.count() === 0) {
             evt.stopEvent();
             return;
         }
 
-        // 46 is the DEL key
         if (!targetEl.hasCls('spreadsheet-cell-cover-edit-field') &&
-            evt.normalizeKey(evt.keyCode) === 46) {
+            Spread.util.Key.isDelKey(evt)) {
 
             me.clearCurrentSelectedRange();
 
@@ -118,11 +116,12 @@ Ext.define('Spread.grid.plugin.ClearRange', {
     clearCurrentSelectedRange: function() {
 
         var me = this,
-            selectionRange = me.view.getSelectionModel().getCurrentSelectionRange();
+            view = me.getView(),
+            selectionRange = me.getSelectionModel().getCurrentSelectionRange();
 
         if (me.loadMask) {
 
-            var loadMask = new Ext.LoadMask(me.view.getEl());
+            var loadMask = new Ext.LoadMask(view.getEl());
             loadMask.show();
             //me.view.setLoading(true);
         }
@@ -134,12 +133,12 @@ Ext.define('Spread.grid.plugin.ClearRange', {
             selectionRange.each(function(position) {
 
                 // Clear cell data
-                position.setValue(me.nullValue);
+                me.clearPosition(position);
 
             }, function onComplete() {
 
-                if (me.view.editable && me.view.editable.editModeStyling && me.view.editable.editable) {
-                    me.view.editable.displayCellsEditing(true);
+                if (view.editable && view.editable.editModeStyling && view.editable.editable) {
+                    view.editable.displayCellsEditing(true);
                 }
 
                 if (me.loadMask) {
@@ -149,5 +148,34 @@ Ext.define('Spread.grid.plugin.ClearRange', {
             });
 
         }, 30);
+    },
+
+    /**
+     * Clears the currently focused/covered position
+     * @return void
+     */
+    clearCurrentFocusPosition: function() {
+        this.clearPosition(
+            this.getSelectionModel().getCurrentFocusPosition()
+        );
+    },
+
+    /**
+     * Clears a position
+     * @param {Spread.selection.Position} position Position to clear
+     * @return void
+     */
+    clearPosition: function(position) {
+
+        var me = this, view = me.getView();
+
+        position.setValue(
+            me.nullValue,
+            me.autoCommit
+        );
+
+        if (view.editable && view.editable.editModeStyling && view.editable.editable) {
+            view.editable.displayCellsEditing(true);
+        }
     }
 });

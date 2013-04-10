@@ -6,7 +6,6 @@ Ext.define('Spread.util.Key', {
 
     singleton: true,
 
-    // Internal flag
     specialKeyPressedBefore: null,
 
     /**
@@ -18,7 +17,7 @@ Ext.define('Spread.util.Key', {
 
         var k = evt.normalizeKey(evt.keyCode);
 
-        return ((k >= 33 && k <= 40) && k != 37 && k != 39) ||  // Page Up/Down, End, Home, Up, Down
+        return (k >= 33 && k <= 40) ||  // Page Up/Down, End, Home, Up, Down
             k == evt.RETURN ||
             k == evt.TAB ||
             k == evt.ESC ||
@@ -58,5 +57,33 @@ Ext.define('Spread.util.Key', {
                (k >= 65 && k <= 90) || // a-z
                (k >= 96 && k <= 111) || // numpad keys
                (k >= 173 && k <= 222)
+    },
+
+    /**
+     * Checks if the key given is a key navigation key (LEFT, UP, DOWN, RIGHT)
+     * @param {Ext.EventObject} evt Event object instance
+     * @return {Boolean}
+     */
+    isNavigationKey: function(evt) {
+
+        var k = evt.normalizeKey(evt.keyCode);
+
+        if (k >= 37 && k <= 40) {
+            return true;
+        }
+        return false;
+    },
+
+    /**
+     * Checks if DEL key is given
+     * @param {Ext.EventObject} evt Event object instance
+     * @return {Boolean}
+     */
+    isDelKey: function(evt) {
+        var k = evt.normalizeKey(evt.keyCode);
+        if (k === 46) {
+            return true;
+        }
+        return false;
     }
 });

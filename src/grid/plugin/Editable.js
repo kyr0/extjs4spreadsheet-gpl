@@ -1,20 +1,23 @@
 /**
  * @class Spread.grid.plugin.Editable
+ * @extends Spread.grid.plugin.AbstractPlugin
  * Allows the spreadsheet to get edited by a text field as known from standard spreadsheet applications.
  *
  * TODO: Support string fields without allowedKeys config to enter special chars!
  */
 Ext.define('Spread.grid.plugin.Editable', {
 
-    extend: 'Ext.AbstractComponent',
+    extend: 'Spread.grid.plugin.AbstractPlugin',
+
+    requires: ['Spread.grid.plugin.AbstractPlugin'],
 
     alias: 'editable',
 
-    /**
-     * @property {Spread.grid.View}
-     * View instance reference
-     */
-    view: null,
+    editableColumns: [],
+    editableColumnIndexes: [],
+    editable: false,
+    isEditing: false,
+    cellClear: false,
 
     /**
      * @cfg {Boolean} autoCommit
@@ -85,9 +88,6 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     cellCoverEditFieldEl: null,
 
-    // Private
-    isEditing: false,
-
     /**
      * @cfg {Boolean} editModeStyling
      * Allows to style the cells when in edit mode
@@ -112,15 +112,6 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     lastEditFieldValue: null,
 
-    // Internal storage (shadow-copy) of editable columns references
-    editableColumns: [],
-
-    // Internal list of indexes of the columns which are editable
-    editableColumnIndexes: [],
-
-    // Internal editable flag
-    editable: false,
-
     /**
      * @protected
      * Registers the hook for cover-double-click editing
@@ -131,11 +122,10 @@ Ext.define('Spread.grid.plugin.Editable', {
 
         var me = this;
 
-        // Set internal reference
-        me.view = view;
+        me.callParent(arguments);
 
         // Add events
-        this.addEvents(
+        me.addEvents(
 
             /**
              * @event beforeeditfieldblur
@@ -228,7 +218,7 @@ Ext.define('Spread.grid.plugin.Editable', {
         );
 
         // Register eventing hook
-        this.initCoverEventing();
+        me.initCoverEventing();
     },
 
     /**
@@ -241,13 +231,13 @@ Ext.define('Spread.grid.plugin.Editable', {
         var me = this;
 
         // Call the following methods after rendering...
-        this.view.on('afterrender', function(view) {
+        me.getView().on('afterrender', function() {
 
             // Collect editable flags from the columns
-            me.initEditingColumns(view);
+            me.initEditingColumns();
 
             // Initialize editable eventing
-            me.initEventing(view);
+            me.initEventing();
         });
     },
 
@@ -255,14 +245,13 @@ Ext.define('Spread.grid.plugin.Editable', {
      * @protected
      * Implements listeners and hooks for eventing which belongs
      * to the edit field, cover element, view and selection model.
-     * @param {Spread.grid.View} view View reference
      * @return void
      */
-    initEventing: function(view) {
-
+    initEventing: function() {
 
         // Handle eventing of cover element
         var me = this,
+            view = me.getView(),
             coverEl = view.getCellCoverEl();
 
         //console.log('initEventing!', coverEl);
@@ -277,7 +266,7 @@ Ext.define('Spread.grid.plugin.Editable', {
             //coverEl.on('dblclick', me.onCoverDblClick, me);
 
             // Double-click based edit mode handler
-            me.view.getEl().on('dblclick', me.onCoverDblClick, me);
+            view.getEl().on('dblclick', me.onCoverDblClick, me);
 
             // Listen to cover key pressed (up)
             view.getEl().on('keydown', me.onCoverKeyPressed, me);
@@ -286,11 +275,11 @@ Ext.define('Spread.grid.plugin.Editable', {
             view.on('covercell', me.onCellCovered, me);
 
             // Handle TAB and ENTER select while editing (save and focus next cell)
-            //view.getSelectionModel().on('tabselect', me.blurEditFieldIfEditing, me);
-            //view.getSelectionModel().on('enterselect', me.blurEditFieldIfEditing, me);
-            view.getSelectionModel().on('beforecellfocus', me.blurEditFieldIfEditing, me);
-            view.getSelectionModel().on('keynavigate', me.blurEditFieldIfEditing, me);
-            //view.getSelectionModel().on('cellblur', me.blurEditFieldIfEditing, me);
+            //me.getSelectionModel().on('tabselect', me.blurEditFieldIfEditing, me);
+            //me.getSelectionModel().on('enterselect', me.blurEditFieldIfEditing, me);
+            me.getSelectionModel().on('beforecellfocus', me.blurEditFieldIfEditing, me);
+            me.getSelectionModel().on('keynavigate', me.blurEditFieldIfEditing, me);
+            //me.getSelectionModel().on('cellblur', me.blurEditFieldIfEditing, me);
 
         } else {
             throw "Cover element not found, initializing editing failed! Please check proper view rendering.";
@@ -301,29 +290,29 @@ Ext.define('Spread.grid.plugin.Editable', {
      * @protected
      * Collects the 'editable' flags from the columns and stores them in
      * this.editableColumns array initially.
-     * @param {Spread.grid.View} view Grid view
      * @return void
      */
-    initEditingColumns: function(view) {
+    initEditingColumns: function() {
 
-        var columns = view.getHeaderCt().getGridColumns();
+        var me = this, view = me.getView(),
+            columns = view.getHeaderCt().getGridColumns();
 
         // Initialize arrays
-        this.editableColumns = [];
-        this.editableColumnIndexes = [];
+        me.editableColumns = [];
+        me.editableColumnIndexes = [];
 
         for (var i=0; i<columns.length; i++) {
 
             if (columns[i].editable) {
 
                 // Push to list of editable columns
-                this.editableColumns.push(columns[i]);
+                me.editableColumns.push(columns[i]);
 
                 // Set reference on column
                 columns[i].columnIndex = i;
 
                 // Push to list of editable columns indexes
-                this.editableColumnIndexes.push(i);
+                me.editableColumnIndexes.push(i);
             }
         }
     },
@@ -336,13 +325,15 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     initTextField: function(coverEl) {
 
+        var me = this;
+
         // Check for field existence (already created?)
-        if (!this.cellCoverEditFieldEl) {
+        if (!me.cellCoverEditFieldEl) {
 
             //console.log('initTextField', arguments);
 
             // Build editor field
-            this.cellCoverEditFieldEl = Ext.get(
+            me.cellCoverEditFieldEl = Ext.get(
 
                 Ext.DomHelper.append(coverEl, {
                     id: Ext.id() + '-cover-input',
@@ -354,7 +345,7 @@ Ext.define('Spread.grid.plugin.Editable', {
             );
 
             // Register key up handler
-            this.cellCoverEditFieldEl.on('keypress', this.onEditFieldKeyPressed, this);
+            me.cellCoverEditFieldEl.on('keypress', me.onEditFieldKeyPressed, me);
         }
     },
 
@@ -366,27 +357,28 @@ Ext.define('Spread.grid.plugin.Editable', {
     onEditFieldBlur: function() {
 
         //console.log('onEditFieldBlur');
+        var me = this;
 
         // Fire interceptable event
-        if (this.fireEvent('beforeeditfieldblur', this) !== false) {
+        if (me.fireEvent('beforeeditfieldblur', me) !== false) {
 
             // Internal flag to prevent two-time rendering
-            this.view.dataChangedRecently = true;
+            me.view.dataChangedRecently = true;
 
             // Stop editing (mode)
-            this.setEditing(false);
+            me.setEditing(false);
 
             // Write changed value back to record/field
-            this.activePosition.setValue(
-                this.getEditingValue(),
-                this.autoCommit
+            me.activePosition.setValue(
+                me.getEditingValue(),
+                me.autoCommit
             );
 
             // Recolorize for dirty flag!
-            this.handleDirtyMarkOnEditModeStyling();
+            me.handleDirtyMarkOnEditModeStyling();
 
             // Fire event
-            this.fireEvent('editfieldblur', this);
+            me.fireEvent('editfieldblur', me);
         }
     },
 
@@ -397,11 +389,13 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     handleDirtyMarkOnEditModeStyling: function() {
 
+        var me = this;
+
         // Full redraw
-        if (this.view.ownerCt.editModeStyling) {
-            this.displayCellsEditing(true);
+        if (me.getView().ownerCt.editModeStyling) {
+            me.displayCellsEditing(true);
         } else {
-            this.displayCellsEditing(false);
+            me.displayCellsEditing(false);
         }
     },
 
@@ -414,10 +408,11 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     blurEditFieldIfEditing: function() {
 
+        var me = this;
         //console.log('blurEditFieldIfEditing', this.isEditing)
 
-        if (this.isEditing) {
-            this.onEditFieldBlur();
+        if (me.isEditing) {
+            me.onEditFieldBlur();
         }
     },
 
@@ -430,25 +425,32 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     onEditFieldKeyPressed: function(evt) {
 
-        var me = this;
+        var me = this,
+            view = me.getView();
 
-        if (this.isEditing) {
+        if (me.isEditing) {
+
+            if (Spread.util.Key.isNavigationKey(evt) || Spread.util.Key.isDelKey(evt)) {
+                return true;
+            }
 
             if (Spread.util.Key.isCancelEditKey(evt)) {
 
                 //console.log('is cancel edit key')
-                this.blurEditFieldIfEditing();
+                me.blurEditFieldIfEditing();
                 return true;
             }
-            //console.log('columns keys allowed? ', me.activePosition.columnHeader.allowedEditKeys);
 
             // If there is a list of allowed keys, check for them
-            if (me.activePosition.columnHeader.allowedEditKeys.length > 0) {
+            if (me.activePosition.columnHeader.allowedEditKeys.length) {
 
                 // Stop key input if not in allowed keys list
-                if (Ext.Array.indexOf(me.activePosition.columnHeader.allowedEditKeys,
+                if (
+                    Ext.Array.indexOf(me.activePosition.columnHeader.allowedEditKeys,
                         String.fromCharCode(evt.getCharCode())
-                    ) === -1 && evt.getKey() !== evt.BACKSPACE)
+                    ) === -1
+                    && evt.getKey() !== evt.BACKSPACE
+                )
                 {
                     evt.stopEvent();
                 }
@@ -458,29 +460,29 @@ Ext.define('Spread.grid.plugin.Editable', {
 
             // Save and jump next cell
             if (evt.getKey() === evt.ENTER) {
-                me.view.getSelectionModel().onKeyEnter(evt);
+                me.getSelectionModel().onKeyEnter(evt);
             }
 
             // Save and jump next cell
             if (evt.getKey() === evt.TAB) {
-                me.view.getSelectionModel().onKeyTab(evt);
+                me.getSelectionModel().onKeyTab(evt);
             }
 
             // Key navigation support (jumping out of field)
             if (evt.getKey() === evt.LEFT) {
-                me.view.getSelectionModel().onKeyLeft(evt);
+                me.getSelectionModel().onKeyLeft(evt);
             }
 
             if (evt.getKey() === evt.RIGHT) {
-                me.view.getSelectionModel().onKeyRight(evt);
+                me.getSelectionModel().onKeyRight(evt);
             }
 
             if (evt.getKey() === evt.UP) {
-                me.view.getSelectionModel().onKeyUp(evt);
+                me.getSelectionModel().onKeyUp(evt);
             }
 
             if (evt.getKey() === evt.DOWN) {
-                me.view.getSelectionModel().onKeyDown(evt);
+                me.getSelectionModel().onKeyDown(evt);
             }
         }
     },
@@ -489,11 +491,11 @@ Ext.define('Spread.grid.plugin.Editable', {
     // which is covering the currently focused cell.
     isOriginCellClick: function(evt) {
 
-        var clickedOnCell = false,
+        var me = this, clickedOnCell = false,
             clickTargetElIdTextParent = evt.getTarget().parentNode.parentNode.id,
             clickTargetElIdText = evt.getTarget().parentNode.id,
             clickTargetElId = evt.getTarget().id,
-            currentPosCellElId = this.view.getSelectionModel().getCurrentFocusPosition().cellEl.id;
+            currentPosCellElId = me.getSelectionModel().getCurrentFocusPosition().cellEl.id;
 
         if (Ext.isIE) {
 
@@ -523,28 +525,30 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     onCoverDblClick: function(evt) {
 
-        if (this.fireEvent('beforecoverdblclick', this) !== false) {
+        var me = this;
+
+        if (me.fireEvent('beforecoverdblclick', me) !== false) {
 
             // Clicked on grid view
             // ...and not already editing
             // ...and clicked on cell cover of the current selected cell position
             // ...and if position is generally editable
             if (!Ext.get(evt.getTarget()).hasCls('x-grid-view') &&
-                !this.isEditing &&
-                this.isOriginCellClick(evt) &&
-                this.isPositionEditable()) {
+                !me.isEditing &&
+                me.isOriginCellClick(evt) &&
+                me.isPositionEditable()) {
 
                 //console.log('onCoverDblClick, setEditable!');
 
                 // Activates the editor
-                this.setEditing(true);
+                me.setEditing(true);
 
                 // Set current value of field in record
-                this.setEditingValue(
-                    this.activePosition.getValue()
+                me.setEditingValue(
+                    me.activePosition.getValue()
                 );
             }
-            this.fireEvent('coverdblclick', this);
+            me.fireEvent('coverdblclick', me);
         }
     },
 
@@ -557,28 +561,37 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     onCoverKeyPressed: function(evt, viewEl) {
 
+        var me = this;
+
         // no key is pressed on a cover,
         // if we're editing...
-        if (this.isEditing) {
+        if (me.isEditing) {
             return;
         }
 
-        if (this.fireEvent('beforecoverkeypressed', this) !== false) {
+        if (me.fireEvent('beforecoverkeypressed', me) !== false) {
 
-            // TODO: DEL key should clear the cell
+            if (Spread.util.Key.isDelKey(evt) && !me.isEditing) {
 
-            if (Spread.util.Key.isStartEditKey(evt) && !this.isEditing) {
+                var clearRangePlugin = me.getSpreadPanel().getPlugin('Spread.grid.plugin.ClearRange');
 
-                if (this.isPositionEditable()) {
-
-                    // Activates the editor
-                    this.setEditing(true);
-
-                    // Reset the editor value
-                    this.setEditingValue('');
+                if (clearRangePlugin) {
+                    clearRangePlugin.clearCurrentFocusPosition();
                 }
             }
-            this.fireEvent('coverkeypressed', this);
+
+            if (Spread.util.Key.isStartEditKey(evt) && !me.isEditing) {
+
+                if (me.isPositionEditable()) {
+
+                    // Activates the editor
+                    me.setEditing(true);
+
+                    // Reset the editor value
+                    me.setEditingValue('');
+                }
+            }
+            me.fireEvent('coverkeypressed', me);
         }
     },
 
@@ -594,18 +607,19 @@ Ext.define('Spread.grid.plugin.Editable', {
     onCellCovered: function(view, position, coverEl, tdEl, coverElSize, coverElPosition) {
 
         //console.log('onCellCovered', position);
+        var me = this;
 
         // Set internal references
-        this.activePosition = position;
-        this.activeCellTdEl = tdEl;
-        this.activeCoverEl = coverEl;
-        this.activeCoverElSize = coverElSize;
-        this.activeCoverElPosition = coverElPosition;
+        me.activePosition = position;
+        me.activeCellTdEl = tdEl;
+        me.activeCoverEl = coverEl;
+        me.activeCoverElSize = coverElSize;
+        me.activeCoverElPosition = coverElPosition;
 
         // But hide, until this.setEditing() is called through UI event
-        this.cellCoverEditFieldEl.dom.style.display = 'none';
+        me.cellCoverEditFieldEl.dom.style.display = 'none';
 
-        this.fireEvent('covercelleditable', this, view, position, coverEl);
+        me.fireEvent('covercelleditable', me, view, position, coverEl);
     },
 
     /**
@@ -614,12 +628,13 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     isPositionEditable: function() {
 
+        var me = this;
         // Check for row to be editable or not
         // TODO!
 
         // Check for column to be editable or not
-        if ((this.activePosition && !this.activePosition.columnHeader.editable) ||
-            !this.editable) {
+        if ((me.activePosition && !me.activePosition.columnHeader.editable) ||
+            !me.editable) {
 
             //console.log('!this.activePosition.columnHeader.editable || !this.editable', !this.activePosition.columnHeader.editable, !this.editable)
             return false;
@@ -642,7 +657,7 @@ Ext.define('Spread.grid.plugin.Editable', {
         }
 
         // Check global and column edit-ability
-        if (!this.isPositionEditable()) {
+        if (!me.isPositionEditable()) {
             return false;
         }
 
@@ -651,7 +666,7 @@ Ext.define('Spread.grid.plugin.Editable', {
         // Set editing
         if (doEdit) {
 
-            if (this.fireEvent('beforeeditingenabled', this) !== false) {
+            if (me.fireEvent('beforeeditingenabled', me) !== false) {
 
                 // Enable edit mode
                 me.isEditing = true;
@@ -674,12 +689,12 @@ Ext.define('Spread.grid.plugin.Editable', {
 
                 }, me.retryFieldElFocusDelay);
 
-                this.fireEvent('editingenabled', this);
+                me.fireEvent('editingenabled', me);
             }
 
         } else {
 
-            if (this.fireEvent('beforeeditingdisabled', this) !== false) {
+            if (me.fireEvent('beforeeditingdisabled', me) !== false) {
 
                 // Hide the editor
                 me.cellCoverEditFieldEl.dom.style.display = 'none';
@@ -688,7 +703,7 @@ Ext.define('Spread.grid.plugin.Editable', {
                 setTimeout(function() {
 
                     try {
-                        me.view.focus();
+                        me.getView().focus();
                     } catch(e) {}
 
                 }, me.stopEditingFocusDelay);
@@ -696,7 +711,7 @@ Ext.define('Spread.grid.plugin.Editable', {
                 // Disable edit mode
                 me.isEditing = false;
 
-                this.fireEvent('editingdisabled', this);
+                me.fireEvent('editingdisabled', me);
             }
         }
     },
@@ -796,9 +811,9 @@ Ext.define('Spread.grid.plugin.Editable', {
      */
     displayCellsEditing: function(displayEditing, onRenderReady) {
 
-        var me = this, viewCells = me.view.getEl().query(
-            me.view.cellSelector
-        ), viewColumns = me.view.getHeaderCt().getGridColumns();
+        var me = this, view = me.getView(), viewCells = view.getEl().query(
+            view.cellSelector
+        ), viewColumns = view.getHeaderCt().getGridColumns();
 
         if (Ext.isIE6 || Ext.isIE7 || Ext.isIE8) {
             me.chunkRenderDelay = 0.3;
