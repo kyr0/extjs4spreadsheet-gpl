@@ -45,22 +45,12 @@ Ext.define('Spread.selection.RangeModel', {
     alias: 'selection.range',
 
 <span id='Spread-selection-RangeModel-property-isRangeModel'>    isRangeModel: true,
+</span><span id='Spread-selection-RangeModel-property-initialViewRefresh'>    initialViewRefresh: true,
+</span><span id='Spread-selection-RangeModel-property-dataChangedRecently'>    dataChangedRecently: false,
+</span><span id='Spread-selection-RangeModel-property-keyNav'>    keyNav: null,
+</span><span id='Spread-selection-RangeModel-property-keyNavigation'>    keyNavigation: false,
+</span><span id='Spread-selection-RangeModel-property-mayRangeSelecting'>    mayRangeSelecting: false,
 </span>
-<span id='Spread-selection-RangeModel-property-initialViewRefresh'>    // Internal indicator flag
-</span>    initialViewRefresh: true,
-
-<span id='Spread-selection-RangeModel-property-dataChangedRecently'>    // Internal indicator flag
-</span>    dataChangedRecently: false,
-
-<span id='Spread-selection-RangeModel-property-keyNav'>    // Internal keyNav reference
-</span>    keyNav: null,
-
-<span id='Spread-selection-RangeModel-property-keyNavigation'>    // Internal indicator flag
-</span>    keyNavigation: false,
-
-<span id='Spread-selection-RangeModel-property-mayRangeSelecting'>    // Internal indicator flag
-</span>    mayRangeSelecting: false,
-
 <span id='Spread-selection-RangeModel-property-rootPosition'>    /**
 </span>     * @property {Spread.selection.Position}
      * Dynamically calculated root position (initial focus position)
@@ -85,7 +75,7 @@ Ext.define('Spread.selection.RangeModel', {
      * position objects, identifying the current
      * range of selected cells.
      */
-    currentSelectionRange: Ext.create('Spread.selection.Range'),
+    currentSelectionRange: null,
 
 <span id='Spread-selection-RangeModel-property-originSelectionPosition'>    /**
 </span>     * @property {Spread.selection.Position}
@@ -110,7 +100,6 @@ Ext.define('Spread.selection.RangeModel', {
 </span>     * @property {Spread.grid.View} Internal view instance reference
      */
     view: null,
-
 
 <span id='Spread-selection-RangeModel-property-Internal'>    /**
 </span>     * @property {Spread.grid.Panel} Internal grid reference
@@ -190,6 +179,9 @@ Ext.define('Spread.selection.RangeModel', {
             'keynavigate'
         );
         this.callParent(arguments);
+
+        // Set current selection range
+        this.currentSelectionRange = new Spread.selection.Range(this.getSpreadPanel());
     },
 
     // --- Initialization
@@ -712,6 +704,8 @@ Ext.define('Spread.selection.RangeModel', {
      */
     setCurrentFocusPosition: function(position) {
 
+        //console.log('setCurrentFocusPosition');
+
         // Remove last focus reference
         if (!position) {
             this.currentFocusPosition = null;
@@ -719,7 +713,7 @@ Ext.define('Spread.selection.RangeModel', {
         }
 
         // Never allow to focus a cell/position which resists inside a header column
-        if (!position.columnHeader.selectable) {
+        if (!position.isSelectable()) {
             return false;
         }
 
@@ -738,7 +732,7 @@ Ext.define('Spread.selection.RangeModel', {
             //console.log('FOCUS ', this.getCurrentFocusPosition().row + ',' + this.getCurrentFocusPosition().column);
 
             // Reset current selection range
-            this.currentSelectionRange = Ext.create('Spread.selection.Range');
+            this.currentSelectionRange = new Spread.selection.Range(this.getSpreadPanel());
 
             // Inform the view to focus the cell
             this.view.coverCell(position);
@@ -938,12 +932,8 @@ Ext.define('Spread.selection.RangeModel', {
                 }
             }
         }
-
-        return Ext.create('Spread.selection.Range', {
-            positions: selectedPositions
-        });
+        return new Spread.selection.Range(this.getSpreadPanel(), selectedPositions);
     },
-
 
 <span id='Spread-selection-RangeModel-method-selectFocusRange'>    /**
 </span>     * @protected
@@ -958,7 +948,7 @@ Ext.define('Spread.selection.RangeModel', {
         this.currentSelectionRange = this.createFocusRange();
 
         // Select the range
-        this.currentSelectionRange.select(this, virtual);
+        this.currentSelectionRange.select(virtual);
     },
 
 <span id='Spread-selection-RangeModel-method-getSelectedPositionData'>    /**
@@ -986,6 +976,14 @@ Ext.define('Spread.selection.RangeModel', {
      */
     getCurrentSelectionRange: function() {
         return this.currentSelectionRange;
+    },
+
+<span id='Spread-selection-RangeModel-method-getSpreadPanel'>    /**
+</span>     * Returns the spread grid panel reference
+     * @return {Spread.grid.Panel}
+     */
+    getSpreadPanel: function() {
+        return this.grid;
     }
 });</pre>
 </body>

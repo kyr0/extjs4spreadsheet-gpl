@@ -40,6 +40,17 @@
  */
 Ext.define('Spread.selection.Position', {
 
+<span id='Spread-selection-Position-property-range'>    /**
+</span>     * @property {Spread.selection.Range} range
+     * Stores the reference of the range this position belongs to (Only if it does belong to any range!)
+     */
+    range: null,
+
+<span id='Spread-selection-Position-property-spreadPanel'>    /**
+</span>     * @property {Spread.grid.Panel} spreadPanel Reference to the spread grid panel
+     */
+    spreadPanel: null,
+
 <span id='Spread-selection-Position-property-view'>    /**
 </span>     * @property {Spread.grid.View} view
      * View instance the position belongs to
@@ -93,6 +104,42 @@ Ext.define('Spread.selection.Position', {
      */
     cellEl: null,
 
+<span id='Spread-selection-Position-property-editable'>    /**
+</span>     * @property {Boolean} editable
+     * Indicator flag describing if the position is editable
+     */
+    editable: false,
+
+<span id='Spread-selection-Position-property-selectable'>    /**
+</span>     * @property {Boolean} selectable
+     * Indicator flag describing if the position is selectable
+     */
+    selectable: true,
+
+<span id='Spread-selection-Position-property-editModeStyling'>    /**
+</span>     * @property {Boolean} editModeStyling
+     * Indicator flag describing if the position should be specially colored when editable
+     */
+    editModeStyling: true,
+
+<span id='Spread-selection-Position-property-focused'>    /**
+</span>     * @property {Boolean} focused
+     * Status flag if the position is currently being focused
+     */
+    focused: false,
+
+<span id='Spread-selection-Position-property-editing'>    /**
+</span>     * @property {Boolean} editing
+     * Status flag if the position is currently in edit mode
+     */
+    editing: false,
+
+<span id='Spread-selection-Position-property-selected'>    /**
+</span>     * @property {Boolean} selected
+     * Status flag if the position resists currently in a selected range
+     */
+    selected: false,
+
 <span id='Spread-selection-Position-method-constructor'>    /**
 </span>     * Creates a position object which points to a cell position, record, column-header
      * and view reference. For performance reasons, try to call this function with all
@@ -111,7 +158,7 @@ Ext.define('Spread.selection.Position', {
 
         // Correct row and column index if outside of possible grid boundings
         var maxRowCount = view.getStore().getCount(),
-            maxColumnCount = view.headerCt.getGridColumns(true).length
+            maxColumnCount = view.headerCt.getGridColumns(true).length;
 
         // Column boundary protection
         if (columnIndex &gt;= maxColumnCount) {
@@ -144,6 +191,7 @@ Ext.define('Spread.selection.Position', {
 
         Ext.apply(this, {
             view: view,
+            spreadPanel: view.getSpreadPanel(),
             column: columnIndex,
             row: rowIndex,
             record: model,
@@ -162,6 +210,8 @@ Ext.define('Spread.selection.Position', {
      */
     validate: function() {
 
+        this.spreadPanel = this.view.getSpreadPanel();
+
         this.record = this.view.getStore().getAt(this.row);
 
         // If record was given or detected, map it's model reference
@@ -178,6 +228,7 @@ Ext.define('Spread.selection.Position', {
         if (this.rowEl) {
             this.cellEl = this.rowEl.childNodes[this.column];
         }
+
         //console.log('Position update()ed ', this);
 
         return this;
@@ -274,7 +325,6 @@ Ext.define('Spread.selection.Position', {
             fieldName,
             ret;
 
-
         // Update position
         me.validate();
 
@@ -370,7 +420,256 @@ Ext.define('Spread.selection.Position', {
      * @return {Spread.selection.Position}
      */
     focus: function() {
+
+        if (!this.isFocusable()) return this;
+
+        // Set state flag
+        this.focused = true;
+
+        // Render selected
         this.view.getSelectionModel().setCurrentFocusPosition(this);
+
+        return this;
+    },
+
+<span id='Spread-selection-Position-method-isFocused'>    /**
+</span>     * Returns true if the position is currently focused
+     * @return {Boolean}
+     */
+    isFocused: function() {
+        return this.focused;
+    },
+
+<span id='Spread-selection-Position-method-isFocusable'>    /**
+</span>     * Returns true if the position is focusable
+     * @return {Boolean}
+     */
+    isFocusable: function() {
+        return this.isSelectable();
+    },
+
+<span id='Spread-selection-Position-method-setEditable'>    /**
+</span>     * En/disable the position to be editable
+     * @param {Boolean} editable Should the position be editable?
+     * @param {Boolean} [suppressNotify=false] Used for transactions when method gets called many times, only the last call should notify the view to trigger a re-rendering.
+     * @return {Spread.selection.Position}
+     */
+    setEditable: function(editable, suppressNotify) {
+
+        this.editable = editable;
+
+        if (!Ext.isDefined(suppressNotify)) {
+            // TODO: Inform plugin
+            //console.log('unimplemented');
+        }
+        return this;
+    },
+
+<span id='Spread-selection-Position-method-isEditable'>    /**
+</span>     * Returns if the position is editable.
+     * Also checks if the column the position resides in is editable.
+     * @return {Boolean}
+     */
+    isEditable: function() {
+
+        if (this.getColumn().editable &amp;&amp; this.editable) {
+            return true;
+        }
+        return false;
+    },
+
+<span id='Spread-selection-Position-method-setEditing'>    /**
+</span>     * Sets the position editing
+     * @param {Boolean} editing Should the position be editable?
+     * @return {Spread.selection.Position}
+     */
+    setEditing: function(editing) {
+
+        if (!this.isEditable()) return this;
+
+        this.editing = editing;
+
+        if (editing) {
+            // TODO: Activate editor
+            //console.log('unimplemented');
+        } else {
+            // TODO: Deactivate editor (inform plugin)
+            //console.log('unimplemented');
+        }
+        return this;
+    },
+
+<span id='Spread-selection-Position-method-isEditing'>    /**
+</span>     * Returns if the position is currently being edited
+     * @return {Boolean}
+     */
+    isEditing: function() {
+        return this.editing;
+    },
+
+<span id='Spread-selection-Position-method-setSelectable'>    /**
+</span>     * En/disable the position to be selectable
+     * @param {Boolean} selectable Should the position be editable?
+     * @param {Boolean} [suppressNotify=false] Used for transactions when method gets called many times, only the last call should notify the view to trigger a re-rendering.
+     * @return {Spread.selection.Position}
+     */
+    setSelectable: function(selectable, suppressNotify) {
+
+        this.selectable = selectable;
+
+        //console.log('setSelectable', this.row, this.column, selectable);
+
+        if (!Ext.isDefined(suppressNotify)) {
+            // TODO: Inform plugin
+            //console.log('unimplemented');
+        }
+        return this;
+    },
+
+<span id='Spread-selection-Position-method-isSelectable'>    /**
+</span>     * Returns if the position is selectable.
+     * Also checks if the column the position resides in is selectable or not.
+     * @return {Boolean}
+     */
+    isSelectable: function() {
+
+        if (this.getColumn().selectable &amp;&amp; this.selectable) {
+            return true;
+        }
+        return false;
+    },
+
+<span id='Spread-selection-Position-method-setEditModeStyling'>    /**
+</span>     * En/disable the position to be styled specially when editable
+     * @param {Boolean} editModeStyling Should the position be styled specially when editable?
+     * @param {Boolean} [suppressNotify=false] Used for transactions when method gets called many times, only the last call should notify the view to trigger a re-rendering.
+     * @return {Spread.selection.Position}
+     */
+    setEditModeStyling: function(editModeStyling, suppressNotify) {
+
+        this.editModeStyling = editModeStyling;
+
+        if (!Ext.isDefined(suppressNotify)) {
+            // TODO: Inform plugin
+            //console.log('unimplemented');
+        }
+        return this;
+    },
+
+<span id='Spread-selection-Position-method-hasEditModeStyling'>    /**
+</span>     * Returns if the position is has edit mode styling enabled
+     * @return {Boolean}
+     */
+    hasEditModeStyling: function() {
+        return this.editModeStyling;
+    },
+
+<span id='Spread-selection-Position-method-setSelected'>    /**
+</span>     * @protected
+     * Sets the internal selected status flag.
+     * This method does not visually select a position.
+     * Use the range.select() and range.deselect() methods or the
+     * Commander API if you want to select positions (ranges!).
+     * @param {Boolean} selected Indicates if the position should be set selected
+     * @return {Spread.selection.Position}
+     */
+    setSelected: function(selected) {
+
+        if (!this.isSelectable()) return this;
+
+        this.selected = selected;
+
+        return this;
+    },
+
+<span id='Spread-selection-Position-method-isSelected'>    /**
+</span>     * Returns if the position currently resists in a range currently being selected
+     * @return {Boolean}
+     */
+    isSelected: function() {
+        return this.selected;
+    },
+
+<span id='Spread-selection-Position-method-setRange'>    /**
+</span>     * Sets the range instance reference
+     * @param {Spread.selection.Range} range Selection range reference
+     * @return {Spread.selection.Position}
+     */
+    setRange: function(range) {
+        this.range = range;
+        return this;
+    },
+
+<span id='Spread-selection-Position-method-getRange'>    /**
+</span>     * Returns a range reference if given
+     * @return {Spread.selection.Range/null}
+     */
+    getRange: function() {
+        return this.range;
+    },
+
+<span id='Spread-selection-Position-method-getSelectionModel'>    /**
+</span>     * Returns the selection model reference
+     * @return {Ext.selection.Model}
+     */
+    getSelectionModel: function() {
+        return this.getSpreadPanel().getSelectionModel();
+    },
+
+<span id='Spread-selection-Position-method-getView'>    /**
+</span>     * Returns the view reference
+     * @return {Spread.grid.View}
+     */
+    getView: function() {
+        return this.view;
+    },
+
+<span id='Spread-selection-Position-method-getSpreadPanel'>    /**
+</span>     * Returns the spread panel reference
+     * @return {Spread.grid.Panel}
+     */
+    getSpreadPanel: function() {
+        return this.spreadPanel;
+    },
+
+<span id='Spread-selection-Position-method-getRowIndex'>    /**
+</span>     * Returns the row index
+     * @return {Number}
+     */
+    getRowIndex: function() {
+        return this.row;
+    },
+
+<span id='Spread-selection-Position-method-getColumnIndex'>    /**
+</span>     * Returns the column index
+     * @return {Number}
+     */
+    getColumnIndex: function() {
+        return this.column;
+    },
+
+<span id='Spread-selection-Position-method-getColumn'>    /**
+</span>     * Returns the column header instance
+     * @return {Ext.grid.column.Column}
+     */
+    getColumn: function() {
+        return this.columnHeader;
+    },
+
+<span id='Spread-selection-Position-method-getRowRecord'>    /**
+</span>     * Returns the grid data record
+     * @return {Ext.data.Record}
+     */
+    getRowRecord: function() {
+        return this.record;
+    },
+
+<span id='Spread-selection-Position-method-getModelClass'>    /**
+</span>     * Returns the model class constructor function the record is an instance of
+     * @return {Function}
+     */
+    getModelClass: function() {
+        return this.model;
     }
 });</pre>
 </body>
