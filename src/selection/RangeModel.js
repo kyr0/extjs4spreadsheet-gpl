@@ -16,8 +16,6 @@
  *
  * Using the interceptable eventing of this selection model, it's possible
  * to extend the selection and focussing logic.
- *
- * TODO: Select cell on click / key nav -> allows clearing by DEL directly!
  */
 Ext.define('Spread.selection.RangeModel', {
 
