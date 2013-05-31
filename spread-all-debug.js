@@ -1453,6 +1453,22 @@ Ext.define('Spread.grid.Panel', {
     },
 
     /**
+     * @override
+     * @protected
+     * Re-Initializes editable setting of columns after reconfigure() has been called.
+     * @return void
+     */
+    reconfigure: function() {
+
+        var ret = this.callOverridden(arguments);
+
+        if (this.editablePluginInstance) {
+            this.editablePluginInstance.initEditingColumns(this.getView());
+        }
+        return ret;
+    },
+
+    /**
      * Enables/Disables the edit mode styling on the whole grid
      * @param {Boolean} editModeStyling Allow edit mode styling?
      * @return void
