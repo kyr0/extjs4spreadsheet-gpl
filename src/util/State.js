@@ -10,17 +10,30 @@ Ext.define('Spread.util.State', {
 
     setPositionState: function(position, name, value) {
 
-        // Prepare
-        if (!this.positionStates[position.row]) {
-            this.positionStates[position.row] = {};
+        var spreadId,
+            states = this.positionStates;
+
+        if (position.spreadPanel) {
+            spreadId = position.spreadPanel.instanceStateId;
+        } else {
+            spreadId = 'undefined';
         }
 
-        if (!this.positionStates[position.row][position.column]) {
-            this.positionStates[position.row][position.column] = {};
+        if (!states[spreadId]) {
+            states[spreadId] = {};
+        }
+
+        // Prepare
+        if (!states[spreadId][position.row]) {
+            states[spreadId][position.row] = {};
+        }
+
+        if (!states[spreadId][position.row][position.column]) {
+            states[spreadId][position.row][position.column] = {};
         }
 
         // Set value
-        this.positionStates[position.row][position.column][name] = value;
+        states[spreadId][position.row][position.column][name] = value;
 
         // Persist it in DOM for faster rendering algorithms/lookup
         /*
@@ -32,13 +45,26 @@ Ext.define('Spread.util.State', {
 
     getPositionState: function(position, name) {
 
-        if (!this.positionStates[position.row]) {
+        var spreadId,
+            states = this.positionStates;
+
+        if (position.spreadPanel) {
+            spreadId = position.spreadPanel.instanceStateId;
+        } else {
+            spreadId = 'undefined';
+        }
+
+        if (!states[spreadId]) {
             return undefined;
         }
 
-        if (!this.positionStates[position.row][position.column]) {
+        if (!states[spreadId][position.row]) {
             return undefined;
         }
-        return this.positionStates[position.row][position.column][name];
+
+        if (!states[spreadId][position.row][position.column]) {
+            return undefined;
+        }
+        return states[spreadId][position.row][position.column][name];
     }
 });

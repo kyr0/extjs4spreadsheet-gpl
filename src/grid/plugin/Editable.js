@@ -840,6 +840,7 @@ Ext.define('Spread.grid.plugin.Editable', {
 
                     displayCellEditingState = Spread.util.State.getPositionState({
                         row: row,
+                        spreadPanel: me.getSpreadPanel(),
                         column: viewCells[i].cellIndex
                     }, 'editmodestyling');
 

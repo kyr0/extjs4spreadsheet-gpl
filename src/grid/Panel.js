@@ -513,12 +513,21 @@ Ext.define('Spread.grid.Panel', {
     clearRangePluginConfig: {},
 
     /**
+     * @property {String}
+     * State management instance state id
+     */
+    instanceStateId: 'undefined',
+
+    /**
      * Pre-process the column configuration to avoid incompatibilities
      * @return void
      */
     constructor: function(config) {
 
         var me = this;
+
+        // Generate state management instance id
+        me.instanceStateId = 'spread-state-' + new Date().getTime() + '-' + Math.random(0, 65535);
 
         // Create instances of plugins
         me.instantiatePlugins();

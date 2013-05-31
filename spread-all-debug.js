@@ -1043,12 +1043,21 @@ Ext.define('Spread.grid.Panel', {
     clearRangePluginConfig: {},
 
     /**
+     * @property {String}
+     * State management instance state id
+     */
+    instanceStateId: 'undefined',
+
+    /**
      * Pre-process the column configuration to avoid incompatibilities
      * @return void
      */
     constructor: function(config) {
 
         var me = this;
+
+        // Generate state management instance id
+        me.instanceStateId = 'spread-state-' + new Date().getTime() + '-' + Math.random(0, 65535);
 
         // Create instances of plugins
         me.instantiatePlugins();
@@ -3549,6 +3558,7 @@ Ext.define('Spread.grid.plugin.Editable', {
 
                     displayCellEditingState = Spread.util.State.getPositionState({
                         row: row,
+                        spreadPanel: me.getSpreadPanel(),
                         column: viewCells[i].cellIndex
                     }, 'editmodestyling');
 
@@ -3958,17 +3968,30 @@ Ext.define('Spread.util.State', {
 
     setPositionState: function(position, name, value) {
 
-        // Prepare
-        if (!this.positionStates[position.row]) {
-            this.positionStates[position.row] = {};
+        var spreadId,
+            states = this.positionStates;
+
+        if (position.spreadPanel) {
+            spreadId = position.spreadPanel.instanceStateId;
+        } else {
+            spreadId = 'undefined';
         }
 
-        if (!this.positionStates[position.row][position.column]) {
-            this.positionStates[position.row][position.column] = {};
+        if (!states[spreadId]) {
+            states[spreadId] = {};
+        }
+
+        // Prepare
+        if (!states[spreadId][position.row]) {
+            states[spreadId][position.row] = {};
+        }
+
+        if (!states[spreadId][position.row][position.column]) {
+            states[spreadId][position.row][position.column] = {};
         }
 
         // Set value
-        this.positionStates[position.row][position.column][name] = value;
+        states[spreadId][position.row][position.column][name] = value;
 
         // Persist it in DOM for faster rendering algorithms/lookup
         /*
@@ -3980,14 +4003,27 @@ Ext.define('Spread.util.State', {
 
     getPositionState: function(position, name) {
 
-        if (!this.positionStates[position.row]) {
+        var spreadId,
+            states = this.positionStates;
+
+        if (position.spreadPanel) {
+            spreadId = position.spreadPanel.instanceStateId;
+        } else {
+            spreadId = 'undefined';
+        }
+
+        if (!states[spreadId]) {
             return undefined;
         }
 
-        if (!this.positionStates[position.row][position.column]) {
+        if (!states[spreadId][position.row]) {
             return undefined;
         }
-        return this.positionStates[position.row][position.column][name];
+
+        if (!states[spreadId][position.row][position.column]) {
+            return undefined;
+        }
+        return states[spreadId][position.row][position.column][name];
     }
 });
 /**
