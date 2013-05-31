@@ -927,7 +927,6 @@ Ext.define('Spread.grid.Panel', {
      * Re-Initializes editable setting of columns after reconfigure() has been called.
      * @return void
      */
-    /*
     reconfigure: function() {
 
         var ret = this.callOverridden(arguments);
@@ -937,7 +936,7 @@ Ext.define('Spread.grid.Panel', {
         }
         return ret;
     },
-    */
+
     /**
      * Enables/Disables the edit mode styling on the whole grid
      * @param {Boolean} editModeStyling Allow edit mode styling?
