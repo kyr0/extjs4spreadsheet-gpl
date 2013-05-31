@@ -23,6 +23,7 @@
     background-image: url("dirty.gif");
     background-position: 0 0;
     background-repeat: no-repeat;
+    height: 18px;
 }
 
 .spreadsheet-view-default {

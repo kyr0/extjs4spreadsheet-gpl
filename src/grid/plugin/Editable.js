@@ -573,10 +573,13 @@ Ext.define('Spread.grid.plugin.Editable', {
 
             if (Spread.util.Key.isDelKey(evt) && !me.isEditing) {
 
-                var clearRangePlugin = me.getSpreadPanel().getPlugin('Spread.grid.plugin.ClearRange');
+                if (me.isPositionEditable()) {
 
-                if (clearRangePlugin) {
-                    clearRangePlugin.clearCurrentFocusPosition();
+                    var clearRangePlugin = me.getSpreadPanel().getPlugin('Spread.grid.plugin.ClearRange');
+
+                    if (clearRangePlugin) {
+                        clearRangePlugin.clearCurrentFocusPosition();
+                    }
                 }
             }
 
@@ -634,7 +637,7 @@ Ext.define('Spread.grid.plugin.Editable', {
 
         // Check for column to be editable or not
         if ((me.activePosition && !me.activePosition.columnHeader.editable) ||
-            !me.editable) {
+            !me.editable || !me.activePosition.isEditable()) {
 
             //console.log('!this.activePosition.columnHeader.editable || !this.editable', !this.activePosition.columnHeader.editable, !this.editable)
             return false;
@@ -813,7 +816,9 @@ Ext.define('Spread.grid.plugin.Editable', {
 
         var me = this, view = me.getView(), viewCells = view.getEl().query(
             view.cellSelector
-        ), viewColumns = view.getHeaderCt().getGridColumns();
+        ), viewColumns = view.getHeaderCt().getGridColumns(),
+        columnCount = viewColumns.length,
+        displayCellEditing = true, row, displayCellEditingState;
 
         if (Ext.isIE6 || Ext.isIE7 || Ext.isIE8) {
             me.chunkRenderDelay = 0.3;
@@ -825,6 +830,24 @@ Ext.define('Spread.grid.plugin.Editable', {
 
             for (var i=startIdx; i<stopIdx; i++) {
 
+                // Evaluate cell edit mode displaying
+                displayCellEditing = true;
+
+                if (viewCells[i]) {
+
+                    // Calculate row index from cell index/column count
+                    row = Math.floor(i/columnCount);
+
+                    displayCellEditingState = Spread.util.State.getPositionState({
+                        row: row,
+                        column: viewCells[i].cellIndex
+                    }, 'editmodestyling');
+
+                    if (Ext.isDefined(displayCellEditingState)) {
+                        displayCellEditing = displayCellEditingState;
+                    }
+                }
+
                 // Jump-over non-exiting AND non-editable cells (of non-editable columns) AND
                 // when a column should be inked which has an implicit editModeStyling=false flag!
                 if (!viewCells[i] ||
@@ -834,7 +857,7 @@ Ext.define('Spread.grid.plugin.Editable', {
                     continue;
                 }
 
-                if (displayEditing) {
+                if (displayEditing && displayCellEditing) {
 
                     // Add css class
                     if (!Ext.fly(viewCells[i]).hasCls(me.editableCellCls)) {

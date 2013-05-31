@@ -19,6 +19,17 @@ Ext.define('Spread.command.Commander', {
     },
 
     /**
+     * Simply redraws the edit mode styling.
+     * Call this method if you have changed some
+     * row/position/column edit mode styling settings using this API.
+     * @return void
+     */
+    redrawEditModeStyling: function() {
+        var speadView = spreadPanel.getView();
+        speadView.editable.displayCellsEditing(speadView.editable.editModeStyling);
+    },
+
+    /**
      * Returns a position to work on
      * @param {Number} columnIndex Column index
      * @param {Number} rowIndex Row index
@@ -279,6 +290,7 @@ Ext.define('Spread.command.Commander', {
         return this;
     },
 
+
     /**
      * Sets the position editable
      * @param {Number} columnIndex Cell index
@@ -287,10 +299,12 @@ Ext.define('Spread.command.Commander', {
      * @return {Spread.command.Commander}
      */
     setPositionEditable: function(columnIndex, rowIndex, editable) {
-        return this.setPositionsEditable([{
-            row: rowIndex,
-            column: columnIndex
-        }], editable);
+        new Spread.selection.Position(
+            this.spreadPanel.getView(),
+            columnIndex,
+            rowIndex
+        ).validate().setEditable(editable);
+        return this;
     },
 
     /**
@@ -356,10 +370,12 @@ Ext.define('Spread.command.Commander', {
      * @return {Spread.command.Commander}
      */
     setPositionSelectable: function(columnIndex, rowIndex, selectable) {
-        return this.setPositionsSelectable([{
-            row: rowIndex,
-            column: columnIndex
-        }], selectable);
+        new Spread.selection.Position(
+            this.spreadPanel.getView(),
+            columnIndex,
+            rowIndex
+        ).validate().setSelectable(selectable);
+        return this;
     },
 
     /**

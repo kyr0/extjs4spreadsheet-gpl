@@ -1,4 +1,99 @@
 /**
+ * @class Spread.overrides.Column
+ * @overrides Ext.grid.column.Column
+ * Overrides to the standard gird column to implement spreadsheet-specific features.
+ */
+Ext.define('Spread.overrides.Column', {
+
+    override: 'Ext.grid.column.Column',
+
+    initialPanelEditModeStyling: false,
+
+    /**
+     * @cfg {Boolean} selectable
+     * If a column is configured as header column, the values aren't selectable nor focusable
+     */
+    selectable: true,
+
+    /**
+     * @cfg {Boolean} editable
+     * If the column is editable, the edit fields gets active on key type-in or double-clicking
+     */
+    editable: true,
+
+    /**
+     * @cfg {Boolean} autoCommit
+     * Auto-commit cell data changes on record automatically
+     * (otherwise the data change indicator will be shown and record needs to be commit()'ed manually!
+     */
+    autoCommit: false,
+
+    /**
+     * @cfg {Function} cellwriter
+     * Pre-processor function for cell data write operations - if you want to modify cell data before record update.
+     * (e.g. when edit field gets blur()'ed and updates the record AND when selection paste (ctrl+v) happens,
+     * this function gets called, when it's defined. The return value of this function will be used as new data value.
+     */
+    cellwriter: null,
+
+    /**
+     * @cfg {Function} cellreader
+     * Pre-processor function for cell read operations - if you want to modify cell data while reading from record.
+     * (e.g. when edit field gets active and loads cell data AND when selection copy (ctrl+c) happens,
+     * this function gets called, when it's defined. The return value of this function will be used.
+     */
+    cellreader: null,
+
+    /**
+     * @cfg {Boolean} editModeStyling
+     * If you enable special styles for editable columns they will
+     * be displayed with a special background color and selection color.
+     */
+    editModeStyling: true,
+
+    /**
+     * @cfg {Array} allowedEditKeys
+     * Specifies the allowed keys so that only these keys can be typed into the edit field
+     */
+    allowedEditKeys: [],
+
+    // private
+    initComponent: function() {
+
+        // Handle UI stuff
+        this.initDynamicColumnTdCls();
+
+        // Call parent
+        this.callParent(arguments);
+    },
+
+    /**
+     * @private
+     * Handles cell <td> addition of CSS classes
+     * @return void
+     */
+    initDynamicColumnTdCls: function() {
+
+        if (!this.selectable) {
+
+            // If not selectable, then editing is impossible
+            this.editable = false;
+
+            // Add unselectable class
+            this.tdCls = 'spreadsheet-cell-unselectable';
+        }
+
+        // Check for editable flag and for edit mode styling
+        if (this.editable && this.editModeStyling &&
+            this.initialPanelEditModeStyling) {
+
+            // Add editable class
+            this.tdCls += ' ' + 'spreadsheet-cell-editable';
+        }
+    }
+});
+
+/**
  * @class Spread.command.Commander
  *
  * Class that implements a public command API for a more
@@ -16,6 +111,17 @@ Ext.define('Spread.command.Commander', {
     // private
     constructor: function(config) {
         Ext.apply(this, config);
+    },
+
+    /**
+     * Simply redraws the edit mode styling.
+     * Call this method if you have changed some
+     * row/position/column edit mode styling settings using this API.
+     * @return void
+     */
+    redrawEditModeStyling: function() {
+        var speadView = spreadPanel.getView();
+        speadView.editable.displayCellsEditing(speadView.editable.editModeStyling);
     },
 
     /**
@@ -279,6 +385,7 @@ Ext.define('Spread.command.Commander', {
         return this;
     },
 
+
     /**
      * Sets the position editable
      * @param {Number} columnIndex Cell index
@@ -287,10 +394,12 @@ Ext.define('Spread.command.Commander', {
      * @return {Spread.command.Commander}
      */
     setPositionEditable: function(columnIndex, rowIndex, editable) {
-        return this.setPositionsEditable([{
-            row: rowIndex,
-            column: columnIndex
-        }], editable);
+        new Spread.selection.Position(
+            this.spreadPanel.getView(),
+            columnIndex,
+            rowIndex
+        ).validate().setEditable(editable);
+        return this;
     },
 
     /**
@@ -356,10 +465,12 @@ Ext.define('Spread.command.Commander', {
      * @return {Spread.command.Commander}
      */
     setPositionSelectable: function(columnIndex, rowIndex, selectable) {
-        return this.setPositionsSelectable([{
-            row: rowIndex,
-            column: columnIndex
-        }], selectable);
+        new Spread.selection.Position(
+            this.spreadPanel.getView(),
+            columnIndex,
+            rowIndex
+        ).validate().setSelectable(selectable);
+        return this;
     },
 
     /**
@@ -861,9 +972,9 @@ Ext.define('Spread.command.Commander', {
  */
 Ext.define('Spread.grid.Panel', {
 
-    extend: 'Ext.grid.Panel',
+    extend:  Ext.grid.Panel ,
 
-    requires: ['Spread.command.Commander'],
+                                           
 
     alias: 'widget.spread',
 
@@ -1410,7 +1521,7 @@ Ext.define('Spread.grid.Panel', {
  */
 Ext.define('Spread.grid.View', {
 
-    extend: 'Ext.grid.View',
+    extend:  Ext.grid.View ,
 
     alias: 'widget.spreadview',
 
@@ -1983,7 +2094,7 @@ Ext.define('Spread.grid.View', {
  */
 Ext.define('Spread.grid.column.Header', {
 
-    extend: 'Ext.grid.RowNumberer',
+    extend:  Ext.grid.RowNumberer ,
 
     alias: 'widget.spreadheadercolumn',
 
@@ -2041,108 +2152,13 @@ Ext.define('Spread.grid.column.Header', {
     }
 });
 /**
- * @class Spread.overrides.Column
- * @overrides Ext.grid.column.Column
- * Overrides to the standard gird column to implement spreadsheet-specific features.
- */
-Ext.define('Spread.overrides.Column', {
-
-    override: 'Ext.grid.column.Column',
-
-    initialPanelEditModeStyling: false,
-
-    /**
-     * @cfg {Boolean} selectable
-     * If a column is configured as header column, the values aren't selectable nor focusable
-     */
-    selectable: true,
-
-    /**
-     * @cfg {Boolean} editable
-     * If the column is editable, the edit fields gets active on key type-in or double-clicking
-     */
-    editable: true,
-
-    /**
-     * @cfg {Boolean} autoCommit
-     * Auto-commit cell data changes on record automatically
-     * (otherwise the data change indicator will be shown and record needs to be commit()'ed manually!
-     */
-    autoCommit: false,
-
-    /**
-     * @cfg {Function} cellwriter
-     * Pre-processor function for cell data write operations - if you want to modify cell data before record update.
-     * (e.g. when edit field gets blur()'ed and updates the record AND when selection paste (ctrl+v) happens,
-     * this function gets called, when it's defined. The return value of this function will be used as new data value.
-     */
-    cellwriter: null,
-
-    /**
-     * @cfg {Function} cellreader
-     * Pre-processor function for cell read operations - if you want to modify cell data while reading from record.
-     * (e.g. when edit field gets active and loads cell data AND when selection copy (ctrl+c) happens,
-     * this function gets called, when it's defined. The return value of this function will be used.
-     */
-    cellreader: null,
-
-    /**
-     * @cfg {Boolean} editModeStyling
-     * If you enable special styles for editable columns they will
-     * be displayed with a special background color and selection color.
-     */
-    editModeStyling: true,
-
-    /**
-     * @cfg {Array} allowedEditKeys
-     * Specifies the allowed keys so that only these keys can be typed into the edit field
-     */
-    allowedEditKeys: [],
-
-    // private
-    initComponent: function() {
-
-        // Handle UI stuff
-        this.initDynamicColumnTdCls();
-
-        // Call parent
-        this.callParent(arguments);
-    },
-
-    /**
-     * @private
-     * Handles cell <td> addition of CSS classes
-     * @return void
-     */
-    initDynamicColumnTdCls: function() {
-
-        if (!this.selectable) {
-
-            // If not selectable, then editing is impossible
-            this.editable = false;
-
-            // Add unselectable class
-            this.tdCls = 'spreadsheet-cell-unselectable';
-        }
-
-        // Check for editable flag and for edit mode styling
-        if (this.editable && this.editModeStyling &&
-            this.initialPanelEditModeStyling) {
-
-            // Add editable class
-            this.tdCls += ' ' + 'spreadsheet-cell-editable';
-        }
-    }
-});
-
-/**
  * @class Spread.grid.plugin.AbstractPlugin
  * @private
  * Abstract plugin implementation
  */
 Ext.define('Spread.grid.plugin.AbstractPlugin', {
 
-    extend: 'Ext.AbstractComponent',
+    extend:  Ext.AbstractComponent ,
 
     alias: 'abstract',
 
@@ -2197,9 +2213,9 @@ Ext.define('Spread.grid.plugin.AbstractPlugin', {
  */
 Ext.define('Spread.grid.plugin.ClearRange', {
 
-    extend: 'Spread.grid.plugin.AbstractPlugin',
+    extend:  Spread.grid.plugin.AbstractPlugin ,
 
-    requires: ['Spread.grid.plugin.AbstractPlugin'],
+                                                    
 
     alias: 'clearrange',
 
@@ -2579,14 +2595,14 @@ Ext.define('Spread.util.Clipping', {
  */
 Ext.define('Spread.grid.plugin.Copyable', {
 
-    extend: 'Spread.grid.plugin.AbstractPlugin',
+    extend:  Spread.grid.plugin.AbstractPlugin ,
 
-    requires: ['Spread.grid.plugin.AbstractPlugin'],
+                                                    
 
     alias: 'copyable',
 
     mixins: {
-        clipping: 'Spread.util.Clipping'
+        clipping:  Spread.util.Clipping 
     },
 
     /**
@@ -2700,9 +2716,9 @@ Ext.define('Spread.grid.plugin.Copyable', {
  */
 Ext.define('Spread.grid.plugin.Editable', {
 
-    extend: 'Spread.grid.plugin.AbstractPlugin',
+    extend:  Spread.grid.plugin.AbstractPlugin ,
 
-    requires: ['Spread.grid.plugin.AbstractPlugin'],
+                                                    
 
     alias: 'editable',
 
@@ -3266,10 +3282,13 @@ Ext.define('Spread.grid.plugin.Editable', {
 
             if (Spread.util.Key.isDelKey(evt) && !me.isEditing) {
 
-                var clearRangePlugin = me.getSpreadPanel().getPlugin('Spread.grid.plugin.ClearRange');
+                if (me.isPositionEditable()) {
 
-                if (clearRangePlugin) {
-                    clearRangePlugin.clearCurrentFocusPosition();
+                    var clearRangePlugin = me.getSpreadPanel().getPlugin('Spread.grid.plugin.ClearRange');
+
+                    if (clearRangePlugin) {
+                        clearRangePlugin.clearCurrentFocusPosition();
+                    }
                 }
             }
 
@@ -3327,7 +3346,7 @@ Ext.define('Spread.grid.plugin.Editable', {
 
         // Check for column to be editable or not
         if ((me.activePosition && !me.activePosition.columnHeader.editable) ||
-            !me.editable) {
+            !me.editable || !me.activePosition.isEditable()) {
 
             //console.log('!this.activePosition.columnHeader.editable || !this.editable', !this.activePosition.columnHeader.editable, !this.editable)
             return false;
@@ -3506,7 +3525,9 @@ Ext.define('Spread.grid.plugin.Editable', {
 
         var me = this, view = me.getView(), viewCells = view.getEl().query(
             view.cellSelector
-        ), viewColumns = view.getHeaderCt().getGridColumns();
+        ), viewColumns = view.getHeaderCt().getGridColumns(),
+        columnCount = viewColumns.length,
+        displayCellEditing = true, row, displayCellEditingState;
 
         if (Ext.isIE6 || Ext.isIE7 || Ext.isIE8) {
             me.chunkRenderDelay = 0.3;
@@ -3518,6 +3539,24 @@ Ext.define('Spread.grid.plugin.Editable', {
 
             for (var i=startIdx; i<stopIdx; i++) {
 
+                // Evaluate cell edit mode displaying
+                displayCellEditing = true;
+
+                if (viewCells[i]) {
+
+                    // Calculate row index from cell index/column count
+                    row = Math.floor(i/columnCount);
+
+                    displayCellEditingState = Spread.util.State.getPositionState({
+                        row: row,
+                        column: viewCells[i].cellIndex
+                    }, 'editmodestyling');
+
+                    if (Ext.isDefined(displayCellEditingState)) {
+                        displayCellEditing = displayCellEditingState;
+                    }
+                }
+
                 // Jump-over non-exiting AND non-editable cells (of non-editable columns) AND
                 // when a column should be inked which has an implicit editModeStyling=false flag!
                 if (!viewCells[i] ||
@@ -3527,7 +3566,7 @@ Ext.define('Spread.grid.plugin.Editable', {
                     continue;
                 }
 
-                if (displayEditing) {
+                if (displayEditing && displayCellEditing) {
 
                     // Add css class
                     if (!Ext.fly(viewCells[i]).hasCls(me.editableCellCls)) {
@@ -3579,14 +3618,14 @@ Ext.define('Spread.grid.plugin.Editable', {
  */
 Ext.define('Spread.grid.plugin.Pasteable', {
 
-    extend: 'Spread.grid.plugin.AbstractPlugin',
+    extend:  Spread.grid.plugin.AbstractPlugin ,
 
-    requires: ['Spread.grid.plugin.AbstractPlugin'],
+                                                    
 
     alias: 'pasteable',
 
     mixins: {
-        clipping: 'Spread.util.Clipping'
+        clipping:  Spread.util.Clipping 
     },
 
     /**
@@ -3908,6 +3947,50 @@ Ext.define('Spread.grid.plugin.Pasteable', {
     }
 });
 /**
+ * @class Spread.util.State
+ * @singleton
+ */
+Ext.define('Spread.util.State', {
+
+    singleton: true,
+
+    positionStates: {},
+
+    setPositionState: function(position, name, value) {
+
+        // Prepare
+        if (!this.positionStates[position.row]) {
+            this.positionStates[position.row] = {};
+        }
+
+        if (!this.positionStates[position.row][position.column]) {
+            this.positionStates[position.row][position.column] = {};
+        }
+
+        // Set value
+        this.positionStates[position.row][position.column][name] = value;
+
+        // Persist it in DOM for faster rendering algorithms/lookup
+        /*
+        if (position.cellEl) {
+            position.cellEl['data-spread-cell-' + name] = String(value);
+        }
+        */
+    },
+
+    getPositionState: function(position, name) {
+
+        if (!this.positionStates[position.row]) {
+            return undefined;
+        }
+
+        if (!this.positionStates[position.row][position.column]) {
+            return undefined;
+        }
+        return this.positionStates[position.row][position.column][name];
+    }
+});
+/**
  * @class Spread.selection.Position
  *
  * Class for representing a position in the grid view / selection model.
@@ -3931,6 +4014,8 @@ Ext.define('Spread.grid.plugin.Pasteable', {
  * references to be valid.
  */
 Ext.define('Spread.selection.Position', {
+
+                                    
 
     /**
      * @property {Spread.selection.Range} range
@@ -4000,7 +4085,7 @@ Ext.define('Spread.selection.Position', {
      * @property {Boolean} editable
      * Indicator flag describing if the position is editable
      */
-    editable: false,
+    editable: true,
 
     /**
      * @property {Boolean} selectable
@@ -4078,6 +4163,30 @@ Ext.define('Spread.selection.Position', {
             model = record.self;
         }
 
+        // State data: editable
+        var editableState = Spread.util.State.getPositionState(this, 'editable');
+        if (Ext.isDefined(editableState)) {
+            this.editable = editableState;
+        } else {
+            Spread.util.State.setPositionState(this, 'editable', this.editable);
+        }
+
+        // State data: editmodestyling
+        var editModeStylingState = Spread.util.State.getPositionState(this, 'editmodestyling');
+        if (Ext.isDefined(editModeStylingState)) {
+            this.editModeStyling = editModeStylingState;
+        } else {
+            Spread.util.State.setPositionState(this, 'editmodestyling', this.editModeStyling);
+        }
+
+        // State data: selectable
+        var selectableState = Spread.util.State.getPositionState(this, 'selectable');
+        if (Ext.isDefined(selectableState)) {
+            this.selectable = selectableState;
+        } else {
+            Spread.util.State.setPositionState(this, 'selectable', this.selectable);
+        }
+
         //console.log('TRY FETCH ROW td', rowEl);
         //console.log('TRY FETCH CELL td', cellEl);
 
@@ -4119,6 +4228,24 @@ Ext.define('Spread.selection.Position', {
 
         if (this.rowEl) {
             this.cellEl = this.rowEl.childNodes[this.column];
+        }
+
+        // State data: editable
+        var editableState = Spread.util.State.getPositionState(this, 'editable');
+        if (Ext.isDefined(editableState)) {
+            this.editable = editableState;
+        }
+
+        // State data: editmodestyling
+        var editModeStylingState = Spread.util.State.getPositionState(this, 'editmodestyling');
+        if (Ext.isDefined(editModeStylingState)) {
+            this.editModeStyling = editModeStylingState;
+        }
+
+        // State data: selectable
+        var selectableState = Spread.util.State.getPositionState(this, 'selectable');
+        if (Ext.isDefined(selectableState)) {
+            this.selectable = selectableState;
         }
 
         //console.log('Position update()ed ', this);
@@ -4350,10 +4477,9 @@ Ext.define('Spread.selection.Position', {
 
         this.editable = editable;
 
-        if (!Ext.isDefined(suppressNotify)) {
-            // TODO: Inform plugin
-            //console.log('unimplemented');
-        }
+        // Store in state manager for multi-instance flag broadcasting
+        Spread.util.State.setPositionState(this, 'editable', editable);
+
         return this;
     },
 
@@ -4363,6 +4489,11 @@ Ext.define('Spread.selection.Position', {
      * @return {Boolean}
      */
     isEditable: function() {
+
+        var editableState = Spread.util.State.getPositionState(this, 'editable');
+        if (Ext.isDefined(editableState)) {
+            this.editable = editableState;
+        }
 
         if (this.getColumn().editable && this.editable) {
             return true;
@@ -4409,12 +4540,11 @@ Ext.define('Spread.selection.Position', {
 
         this.selectable = selectable;
 
+        // Store in state manager for multi-instance flag broadcasting
+        Spread.util.State.setPositionState(this, 'selectable', selectable);
+
         //console.log('setSelectable', this.row, this.column, selectable);
 
-        if (!Ext.isDefined(suppressNotify)) {
-            // TODO: Inform plugin
-            //console.log('unimplemented');
-        }
         return this;
     },
 
@@ -4424,6 +4554,11 @@ Ext.define('Spread.selection.Position', {
      * @return {Boolean}
      */
     isSelectable: function() {
+
+        var selectableState = Spread.util.State.getPositionState(this, 'selectable');
+        if (Ext.isDefined(selectableState)) {
+            this.selectable = selectableState;
+        }
 
         if (this.getColumn().selectable && this.selectable) {
             return true;
@@ -4441,10 +4576,9 @@ Ext.define('Spread.selection.Position', {
 
         this.editModeStyling = editModeStyling;
 
-        if (!Ext.isDefined(suppressNotify)) {
-            // TODO: Inform plugin
-            //console.log('unimplemented');
-        }
+        // Store in state manager for multi-instance flag broadcasting
+        Spread.util.State.setPositionState(this, 'editmodestyling', editModeStyling);
+
         return this;
     },
 
@@ -4453,6 +4587,11 @@ Ext.define('Spread.selection.Position', {
      * @return {Boolean}
      */
     hasEditModeStyling: function() {
+
+        var editModeStylingState = Spread.util.State.getPositionState(this, 'editmodestyling');
+        if (Ext.isDefined(editModeStylingState)) {
+            this.editModeStyling = editModeStylingState;
+        }
         return this.editModeStyling;
     },
 
@@ -4964,14 +5103,12 @@ Ext.define('Spread.selection.Range', {
  *
  * Using the interceptable eventing of this selection model, it's possible
  * to extend the selection and focussing logic.
- *
- * TODO: Select cell on click / key nav -> allows clearing by DEL directly!
  */
 Ext.define('Spread.selection.RangeModel', {
 
-    extend: 'Ext.selection.Model',
+    extend:  Ext.selection.Model ,
 
-    requires: ['Spread.selection.Range'],
+                                         
 
     alias: 'selection.range',
 
