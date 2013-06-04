@@ -5,9 +5,9 @@
  */
 Ext.define('Spread.grid.plugin.AbstractPlugin', {
 
-    extend: 'Ext.AbstractComponent',
+    'extend': 'Ext.AbstractComponent',
 
-    alias: 'abstract',
+    'alias': 'abstract',
 
     /**
      * @property {Spread.grid.View} view

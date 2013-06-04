@@ -7,11 +7,11 @@
  */
 Ext.define('Spread.grid.plugin.Editable', {
 
-    extend: 'Spread.grid.plugin.AbstractPlugin',
+    'extend': 'Spread.grid.plugin.AbstractPlugin',
 
-    requires: ['Spread.grid.plugin.AbstractPlugin'],
+    'requires': ['Spread.grid.plugin.AbstractPlugin'],
 
-    alias: 'editable',
+    'alias': 'editable',
 
     editableColumns: [],
     editableColumnIndexes: [],

@@ -19,9 +19,9 @@
  */
 Ext.define('Spread.selection.RangeModel', {
 
-    extend: 'Ext.selection.Model',
+    'extend': 'Ext.selection.Model',
 
-    requires: ['Spread.selection.Range'],
+    'requires': ['Spread.selection.Range'],
 
     alias: 'selection.range',
 

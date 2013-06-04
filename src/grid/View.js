@@ -9,9 +9,9 @@
  */
 Ext.define('Spread.grid.View', {
 
-    extend: 'Ext.grid.View',
+    'extend': 'Ext.grid.View',
 
-    alias: 'widget.spreadview',
+    'alias': 'widget.spreadview',
 
     stripeRows: false,
     trackOver: false,

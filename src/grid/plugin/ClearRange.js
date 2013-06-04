@@ -5,11 +5,11 @@
  */
 Ext.define('Spread.grid.plugin.ClearRange', {
 
-    extend: 'Spread.grid.plugin.AbstractPlugin',
+    'extend': 'Spread.grid.plugin.AbstractPlugin',
 
-    requires: ['Spread.grid.plugin.AbstractPlugin'],
+    'requires': ['Spread.grid.plugin.AbstractPlugin'],
 
-    alias: 'clearrange',
+    'alias': 'clearrange',
 
     /**
      * @cfg {Boolean}

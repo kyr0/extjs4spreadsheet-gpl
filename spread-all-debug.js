@@ -5,7 +5,7 @@
  */
 Ext.define('Spread.overrides.Column', {
 
-    override: 'Ext.grid.column.Column',
+    'override': 'Ext.grid.column.Column',
 
     initialPanelEditModeStyling: false,
 
@@ -972,11 +972,11 @@ Ext.define('Spread.command.Commander', {
  */
 Ext.define('Spread.grid.Panel', {
 
-    extend:  Ext.grid.Panel ,
+    'extend':  Ext.grid.Panel ,
 
-                                           
+                                             
 
-    alias: 'widget.spread',
+    'alias': 'widget.spread',
 
     viewType: 'spreadview',
     closeAction: 'destroy',
@@ -1530,9 +1530,9 @@ Ext.define('Spread.grid.Panel', {
  */
 Ext.define('Spread.grid.View', {
 
-    extend:  Ext.grid.View ,
+    'extend':  Ext.grid.View ,
 
-    alias: 'widget.spreadview',
+    'alias': 'widget.spreadview',
 
     stripeRows: false,
     trackOver: false,
@@ -2103,9 +2103,9 @@ Ext.define('Spread.grid.View', {
  */
 Ext.define('Spread.grid.column.Header', {
 
-    extend:  Ext.grid.RowNumberer ,
+    'extend':  Ext.grid.RowNumberer ,
 
-    alias: 'widget.spreadheadercolumn',
+    'alias': 'widget.spreadheadercolumn',
 
     resizable: true,
 
@@ -2167,9 +2167,9 @@ Ext.define('Spread.grid.column.Header', {
  */
 Ext.define('Spread.grid.plugin.AbstractPlugin', {
 
-    extend:  Ext.AbstractComponent ,
+    'extend':  Ext.AbstractComponent ,
 
-    alias: 'abstract',
+    'alias': 'abstract',
 
     /**
      * @property {Spread.grid.View} view
@@ -2222,11 +2222,11 @@ Ext.define('Spread.grid.plugin.AbstractPlugin', {
  */
 Ext.define('Spread.grid.plugin.ClearRange', {
 
-    extend:  Spread.grid.plugin.AbstractPlugin ,
+    'extend':  Spread.grid.plugin.AbstractPlugin ,
 
-                                                    
+                                                      
 
-    alias: 'clearrange',
+    'alias': 'clearrange',
 
     /**
      * @cfg {Boolean}
@@ -2604,13 +2604,13 @@ Ext.define('Spread.util.Clipping', {
  */
 Ext.define('Spread.grid.plugin.Copyable', {
 
-    extend:  Spread.grid.plugin.AbstractPlugin ,
+    'extend':  Spread.grid.plugin.AbstractPlugin ,
 
-                                                    
+                                                      
 
-    alias: 'copyable',
+    'alias': 'copyable',
 
-    mixins: {
+    'mixins': {
         clipping:  Spread.util.Clipping 
     },
 
@@ -2725,11 +2725,11 @@ Ext.define('Spread.grid.plugin.Copyable', {
  */
 Ext.define('Spread.grid.plugin.Editable', {
 
-    extend:  Spread.grid.plugin.AbstractPlugin ,
+    'extend':  Spread.grid.plugin.AbstractPlugin ,
 
-                                                    
+                                                      
 
-    alias: 'editable',
+    'alias': 'editable',
 
     editableColumns: [],
     editableColumnIndexes: [],
@@ -3628,13 +3628,13 @@ Ext.define('Spread.grid.plugin.Editable', {
  */
 Ext.define('Spread.grid.plugin.Pasteable', {
 
-    extend:  Spread.grid.plugin.AbstractPlugin ,
+    'extend':  Spread.grid.plugin.AbstractPlugin ,
 
-                                                    
+                                                      
 
-    alias: 'pasteable',
+    'alias': 'pasteable',
 
-    mixins: {
+    'mixins': {
         clipping:  Spread.util.Clipping 
     },
 
@@ -4051,7 +4051,7 @@ Ext.define('Spread.util.State', {
  */
 Ext.define('Spread.selection.Position', {
 
-                                    
+                                      
 
     /**
      * @property {Spread.selection.Range} range
@@ -5142,9 +5142,9 @@ Ext.define('Spread.selection.Range', {
  */
 Ext.define('Spread.selection.RangeModel', {
 
-    extend:  Ext.selection.Model ,
+    'extend':  Ext.selection.Model ,
 
-                                         
+                                           
 
     alias: 'selection.range',
 

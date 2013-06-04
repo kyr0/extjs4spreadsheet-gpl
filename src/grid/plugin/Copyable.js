@@ -6,13 +6,13 @@
  */
 Ext.define('Spread.grid.plugin.Copyable', {
 
-    extend: 'Spread.grid.plugin.AbstractPlugin',
+    'extend': 'Spread.grid.plugin.AbstractPlugin',
 
-    requires: ['Spread.grid.plugin.AbstractPlugin'],
+    'requires': ['Spread.grid.plugin.AbstractPlugin'],
 
-    alias: 'copyable',
+    'alias': 'copyable',
 
-    mixins: {
+    'mixins': {
         clipping: 'Spread.util.Clipping'
     },
 

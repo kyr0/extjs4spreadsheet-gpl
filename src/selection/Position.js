@@ -23,7 +23,7 @@
  */
 Ext.define('Spread.selection.Position', {
 
-    requires: ['Spread.util.State'],
+    'requires': ['Spread.util.State'],
 
     /**
      * @property {Spread.selection.Range} range

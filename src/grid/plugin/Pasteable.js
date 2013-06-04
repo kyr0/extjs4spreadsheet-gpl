@@ -7,13 +7,13 @@
  */
 Ext.define('Spread.grid.plugin.Pasteable', {
 
-    extend: 'Spread.grid.plugin.AbstractPlugin',
+    'extend': 'Spread.grid.plugin.AbstractPlugin',
 
-    requires: ['Spread.grid.plugin.AbstractPlugin'],
+    'requires': ['Spread.grid.plugin.AbstractPlugin'],
 
-    alias: 'pasteable',
+    'alias': 'pasteable',
 
-    mixins: {
+    'mixins': {
         clipping: 'Spread.util.Clipping'
     },
 

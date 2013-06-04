@@ -6,9 +6,9 @@
  */
 Ext.define('Spread.grid.column.Header', {
 
-    extend: 'Ext.grid.RowNumberer',
+    'extend': 'Ext.grid.RowNumberer',
 
-    alias: 'widget.spreadheadercolumn',
+    'alias': 'widget.spreadheadercolumn',
 
     resizable: true,
 

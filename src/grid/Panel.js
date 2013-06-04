@@ -442,11 +442,11 @@
  */
 Ext.define('Spread.grid.Panel', {
 
-    extend: 'Ext.grid.Panel',
+    'extend': 'Ext.grid.Panel',
 
-    requires: ['Spread.command.Commander'],
+    'requires': ['Spread.command.Commander'],
 
-    alias: 'widget.spread',
+    'alias': 'widget.spread',
 
     viewType: 'spreadview',
     closeAction: 'destroy',

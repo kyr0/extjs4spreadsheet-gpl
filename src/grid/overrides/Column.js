@@ -5,7 +5,7 @@
  */
 Ext.define('Spread.overrides.Column', {
 
-    override: 'Ext.grid.column.Column',
+    'override': 'Ext.grid.column.Column',
 
     initialPanelEditModeStyling: false,
 
