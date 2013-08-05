@@ -389,12 +389,14 @@ Ext.define('Spread.selection.Position', {
 
         if (useInternalAPIs) {
 
-            ret = me.record[
-                me.record.persistenceProperty
-            ][fieldName] = newValue;
+            // Set specific modified field value
+            me.record.modified[fieldName] = newValue;
 
             // Set record dirty
-            me.record.setDirty();
+            me.record.dirty = true;
+
+            // Set specific field's value
+            ret = me.record[me.record.persistenceProperty][fieldName] = newValue;
 
         } else {
 
