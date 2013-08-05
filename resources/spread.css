@@ -27,11 +27,14 @@
 }
 
 .spreadsheet-view-default {
-    position: absolute;
+    /* Commenting out fixed issue #32; Need to test against older IE! */
+    /* position: absolute; */
 }
 
+/*
 .x-grid-row {
 }
+*/
 
 .spreadsheet-view-default .x-grid-cell-header {
     cursor: default !important;

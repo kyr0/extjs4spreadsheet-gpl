@@ -244,7 +244,7 @@ Ext.define('Spread.selection.RangeModel', {
 
         // Catch the view's cell dbl click event
         me.view.on({
-            uievent: me.onUIEvent,
+            cellmouseevents: me.onCellMouseEvents,
             refresh: me.onViewRefresh,
             scope: me
         });
@@ -412,25 +412,17 @@ Ext.define('Spread.selection.RangeModel', {
 
     /**
      * @protected
-     * UI Event processing
-     * @param {String} type UI Event type (e.g. 'mousedown')
-     * @param {Spread.grid.View} view Spread view instance reference
-     * @param {HTMLElement} cell Cell HTML element reference (<td>)
-     * @param {Number} rowIndex Row index
-     * @param {Number} cellIndex Cell index
-     * @param {Ext.EventObject} evt Event instance
-     * @param {Ext.data.Model} record Data record instance
-     * @param {HTMLElement} row Row HTML element reference (<tr>)
-     * @return void
+     * Cell mouse event processing
      */
-    onUIEvent: function(type, view, cell, rowIndex, cellIndex, evt, record, row) {
+    onCellMouseEvents: function(type, view, cell, rowIndex, cellIndex, evt, record, row) {
 
-        //console.log('uievent', type);
         var me = this, args = arguments;
 
         switch(type) {
 
             case "mouseover":
+
+                // type, view, cell, rowIndex, cellIndex, evt, record, row
                 me.onCellMouseOver.apply(me, args);
                 break;
 
@@ -520,8 +512,6 @@ Ext.define('Spread.selection.RangeModel', {
         // When range selection is happening,
         // it's of interest to select responsive
         if (this.mayRangeSelecting) {
-
-            //console.log('cell mouse over', arguments);
 
             // Set last position
             if (
@@ -868,7 +858,6 @@ Ext.define('Spread.selection.RangeModel', {
         */
 
         var rowCount = this.view.getStore().getCount(),
-            columnCount = this.view.headerCt.getGridColumns(true).length,
             originRow = this.getOriginSelectionPosition().row,
             focusRow = this.getCurrentFocusPosition().row,
             originColumn = this.getOriginSelectionPosition().column,
@@ -877,6 +866,12 @@ Ext.define('Spread.selection.RangeModel', {
             columnIndexes = [],
             selectedPositions = [],
             selPosition = null;
+
+        if (Ext.versions.extjs.major === 4 && Ext.versions.extjs.minor < 2) {
+            var columnCount = this.view.headerCt.getGridColumns(true).length;
+        } else {
+            var columnCount = this.view.getGridColumns().length;
+        }
 
         // Interpolate selected row indexes
         if (focusRow <= originRow) {

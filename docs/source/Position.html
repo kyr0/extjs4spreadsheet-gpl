@@ -40,6 +40,8 @@
  */
 Ext.define('Spread.selection.Position', {
 
+    'requires': ['Spread.util.State'],
+
 <span id='Spread-selection-Position-property-range'>    /**
 </span>     * @property {Spread.selection.Range} range
      * Stores the reference of the range this position belongs to (Only if it does belong to any range!)
@@ -108,7 +110,7 @@ Ext.define('Spread.selection.Position', {
 </span>     * @property {Boolean} editable
      * Indicator flag describing if the position is editable
      */
-    editable: false,
+    editable: true,
 
 <span id='Spread-selection-Position-property-selectable'>    /**
 </span>     * @property {Boolean} selectable
@@ -150,15 +152,18 @@ Ext.define('Spread.selection.Position', {
      * @param {Ext.data.Model} [record=auto-detect] Data record instance
      * @param {HTMLElement} [rowEl=auto-detect] Row's HTML element (tr-element)
      * @param {HTMLElement} [cellEl=auto-detect] Cell's HTML element (td-element)
-     * @return {Object}
+     * @return
      */
     constructor: function(view, columnIndex, rowIndex, record, rowEl, cellEl) {
 
-        //console.log('instantiation of Position', arguments);
-
         // Correct row and column index if outside of possible grid boundings
-        var maxRowCount = view.getStore().getCount(),
-            maxColumnCount = view.headerCt.getGridColumns(true).length;
+        var maxRowCount = view.getStore().getCount();
+
+        if (Ext.versions.extjs.major === 4 &amp;&amp; Ext.versions.extjs.minor &lt; 2) {
+            var maxColumnCount = view.headerCt.getGridColumns(true).length;
+        } else {
+            var maxColumnCount = view.getGridColumns().length;
+        }
 
         // Column boundary protection
         if (columnIndex &gt;= maxColumnCount) {
@@ -184,6 +189,30 @@ Ext.define('Spread.selection.Position', {
         // If record was given or detected, map it's model reference
         if (record) {
             model = record.self;
+        }
+
+        // State data: editable
+        var editableState = Spread.util.State.getPositionState(this, 'editable');
+        if (Ext.isDefined(editableState)) {
+            this.editable = editableState;
+        } else {
+            Spread.util.State.setPositionState(this, 'editable', this.editable);
+        }
+
+        // State data: editmodestyling
+        var editModeStylingState = Spread.util.State.getPositionState(this, 'editmodestyling');
+        if (Ext.isDefined(editModeStylingState)) {
+            this.editModeStyling = editModeStylingState;
+        } else {
+            Spread.util.State.setPositionState(this, 'editmodestyling', this.editModeStyling);
+        }
+
+        // State data: selectable
+        var selectableState = Spread.util.State.getPositionState(this, 'selectable');
+        if (Ext.isDefined(selectableState)) {
+            this.selectable = selectableState;
+        } else {
+            Spread.util.State.setPositionState(this, 'selectable', this.selectable);
         }
 
         //console.log('TRY FETCH ROW td', rowEl);
@@ -227,6 +256,24 @@ Ext.define('Spread.selection.Position', {
 
         if (this.rowEl) {
             this.cellEl = this.rowEl.childNodes[this.column];
+        }
+
+        // State data: editable
+        var editableState = Spread.util.State.getPositionState(this, 'editable');
+        if (Ext.isDefined(editableState)) {
+            this.editable = editableState;
+        }
+
+        // State data: editmodestyling
+        var editModeStylingState = Spread.util.State.getPositionState(this, 'editmodestyling');
+        if (Ext.isDefined(editModeStylingState)) {
+            this.editModeStyling = editModeStylingState;
+        }
+
+        // State data: selectable
+        var selectableState = Spread.util.State.getPositionState(this, 'selectable');
+        if (Ext.isDefined(selectableState)) {
+            this.selectable = selectableState;
         }
 
         //console.log('Position update()ed ', this);
@@ -362,12 +409,14 @@ Ext.define('Spread.selection.Position', {
 
         if (useInternalAPIs) {
 
-            ret = me.record[
-                me.record.persistenceProperty
-            ][fieldName] = newValue;
+            // Set specific modified field value
+            me.record.modified[fieldName] = newValue;
 
             // Set record dirty
-            me.record.setDirty();
+            me.record.dirty = true;
+
+            // Set specific field's value
+            ret = me.record[me.record.persistenceProperty][fieldName] = newValue;
 
         } else {
 
@@ -458,10 +507,9 @@ Ext.define('Spread.selection.Position', {
 
         this.editable = editable;
 
-        if (!Ext.isDefined(suppressNotify)) {
-            // TODO: Inform plugin
-            //console.log('unimplemented');
-        }
+        // Store in state manager for multi-instance flag broadcasting
+        Spread.util.State.setPositionState(this, 'editable', editable);
+
         return this;
     },
 
@@ -471,6 +519,11 @@ Ext.define('Spread.selection.Position', {
      * @return {Boolean}
      */
     isEditable: function() {
+
+        var editableState = Spread.util.State.getPositionState(this, 'editable');
+        if (Ext.isDefined(editableState)) {
+            this.editable = editableState;
+        }
 
         if (this.getColumn().editable &amp;&amp; this.editable) {
             return true;
@@ -517,12 +570,11 @@ Ext.define('Spread.selection.Position', {
 
         this.selectable = selectable;
 
+        // Store in state manager for multi-instance flag broadcasting
+        Spread.util.State.setPositionState(this, 'selectable', selectable);
+
         //console.log('setSelectable', this.row, this.column, selectable);
 
-        if (!Ext.isDefined(suppressNotify)) {
-            // TODO: Inform plugin
-            //console.log('unimplemented');
-        }
         return this;
     },
 
@@ -532,6 +584,11 @@ Ext.define('Spread.selection.Position', {
      * @return {Boolean}
      */
     isSelectable: function() {
+
+        var selectableState = Spread.util.State.getPositionState(this, 'selectable');
+        if (Ext.isDefined(selectableState)) {
+            this.selectable = selectableState;
+        }
 
         if (this.getColumn().selectable &amp;&amp; this.selectable) {
             return true;
@@ -549,10 +606,9 @@ Ext.define('Spread.selection.Position', {
 
         this.editModeStyling = editModeStyling;
 
-        if (!Ext.isDefined(suppressNotify)) {
-            // TODO: Inform plugin
-            //console.log('unimplemented');
-        }
+        // Store in state manager for multi-instance flag broadcasting
+        Spread.util.State.setPositionState(this, 'editmodestyling', editModeStyling);
+
         return this;
     },
 
@@ -561,6 +617,11 @@ Ext.define('Spread.selection.Position', {
      * @return {Boolean}
      */
     hasEditModeStyling: function() {
+
+        var editModeStylingState = Spread.util.State.getPositionState(this, 'editmodestyling');
+        if (Ext.isDefined(editModeStylingState)) {
+            this.editModeStyling = editModeStylingState;
+        }
         return this.editModeStyling;
     },
 

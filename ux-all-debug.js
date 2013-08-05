@@ -3,7 +3,7 @@
  */
 Ext.define('Ext.ux.BoxReorderer', {
     mixins: {
-        observable: 'Ext.util.Observable'
+        observable:  Ext.util.Observable 
     },
 
     /**
@@ -404,7 +404,7 @@ Ext.define('Ext.ux.BoxReorderer', {
  * for a column.
  */
 Ext.define('Ext.ux.CheckColumn', {
-    extend: 'Ext.grid.column.Column',
+    extend:  Ext.grid.column.Column ,
     alias: 'widget.checkcolumn',
 
     /**
@@ -838,7 +838,7 @@ Ext.define('Ext.ux.DataView.Animated', {
  * 
  */
 Ext.define('Ext.ux.DataView.DragSelector', {
-    requires: ['Ext.dd.DragTracker', 'Ext.util.Region'],
+                                                        
 
     /**
      * Initializes the plugin by setting up the drag tracker
@@ -1049,7 +1049,7 @@ Ext.create('Ext.view.View', {
  *
  */
 Ext.define('Ext.ux.DataView.Draggable', {
-    requires: 'Ext.dd.DragZone',
+                                
 
     /**
      * @cfg {String} ghostCls The CSS class added to the outermost element of the created ghost proxy
@@ -1233,7 +1233,7 @@ Ext.define('Ext.ux.DataView.Draggable', {
  */
 Ext.define('Ext.ux.DataView.LabelEditor', {
 
-    extend: 'Ext.Editor',
+    extend:  Ext.Editor ,
 
     alignment: 'tl-tl',
 
@@ -1250,9 +1250,9 @@ Ext.define('Ext.ux.DataView.LabelEditor', {
 
     labelSelector: 'x-editable',
 
-    requires: [
-        'Ext.form.field.Text'
-    ],
+               
+                             
+      
 
     constructor: function(config) {
         config.field = config.field || Ext.create('Ext.form.field.Text', {
@@ -1685,11 +1685,11 @@ Ext.define('Ext.ux.FieldReplicator', {
  * @author Shea Frederick
  */
 Ext.define('Ext.ux.GMapPanel', {
-    extend: 'Ext.panel.Panel',
+    extend:  Ext.panel.Panel ,
     
     alias: 'widget.gmappanel',
     
-    requires: ['Ext.window.MessageBox'],
+                                        
     
     initComponent : function(){
         Ext.applyIf(this,{
@@ -1784,7 +1784,7 @@ Ext.define('Ext.ux.GMapPanel', {
  * <p>Paging Memory Proxy, allows to use paging grid with in memory dataset</p>
  */
 Ext.define('Ext.ux.data.PagingMemoryProxy', {
-    extend: 'Ext.data.proxy.Memory',
+    extend:  Ext.data.proxy.Memory ,
     alias: 'proxy.pagingmemory',
     alternateClassName: 'Ext.data.PagingMemoryProxy',
 
@@ -1868,15 +1868,15 @@ Ext.define('Ext.ux.data.PagingMemoryProxy', {
  * A TabPanel with grouping support.
  */
 Ext.define('Ext.ux.GroupTabPanel', {
-    extend: 'Ext.Container',
+    extend:  Ext.Container ,
 
     alias: 'widget.grouptabpanel',
 
-    requires:[
-        'Ext.data.*',
-        'Ext.tree.*',
-        'Ext.layout.*'
-    ],
+              
+                     
+                     
+                      
+      
 
     baseCls : Ext.baseCSSPrefix + 'grouptabpanel',
 
@@ -2205,7 +2205,7 @@ Ext.define('Ext.ux.GroupTabPanel', {
  */
 Ext.define('Ext.ux.GroupTreeChunker', {
     singleton: true,
-    requires: ['Ext.XTemplate'],
+                                
     metaTableTpl: [
         '{%if (this.openTableWrap)out.push(this.openTableWrap())%}',
         '<table class="' + Ext.baseCSSPrefix + 'grid-table-resizer" border="0" cellspacing="0" cellpadding="0" {[this.embedFullWidth(values)]}><tr><td>',
@@ -2330,7 +2330,7 @@ Ext.define('Ext.ux.GroupTreeChunker', {
  * @class Ext.ux.IFrame
  */
 Ext.define('Ext.ux.IFrame', {
-    extend: 'Ext.Component',
+    extend:  Ext.Component ,
 
     alias: 'widget.uxiframe',
 
@@ -2536,10 +2536,10 @@ Ext.define('Ext.ux.IFrame', {
  *
  */
 Ext.define('Ext.ux.statusbar.StatusBar', {
-    extend: 'Ext.toolbar.Toolbar',
+    extend:  Ext.toolbar.Toolbar ,
     alternateClassName: 'Ext.ux.StatusBar',
     alias: 'widget.statusbar',
-    requires: ['Ext.toolbar.TextItem'],
+                                       
     /**
      * @cfg {String} statusAlign
      * The alignment of the status element within the overall StatusBar layout.  When the StatusBar is rendered,
@@ -2905,13 +2905,13 @@ Ext.define('Ext.ux.statusbar.StatusBar', {
  * @author Nicolas Ferrero
  */
 Ext.define('Ext.ux.LiveSearchGridPanel', {
-    extend: 'Ext.grid.Panel',
-    requires: [
-        'Ext.toolbar.TextItem',
-        'Ext.form.field.Checkbox',
-        'Ext.form.field.Text',
-        'Ext.ux.statusbar.StatusBar'
-    ],
+    extend:  Ext.grid.Panel ,
+               
+                               
+                                  
+                              
+                                    
+      
     
     /**
      * @private
@@ -3188,9 +3188,9 @@ Ext.define('Ext.ux.LiveSearchGridPanel', {
  * @ptype preview
  */
 Ext.define('Ext.ux.PreviewPlugin', {
-    extend: 'Ext.AbstractPlugin',
+    extend:  Ext.AbstractPlugin ,
     alias: 'plugin.preview',
-    requires: ['Ext.grid.feature.RowBody', 'Ext.grid.feature.RowWrap'],
+                                                                       
     
     // private, css class to use to hide the body
     hideBodyCls: 'x-grid-row-body-hidden',
@@ -3253,7 +3253,7 @@ Ext.define('Ext.ux.PreviewPlugin', {
 */
 Ext.define('Ext.ux.ProgressBarPager', {
 
-    requires: ['Ext.ProgressBar'],
+                                  
     /**
      * @cfg {Number} width
      * <p>The default progress bar width.  Default is 225.</p>
@@ -3361,12 +3361,12 @@ Ext.define('Ext.ux.ProgressBarPager', {
  * @ptype rowexpander
  */
 Ext.define('Ext.ux.RowExpander', {
-    extend: 'Ext.AbstractPlugin',
+    extend:  Ext.AbstractPlugin ,
 
-    requires: [
-        'Ext.grid.feature.RowBody',
-        'Ext.grid.feature.RowWrap'
-    ],
+               
+                                   
+                                  
+      
 
     alias: 'plugin.rowexpander',
 
@@ -3598,10 +3598,10 @@ Ext.define('Ext.ux.RowExpander', {
 * @param {Object} config Configuration options
 */
 Ext.define('Ext.ux.SlidingPager', {
-    requires: [
-        'Ext.slider.Single',
-        'Ext.slider.Tip'
-    ],
+               
+                            
+                        
+      
 
     constructor : function(config) {
         if (config) {
@@ -3868,7 +3868,7 @@ Ext.define('Ext.ux.TabCloseMenu', {
     alias: 'plugin.tabclosemenu',
 
     mixins: {
-        observable: 'Ext.util.Observable'
+        observable:  Ext.util.Observable 
     },
 
     /**
@@ -4076,7 +4076,7 @@ Ext.define('Ext.ux.TabCloseMenu', {
  */
 Ext.define('Ext.ux.TabReorderer', {
 
-    extend: 'Ext.ux.BoxReorderer',
+    extend:  Ext.ux.BoxReorderer ,
 
     itemSelector: '.x-tab',
 
@@ -4135,7 +4135,7 @@ Ext.ns('Ext.ux');
 Ext.define('Ext.ux.TabScrollerMenu', {
     alias: 'plugin.tabscrollermenu',
 
-    requires: ['Ext.menu.Menu'],
+                                
 
     /**
      * @cfg {Number} pageSize How many items to allow per submenu.
@@ -4501,7 +4501,7 @@ Ext.define('Ext.ux.TabScrollerMenu', {
  * A Picker field that contains a tree panel on its popup, enabling selection of tree nodes.
  */
 Ext.define('Ext.ux.TreePicker', {
-    extend: 'Ext.form.field.Picker',
+    extend:  Ext.form.field.Picker ,
     xtype: 'treepicker',
 
     triggerCls: Ext.baseCSSPrefix + 'form-arrow-trigger',
@@ -5087,7 +5087,7 @@ Ext.define('Ext.ux.ajax.DataSimlet', function () {
     }
 
     return {
-        extend: 'Ext.ux.ajax.Simlet',
+        extend:  Ext.ux.ajax.Simlet ,
 
         getData: function (ctx) {
             var me = this,
@@ -5201,7 +5201,7 @@ Ext.define('Ext.ux.ajax.DataSimlet', function () {
  * JSON Simlet.
  */
 Ext.define('Ext.ux.ajax.JsonSimlet', {
-    extend: 'Ext.ux.ajax.DataSimlet',
+    extend:  Ext.ux.ajax.DataSimlet ,
     alias: 'simlet.json',
 
     doGet: function (ctx) {
@@ -5278,12 +5278,12 @@ Ext.define('Ext.ux.ajax.JsonSimlet', {
 Ext.define('Ext.ux.ajax.SimManager', {
     singleton: true,
 
-    requires: [
-        'Ext.data.Connection',
-        'Ext.ux.ajax.SimXhr',
-        'Ext.ux.ajax.Simlet',
-        'Ext.ux.ajax.JsonSimlet'
-    ],
+               
+                              
+                             
+                             
+                                
+      
 
     /**
      * @cfg {Ext.ux.ajax.Simlet} defaultSimlet
@@ -5452,7 +5452,7 @@ Ext.define('Ext.ux.ajax.SimManager', {
  * This class simulates XML-based requests.
  */
 Ext.define('Ext.ux.ajax.XmlSimlet', {
-    extend: 'Ext.ux.ajax.DataSimlet',
+    extend:  Ext.ux.ajax.DataSimlet ,
     alias: 'simlet.xml',
 
     /**
@@ -5516,7 +5516,7 @@ Ext.define('Ext.ux.ajax.XmlSimlet', {
 Ext.define('Ext.ux.event.Driver', {
     active: null,
     mixins: {
-        observable: 'Ext.util.Observable'
+        observable:  Ext.util.Observable 
     },
 
     constructor: function (config) {
@@ -5728,7 +5728,7 @@ Ext.define('Ext.ux.event.Maker', {
  *      }
  */
 Ext.define('Ext.ux.event.Player', {
-    extend: 'Ext.ux.event.Driver',
+    extend:  Ext.ux.event.Driver ,
 
     /**
      * @cfg {Array} eventQueue The event queue to playback. This must be provided before
@@ -6091,7 +6091,7 @@ Ext.define('Ext.ux.event.Recorder', function () {
     }
 
     return {
-        extend: 'Ext.ux.event.Driver',
+        extend:  Ext.ux.event.Driver ,
 
         eventsToRecord: function () {
             var key = { kind: 'keyboard', modKeys: true, key: true, bubbles: true },
@@ -6415,14 +6415,14 @@ Ext.define('Ext.ux.event.Recorder', function () {
  *    javascript:void(window.open("../ux/event/RecorderManager.html","recmgr"))
  */
 Ext.define('Ext.ux.event.RecorderManager', {
-    extend: 'Ext.panel.Panel',
+    extend:  Ext.panel.Panel ,
 
     alias: 'widget.eventrecordermanager',
 
-    uses: [
-        'Ext.ux.event.Recorder',
-        'Ext.ux.event.Player'
-    ],
+           
+                                
+                             
+      
 
     layout: 'fit',
     buttonAlign: 'left',
@@ -6687,19 +6687,19 @@ Ext.define('Ext.ux.event.RecorderManager', {
  */
 Ext.define('Ext.ux.form.MultiSelect', {
     
-    extend: 'Ext.form.FieldContainer',
+    extend:  Ext.form.FieldContainer ,
     
     mixins: {
-        bindable: 'Ext.util.Bindable',
-        field: 'Ext.form.field.Field'    
+        bindable:  Ext.util.Bindable ,
+        field:  Ext.form.field.Field     
     },
     
     alternateClassName: 'Ext.ux.Multiselect',
     alias: ['widget.multiselectfield', 'widget.multiselect'],
     
-    requires: ['Ext.panel.Panel', 'Ext.view.BoundList', 'Ext.layout.container.Fit'],
+                                                                                    
     
-    uses: ['Ext.view.DragZone', 'Ext.view.DropZone'],
+                                                     
     
     layout: 'fit',
     
@@ -7160,13 +7160,13 @@ Ext.define('Ext.ux.form.MultiSelect', {
  * A control that allows selection of between two Ext.ux.form.MultiSelect controls.
  */
 Ext.define('Ext.ux.form.ItemSelector', {
-    extend: 'Ext.ux.form.MultiSelect',
+    extend:  Ext.ux.form.MultiSelect ,
     alias: ['widget.itemselectorfield', 'widget.itemselector'],
     alternateClassName: ['Ext.ux.ItemSelector'],
-    requires: [
-        'Ext.button.Button',
-        'Ext.ux.form.MultiSelect'
-    ],
+               
+                            
+                                 
+      
 
     /**
      * @cfg {Boolean} [hideNavIcons=false] True to hide the navigation icons
@@ -7534,7 +7534,7 @@ Ext.define('Ext.ux.form.ItemSelector', {
 });
 
 Ext.define('Ext.ux.form.SearchField', {
-    extend: 'Ext.form.field.Trigger',
+    extend:  Ext.form.field.Trigger ,
 
     alias: 'widget.searchfield',
 
@@ -7698,17 +7698,17 @@ Ext.define('Ext.ux.form.SearchField', {
  *     grid.filters
  */
 Ext.define('Ext.ux.grid.FiltersFeature', {
-    extend: 'Ext.grid.feature.Feature',
+    extend:  Ext.grid.feature.Feature ,
     alias: 'feature.filters',
-    uses: [
-        'Ext.ux.grid.menu.ListMenu',
-        'Ext.ux.grid.menu.RangeMenu',
-        'Ext.ux.grid.filter.BooleanFilter',
-        'Ext.ux.grid.filter.DateFilter',
-        'Ext.ux.grid.filter.ListFilter',
-        'Ext.ux.grid.filter.NumericFilter',
-        'Ext.ux.grid.filter.StringFilter'
-    ],
+           
+                                    
+                                     
+                                           
+                                        
+                                        
+                                           
+                                         
+      
 
     /**
      * @cfg {Boolean} autoReload
@@ -8383,7 +8383,7 @@ Ext.define('Ext.ux.grid.FiltersFeature', {
  * A Grid which creates itself from an existing HTML table element.
  */
 Ext.define('Ext.ux.grid.TransformGrid', {
-    extend: 'Ext.grid.Panel',
+    extend:  Ext.grid.Panel ,
 
     /**
      * Creates the grid from HTML table element.
@@ -8479,7 +8479,7 @@ Ext.define('Ext.ux.grid.TransformGrid', {
  * Abstract base class for filter implementations.
  */
 Ext.define('Ext.ux.grid.filter.Filter', {
-    extend: 'Ext.util.Observable',
+    extend:  Ext.util.Observable ,
 
     /**
      * @cfg {Boolean} active
@@ -8685,7 +8685,7 @@ var filters = Ext.create('Ext.ux.grid.GridFilters', {
  * </code></pre>
  */
 Ext.define('Ext.ux.grid.filter.BooleanFilter', {
-    extend: 'Ext.ux.grid.filter.Filter',
+    extend:  Ext.ux.grid.filter.Filter ,
     alias: 'gridfilter.boolean',
 
 	/**
@@ -8792,9 +8792,9 @@ var filters = Ext.create('Ext.ux.grid.GridFilters', {
  * </code></pre>
  */
 Ext.define('Ext.ux.grid.filter.DateFilter', {
-    extend: 'Ext.ux.grid.filter.Filter',
+    extend:  Ext.ux.grid.filter.Filter ,
     alias: 'gridfilter.date',
-    uses: ['Ext.picker.Date', 'Ext.menu.Menu'],
+                                               
 
     /**
      * @cfg {String} afterText
@@ -8896,7 +8896,7 @@ Ext.define('Ext.ux.grid.filter.DateFilter', {
                                     select: me.onPickerSelect,
                                     scope: me
                                 }
-                            }),
+                            })
                         ]
                     }),
                     listeners: {
@@ -9127,7 +9127,7 @@ var filters = Ext.create('Ext.ux.grid.GridFilters', {
  *
  */
 Ext.define('Ext.ux.grid.filter.ListFilter', {
-    extend: 'Ext.ux.grid.filter.Filter',
+    extend:  Ext.ux.grid.filter.Filter ,
     alias: 'gridfilter.list',
 
     /**
@@ -9298,9 +9298,9 @@ var filters = Ext.create('Ext.ux.grid.GridFilters', {
  * configurations to NumericFilter, and will be copied over to the internal menu instance automatically.</p>
  */
 Ext.define('Ext.ux.grid.filter.NumericFilter', {
-    extend: 'Ext.ux.grid.filter.Filter',
+    extend:  Ext.ux.grid.filter.Filter ,
     alias: 'gridfilter.numeric',
-    uses: ['Ext.form.field.Number'],
+                                    
 
     /**
      * @private @override
@@ -9419,7 +9419,7 @@ var filters = Ext.create('Ext.ux.grid.GridFilters', {
  * </code></pre>
  */
 Ext.define('Ext.ux.grid.filter.StringFilter', {
-    extend: 'Ext.ux.grid.filter.Filter',
+    extend:  Ext.ux.grid.filter.Filter ,
     alias: 'gridfilter.string',
 
     /**
@@ -9539,7 +9539,7 @@ Ext.define('Ext.ux.grid.filter.StringFilter', {
  * also accepts all configuration options from {@link Ext.ux.grid.filter.ListFilter}.
  */
 Ext.define('Ext.ux.grid.menu.ListMenu', {
-    extend: 'Ext.menu.Menu',
+    extend:  Ext.menu.Menu ,
 
     /**
      * @cfg {String} labelField
@@ -9721,7 +9721,7 @@ Ext.define('Ext.ux.grid.menu.ListMenu', {
  * by {@link Ext.ux.grid.filter.NumericFilter} to create its menu.
  */
 Ext.define('Ext.ux.grid.menu.RangeMenu', {
-    extend: 'Ext.menu.Menu',
+    extend:  Ext.menu.Menu ,
 
     /**
      * @cfg {String} fieldCls
@@ -10016,7 +10016,7 @@ menuItemCfgs : {
  *      });
  */
 Ext.define('Ext.ux.layout.Center', {
-    extend: 'Ext.layout.container.Fit',
+    extend:  Ext.layout.container.Fit ,
     alias: 'layout.ux.center',
 
     percentRe: /^\d+(?:\.\d+)?\%$/,
@@ -10086,8 +10086,8 @@ Ext.define('Ext.ux.layout.Center', {
  * notification when the associated form contains validation errors.
  */
 Ext.define('Ext.ux.statusbar.ValidationStatus', {
-    extend: 'Ext.Component', 
-    requires: ['Ext.util.MixedCollection'],
+    extend:  Ext.Component , 
+                                           
     /**
      * @cfg {String} errorIconCls
      * The {@link Ext.ux.statusbar.StatusBar#iconCls iconCls} value to be applied

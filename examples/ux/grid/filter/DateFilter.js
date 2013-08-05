@@ -130,7 +130,7 @@ Ext.define('Ext.ux.grid.filter.DateFilter', {
                                     select: me.onPickerSelect,
                                     scope: me
                                 }
-                            }),
+                            })
                         ]
                     }),
                     listeners: {

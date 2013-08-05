@@ -121,7 +121,10 @@ Ext.define('Spread.grid.plugin.ClearRange', {
 
         if (me.loadMask) {
 
-            var loadMask = new Ext.LoadMask(view.getEl());
+            var maskEl = view.getEl();
+            maskEl.target = maskEl;
+
+            var loadMask = new Ext.LoadMask(maskEl);
             loadMask.show();
             //me.view.setLoading(true);
         }

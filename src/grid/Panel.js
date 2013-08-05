@@ -892,8 +892,6 @@ Ext.define('Spread.grid.Panel', {
             selModelConfig.enableKeyNav = this.enableKeyNav;
         }
 
-        //console.log('selModelConfig', selModelConfig);
-
         // Assign selection model instance
         this.selModel = selModelConfig;
     },

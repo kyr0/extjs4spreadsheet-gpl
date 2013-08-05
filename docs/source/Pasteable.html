@@ -24,13 +24,13 @@
  */
 Ext.define('Spread.grid.plugin.Pasteable', {
 
-    extend: 'Spread.grid.plugin.AbstractPlugin',
+    'extend': 'Spread.grid.plugin.AbstractPlugin',
 
-    requires: ['Spread.grid.plugin.AbstractPlugin'],
+    'requires': ['Spread.grid.plugin.AbstractPlugin'],
 
-    alias: 'pasteable',
+    'alias': 'pasteable',
 
-    mixins: {
+    'mixins': {
         clipping: 'Spread.util.Clipping'
     },
 
@@ -150,9 +150,11 @@ Ext.define('Spread.grid.plugin.Pasteable', {
 
         if (me.loadMask) {
 
-            var loadMask = new Ext.LoadMask(view.getEl());
+            var maskEl = view.getEl();
+            maskEl.target = maskEl;
+
+            var loadMask = new Ext.LoadMask(maskEl);
             loadMask.show();
-            //me.view.setLoading(true);
         }
 
         // Fire interceptable event

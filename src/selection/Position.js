@@ -135,15 +135,18 @@ Ext.define('Spread.selection.Position', {
      * @param {Ext.data.Model} [record=auto-detect] Data record instance
      * @param {HTMLElement} [rowEl=auto-detect] Row's HTML element (tr-element)
      * @param {HTMLElement} [cellEl=auto-detect] Cell's HTML element (td-element)
-     * @return {Object}
+     * @return
      */
     constructor: function(view, columnIndex, rowIndex, record, rowEl, cellEl) {
 
-        //console.log('instantiation of Position', arguments);
-
         // Correct row and column index if outside of possible grid boundings
-        var maxRowCount = view.getStore().getCount(),
-            maxColumnCount = view.headerCt.getGridColumns(true).length;
+        var maxRowCount = view.getStore().getCount();
+
+        if (Ext.versions.extjs.major === 4 && Ext.versions.extjs.minor < 2) {
+            var maxColumnCount = view.headerCt.getGridColumns(true).length;
+        } else {
+            var maxColumnCount = view.getGridColumns().length;
+        }
 
         // Column boundary protection
         if (columnIndex >= maxColumnCount) {

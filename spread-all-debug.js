@@ -1422,8 +1422,6 @@ Ext.define('Spread.grid.Panel', {
             selModelConfig.enableKeyNav = this.enableKeyNav;
         }
 
-        //console.log('selModelConfig', selModelConfig);
-
         // Assign selection model instance
         this.selModel = selModelConfig;
     },
@@ -1733,7 +1731,12 @@ Ext.define('Spread.grid.View', {
              * @event paste
              * @inheritdoc Spread.grid.plugin.Pasteable#paste
              */
-            'paste'
+            'paste',
+
+            /**
+             * @event cellmouseevents
+             */
+            'cellmouseevents'
         );
 
 
@@ -1753,7 +1756,51 @@ Ext.define('Spread.grid.View', {
         // Initializes relay eventing
         me.initRelayEvents();
 
+        // Initialize cell mouse over/out event
+        me.initCellMouseEvents();
+
         return ret;
+    },
+
+    /**
+     * Initializes the cell mouse event handling
+     * @return void
+     */
+    initCellMouseEvents: function() {
+
+        var me = this, handleMouseEvent = function(evt, el, evtName) {
+
+            el = Ext.get(Ext.get(el).findParent('.x-grid-cell'), 5);
+
+            if (el && el.hasCls('x-grid-cell')) {
+                me.fireCellMouseEvent(el, evtName, evt);
+            }
+        };
+
+        this.on('afterrender', function() {
+
+            this.getEl().on('mouseover', function(evt, el) {
+                handleMouseEvent.call(me, evt, el, 'mouseover');
+            });
+
+            this.getEl().on('mousedown', function(evt, el) {
+                handleMouseEvent.call(me, evt, el, 'mousedown');
+            });
+        });
+    },
+
+    fireCellMouseEvent: function(cell, type, evt) {
+
+        var me = this,
+            cellEl = cell.dom,
+            rowEl = me.getRowElFromCellEl(cellEl),
+            record = me.getRecord(rowEl),
+            cellIndex = me.getCellIndex(rowEl, cellEl),
+            rowIndex = me.getRowIndex(rowEl) + 1;
+
+        //console.log('fireCellMouseEvent', cell, type);
+
+        me.fireEvent('cellmouseevents', type, me, cellEl, rowIndex, cellIndex, evt, record, rowEl);
     },
 
     /**
@@ -1859,6 +1906,49 @@ Ext.define('Spread.grid.View', {
     },
 
     /**
+     * Returns the row element for a given cell element
+     * @param {HTMLElement} cellEl Cell's HTML element reference
+     * @return {HTMLElement}
+     */
+    getRowElFromCellEl: function(cellEl) {
+        return  Ext.fly(cellEl).up('tr').dom;
+    },
+
+    /**
+     * Returns the cell index number for a given row and cell element
+     * @param {HTMLElement} rowEl Row's HTML element reference
+     * @param {HTMLElement} cellEl Cell's HTML element reference
+     * @return {Number}
+     */
+    getCellIndex: function(rowEl, cellEl) {
+
+        // Analyze cell index
+        for (var i=0; i<rowEl.childNodes.length; i++) {
+            if (rowEl.childNodes[i] === cellEl) {
+                return i;
+            }
+        }
+    },
+
+    /**
+     * Returns the row index number for a given row element
+     * @param {HTMLElement} rowEl Row's HTML element reference
+     * @return {Number}
+     */
+    getRowIndex: function(rowEl) {
+
+        // Table <table> element
+        var tableBodyEl = Ext.fly(rowEl).up('tbody').dom;
+
+        // Analyze row index
+        for (var i=0; i<tableBodyEl.childNodes.length; i++) {
+            if (tableBodyEl.childNodes[i] === rowEl) {
+                return (i-1);
+            }
+        }
+    },
+
+    /**
      * @protected
      * Bubble the mousedown event to the cell's <td> element which is covered by the coverEl.
      * @param {Ext.EventObject} evt Event of mousedown
@@ -1867,8 +1957,8 @@ Ext.define('Spread.grid.View', {
      */
     bubbleCellMouseDownToSelectionModel: function(evt, coverEl) {
 
-        var cellEl = coverEl.id.split('_'),
-            rowEl, tableBodyEl, rowIndex, cellIndex, record, i;
+        var me = this, cellEl = coverEl.id.split('_'),
+            rowEl, rowIndex, cellIndex, record, i;
 
         // Fetch <td> cell for given cover element and proove that
         if (cellEl[1] && Ext.fly(cellEl[1]) && Ext.fly(cellEl[1]).hasCls('x-grid-cell')) {
@@ -1877,32 +1967,17 @@ Ext.define('Spread.grid.View', {
             cellEl = Ext.fly(cellEl[1]).dom;
 
             // Row <tr> element
-            rowEl = Ext.fly(cellEl).up('tr').dom;
+            rowEl = me.getRowElFromCellEl(cellEl);
 
             // Fetch record with using node info
-            record = this.getRecord(rowEl);
+            record = me.getRecord(rowEl);
 
-            // Table <table> element
-            tableBodyEl = Ext.fly(rowEl).up('tbody').dom;
+            cellIndex = me.getCellIndex(rowEl, cellEl);
 
-            // Analyze cell index
-            for (i=0; i<rowEl.childNodes.length; i++) {
-                if (rowEl.childNodes[i] === cellEl) {
-                    cellIndex = i;
-                    break;
-                }
-            }
-
-            // Analyze row index
-            for (i=0; i<tableBodyEl.childNodes.length; i++) {
-                if (tableBodyEl.childNodes[i] === rowEl) {
-                    rowIndex = (i-1);
-                    break;
-                }
-            }
+            rowIndex = me.getRowIndex(rowEl);
 
             // Bubble the event through
-            this.getSelectionModel().onCellMouseDown('mousedown', this, cellEl, rowIndex, cellIndex, evt, record, rowEl);
+            me.getSelectionModel().onCellMouseDown('mousedown', me, cellEl, rowIndex, cellIndex, evt, record, rowEl);
         }
     },
 
@@ -2338,7 +2413,10 @@ Ext.define('Spread.grid.plugin.ClearRange', {
 
         if (me.loadMask) {
 
-            var loadMask = new Ext.LoadMask(view.getEl());
+            var maskEl = view.getEl();
+            maskEl.target = maskEl;
+
+            var loadMask = new Ext.LoadMask(maskEl);
             loadMask.show();
             //me.view.setLoading(true);
         }
@@ -3754,9 +3832,11 @@ Ext.define('Spread.grid.plugin.Pasteable', {
 
         if (me.loadMask) {
 
-            var loadMask = new Ext.LoadMask(view.getEl());
+            var maskEl = view.getEl();
+            maskEl.target = maskEl;
+
+            var loadMask = new Ext.LoadMask(maskEl);
             loadMask.show();
-            //me.view.setLoading(true);
         }
 
         // Fire interceptable event
@@ -4163,15 +4243,18 @@ Ext.define('Spread.selection.Position', {
      * @param {Ext.data.Model} [record=auto-detect] Data record instance
      * @param {HTMLElement} [rowEl=auto-detect] Row's HTML element (tr-element)
      * @param {HTMLElement} [cellEl=auto-detect] Cell's HTML element (td-element)
-     * @return {Object}
+     * @return
      */
     constructor: function(view, columnIndex, rowIndex, record, rowEl, cellEl) {
 
-        //console.log('instantiation of Position', arguments);
-
         // Correct row and column index if outside of possible grid boundings
-        var maxRowCount = view.getStore().getCount(),
-            maxColumnCount = view.headerCt.getGridColumns(true).length;
+        var maxRowCount = view.getStore().getCount();
+
+        if (Ext.versions.extjs.major === 4 && Ext.versions.extjs.minor < 2) {
+            var maxColumnCount = view.headerCt.getGridColumns(true).length;
+        } else {
+            var maxColumnCount = view.getGridColumns().length;
+        }
 
         // Column boundary protection
         if (columnIndex >= maxColumnCount) {
@@ -4417,12 +4500,14 @@ Ext.define('Spread.selection.Position', {
 
         if (useInternalAPIs) {
 
-            ret = me.record[
-                me.record.persistenceProperty
-            ][fieldName] = newValue;
+            // Set specific modified field value
+            me.record.modified[fieldName] = newValue;
 
             // Set record dirty
-            me.record.setDirty();
+            me.record.dirty = true;
+
+            // Set specific field's value
+            ret = me.record[me.record.persistenceProperty][fieldName] = newValue;
 
         } else {
 
@@ -5367,7 +5452,7 @@ Ext.define('Spread.selection.RangeModel', {
 
         // Catch the view's cell dbl click event
         me.view.on({
-            uievent: me.onUIEvent,
+            cellmouseevents: me.onCellMouseEvents,
             refresh: me.onViewRefresh,
             scope: me
         });
@@ -5535,25 +5620,17 @@ Ext.define('Spread.selection.RangeModel', {
 
     /**
      * @protected
-     * UI Event processing
-     * @param {String} type UI Event type (e.g. 'mousedown')
-     * @param {Spread.grid.View} view Spread view instance reference
-     * @param {HTMLElement} cell Cell HTML element reference (<td>)
-     * @param {Number} rowIndex Row index
-     * @param {Number} cellIndex Cell index
-     * @param {Ext.EventObject} evt Event instance
-     * @param {Ext.data.Model} record Data record instance
-     * @param {HTMLElement} row Row HTML element reference (<tr>)
-     * @return void
+     * Cell mouse event processing
      */
-    onUIEvent: function(type, view, cell, rowIndex, cellIndex, evt, record, row) {
+    onCellMouseEvents: function(type, view, cell, rowIndex, cellIndex, evt, record, row) {
 
-        //console.log('uievent', type);
         var me = this, args = arguments;
 
         switch(type) {
 
             case "mouseover":
+
+                // type, view, cell, rowIndex, cellIndex, evt, record, row
                 me.onCellMouseOver.apply(me, args);
                 break;
 
@@ -5643,8 +5720,6 @@ Ext.define('Spread.selection.RangeModel', {
         // When range selection is happening,
         // it's of interest to select responsive
         if (this.mayRangeSelecting) {
-
-            //console.log('cell mouse over', arguments);
 
             // Set last position
             if (
@@ -5991,7 +6066,6 @@ Ext.define('Spread.selection.RangeModel', {
         */
 
         var rowCount = this.view.getStore().getCount(),
-            columnCount = this.view.headerCt.getGridColumns(true).length,
             originRow = this.getOriginSelectionPosition().row,
             focusRow = this.getCurrentFocusPosition().row,
             originColumn = this.getOriginSelectionPosition().column,
@@ -6000,6 +6074,12 @@ Ext.define('Spread.selection.RangeModel', {
             columnIndexes = [],
             selectedPositions = [],
             selPosition = null;
+
+        if (Ext.versions.extjs.major === 4 && Ext.versions.extjs.minor < 2) {
+            var columnCount = this.view.headerCt.getGridColumns(true).length;
+        } else {
+            var columnCount = this.view.getGridColumns().length;
+        }
 
         // Interpolate selected row indexes
         if (focusRow <= originRow) {
