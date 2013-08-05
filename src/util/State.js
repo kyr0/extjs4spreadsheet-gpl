@@ -1,6 +1,8 @@
 /**
  * @class Spread.util.State
  * @singleton
+ *
+ * Holds the cell's state values for one or many spread instances.
  */
 Ext.define('Spread.util.State', {
 
@@ -66,5 +68,14 @@ Ext.define('Spread.util.State', {
             return undefined;
         }
         return states[spreadId][position.row][position.column][name];
+    },
+
+    /**
+     * Clears the state data for a given spread id
+     * @param {String} spreadId Spread id
+     * @return void
+     */
+    clear: function(spreadId) {
+        this.positionStates[spreadId] = {};
     }
 });

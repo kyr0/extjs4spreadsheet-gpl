@@ -962,6 +962,23 @@ Ext.define('Spread.grid.Panel', {
         return this.editable;
     },
 
+    /**
+     * Reconfigures the grid by parent implementation
+     * but also clears the Spread.util.State.
+     */
+    reconfigure: function() {
+
+        var me = this;
+
+        // Clear spread cell's state
+        Spread.util.State.clear(me.instanceStateId);
+
+        // Sets the dataChangedRecently flag
+        me.getSelectionModel().dataChangedRecently = true;
+
+        return me.callParent(arguments);
+    },
+
     statics: {
 
         /**

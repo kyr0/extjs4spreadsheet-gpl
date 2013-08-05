@@ -1492,6 +1492,23 @@ Ext.define('Spread.grid.Panel', {
         return this.editable;
     },
 
+    /**
+     * Reconfigures the grid by parent implementation
+     * but also clears the Spread.util.State.
+     */
+    reconfigure: function() {
+
+        var me = this;
+
+        // Clear spread cell's state
+        Spread.util.State.clear(me.instanceStateId);
+
+        // Sets the dataChangedRecently flag
+        me.getSelectionModel().dataChangedRecently = true;
+
+        return me.callParent(arguments);
+    },
+
     statics: {
 
         /**
@@ -4039,6 +4056,8 @@ Ext.define('Spread.grid.plugin.Pasteable', {
 /**
  * @class Spread.util.State
  * @singleton
+ *
+ * Holds the cell's state values for one or many spread instances.
  */
 Ext.define('Spread.util.State', {
 
@@ -4104,6 +4123,15 @@ Ext.define('Spread.util.State', {
             return undefined;
         }
         return states[spreadId][position.row][position.column][name];
+    },
+
+    /**
+     * Clears the state data for a given spread id
+     * @param {String} spreadId Spread id
+     * @return void
+     */
+    clear: function(spreadId) {
+        this.positionStates[spreadId] = {};
     }
 });
 /**
