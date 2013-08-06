@@ -980,7 +980,7 @@ Ext.define('Spread.grid.Panel', {
 
         var me = this;
 
-        me.clearState();
+        me.clearCellStates();
 
         // Sets the dataChangedRecently flag
         me.getSelectionModel().dataChangedRecently = true;
