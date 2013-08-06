@@ -1493,6 +1493,16 @@ Ext.define('Spread.grid.Panel', {
     },
 
     /**
+     * Clears the spread's cell state
+     * @return void
+     */
+    clearCellStates: function() {
+
+        // Clear spread cell's state
+        Spread.util.State.clear(this.instanceStateId);
+    },
+
+    /**
      * Reconfigures the grid by parent implementation
      * but also clears the Spread.util.State.
      */
@@ -1500,8 +1510,7 @@ Ext.define('Spread.grid.Panel', {
 
         var me = this;
 
-        // Clear spread cell's state
-        Spread.util.State.clear(me.instanceStateId);
+        me.clearState();
 
         // Sets the dataChangedRecently flag
         me.getSelectionModel().dataChangedRecently = true;
